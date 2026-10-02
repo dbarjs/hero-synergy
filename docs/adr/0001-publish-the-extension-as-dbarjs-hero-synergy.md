@@ -2,7 +2,7 @@
 
 The extension's publisher ID is `dbarjs`, Eduardo's personal ID, and not the brand `hero-synergy`, even though the npm packages live in the `@hero-synergy` scope. The ID can never be changed once created, and it is also the Open VSX namespace, because both registries read the same `publisher` field. `dbarjs` mirrors the repository (`dbarjs/hero-synergy`), says plainly that a person is behind an unofficial companion, and can be claimed on Open VSX on its own because it matches Eduardo's GitHub ID.
 
-The bare name `hero-synergy` belongs to the extension. An extension's `name` can't be scoped and two workspace packages can't share a name, so the unscoped npm name `hero-synergy` is deliberately not claimed. The npm packages are `@hero-synergy/core` and `@hero-synergy/cli`, and `npx @hero-synergy/cli` runs the `hero-synergy` bin.
+The bare name `hero-synergy` belongs to the extension. An extension's `name` can't be scoped and two workspace packages can't share a name, so the unscoped npm name `hero-synergy` is deliberately not claimed. The scoped names `@hero-synergy/core` and `@hero-synergy/cli` are kept for later: v0.1.0 publishes neither, and if the CLI ships, `npx @hero-synergy/cli` runs the `hero-synergy` bin.
 
 ## Considered options
 
