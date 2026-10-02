@@ -1,0 +1,43 @@
+{
+  "kind": "map",
+  "bodyForm": "M2",
+  "destination": null,
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 3,
+      "gist": "Postgres, one schema per tenant"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 5,
+      "gist": "was dropped"
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [],
+  "taskList": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "warnings": [
+    "Uses 'Fog' instead of 'Not yet specified'",
+    "Uses ':' instead of '—' in decision lines",
+    "Task list in body (should use native sub-issues)",
+    "Second decision line not in standard [title](link) format"
+  ]
+}

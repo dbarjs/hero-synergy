@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Under which names is hero-synergy published?",
+  "summary": "Decide the publisher ID, npm names, and Open VSX namespace for hero-synergy.",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Publisher ID `dbarjs`, extension ID `dbarjs.hero-synergy`, Open VSX namespace `dbarjs`, don't claim unscoped npm."
+  },
+  "warnings": [
+    "Body mentions blocking research ticket without issue number"
+  ]
+}

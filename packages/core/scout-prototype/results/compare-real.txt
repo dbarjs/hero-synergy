@@ -1,0 +1,237 @@
+item  field            same  code                                                                    model                                                                 
+----  ---------------  ----  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+#1    bodyForm         same  M5                                                                      M5                                                                    
+#1    destination      DIFF  hero-synergy v0.1.0 fully decided: every question it depends on is re…  hero-synergy v0.1.0 fully decided: every question it depends on is re…
+#1    notes            DIFF  - **Domain.** An unofficial VS Code cockpit for Matt Pocock's agent s…  Domain: An unofficial VS Code cockpit for Matt Pocock's agent skills …
+#1    decisions        DIFF  [{"title":"Which wayfinder conventions exist in the wild?","url":"htt…  [{"number":10,"title":"Which wayfinder conventions exist in the wild?…
+#1    notYetSpecified  same  [{"text":"**The snapshot's fields.** What a snapshot holds for each m…  [{"text":"The snapshot's fields. What a snapshot holds for each map a…
+#1    outOfScope       same  [{"text":"**Building and releasing v0.1.0.** The build, the release p…  [{"text":"Building and releasing v0.1.0. The build, the release pipel…
+#1    taskList         same  []                                                                      []                                                                    
+#1    warnings               0                                                                       0                                                                     
+#2    type             same  task                                                                    task                                                                  
+#2    partOf           same  null                                                                    null                                                                  
+#2    textBlockedBy    same  []                                                                      []                                                                    
+#2    legacyClaim      same  false                                                                   false                                                                 
+#2    question         DIFF  What does the repo look like once the seed's stack is actually instal…  What does the repo look like once the seed's stack is actually instal…
+#2    resolution       same  {"author":"dbarjs","gist":"## Answer The workspace is scaffolded on `…  {"author":"dbarjs","gist":"Workspace scaffolded on main with all chec…
+#2    warnings               0                                                                       0                                                                     
+#3    type             same  grilling                                                                grilling                                                              
+#3    partOf           same  null                                                                    null                                                                  
+#3    textBlockedBy    same  []                                                                      []                                                                    
+#3    legacyClaim      same  false                                                                   false                                                                 
+#3    question         same  Which trackers and which workspace shapes must the Cockpit handle in …  Which trackers and which workspace shapes must the Cockpit handle in …
+#3    resolution       same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo in a grilli…  {"author":"dbarjs","gist":"v0.1.0 supports GitHub and local markdown …
+#3    warnings               0                                                                       1                                                                     
+#4    type             same  grilling                                                                grilling                                                              
+#4    partOf           same  null                                                                    null                                                                  
+#4    textBlockedBy    same  []                                                                      []                                                                    
+#4    legacyClaim      same  false                                                                   false                                                                 
+#4    question         DIFF  Besides the VS Code extension, what does v0.1.0 ship?
+
+To decide:
+
+- …  ## Question
+
+Besides the VS Code extension, what does v0.1.0 ship?
+
+T…
+#4    resolution       same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo on 2026-10-…  {"author":"dbarjs","gist":"v0.1.0 ships the VS Code extension and not…
+#4    warnings               0                                                                       1                                                                     
+#5    type             same  grilling                                                                grilling                                                              
+#5    partOf           same  null                                                                    null                                                                  
+#5    textBlockedBy    same  []                                                                      []                                                                    
+#5    legacyClaim      same  false                                                                   false                                                                 
+#5    question         same  A Cockpit session runs in its own worktree (`claude -w <ticket-slug>`…  A Cockpit session runs in its own worktree (`claude -w <ticket-slug>`…
+#5    resolution       same  {"author":"dbarjs","gist":"## Resolution **Every ticket session runs …  {"author":"dbarjs","gist":"Every ticket session runs in its own workt…
+#5    warnings               0                                                                       1                                                                     
+#6    type             same  prototype                                                               prototype                                                             
+#6    partOf           same  null                                                                    null                                                                  
+#6    textBlockedBy    same  []                                                                      []                                                                    
+#6    legacyClaim      same  false                                                                   false                                                                 
+#6    question         DIFF  Does a small Claude Code plugin, loaded with `--plugin-dir`, give the…  Does a small Claude Code plugin, loaded with `--plugin-dir`, give the…
+#6    resolution       same  {"author":"dbarjs","gist":"## Resolution **Yes, with a corrected tabl…  {"author":"dbarjs","gist":"Yes; plugin stays as status source with co…
+#6    warnings               0                                                                       0                                                                     
+#7    type             same  prototype                                                               prototype                                                             
+#7    partOf           same  null                                                                    null                                                                  
+#7    textBlockedBy    same  []                                                                      []                                                                    
+#7    legacyClaim      same  false                                                                   false                                                                 
+#7    question         same  How does the Cockpit draw a map: a list, a graph, or both?
+
+Make roug…  How does the Cockpit draw a map: a list, a graph, or both?
+
+Make roug…
+#7    resolution       same  null                                                                    null                                                                  
+#7    warnings               0                                                                       2                                                                     
+#8    type             same  research                                                                research                                                              
+#8    partOf           same  null                                                                    null                                                                  
+#8    textBlockedBy    same  []                                                                      []                                                                    
+#8    legacyClaim      same  false                                                                   false                                                                 
+#8    question         DIFF  Which of the names hero-synergy wants are free, taken, or already own…  Which of the names hero-synergy wants are free, taken, or already own…
+#8    resolution       same  {"author":"dbarjs","gist":"The hero-synergy npm org is mine"}           {"author":"dbarjs","gist":"npm org hero-synergy is Eduardo's; unscope…
+#8    warnings               0                                                                       0                                                                     
+#9    type             same  research                                                                research                                                              
+#9    partOf           same  null                                                                    null                                                                  
+#9    textBlockedBy    same  []                                                                      []                                                                    
+#9    legacyClaim      same  false                                                                   false                                                                 
+#9    question         DIFF  Can a single `gh api graphql` query return everything the scout's col…  Can a single `gh api graphql` query return everything the scout's col…
+#9    resolution       same  {"author":"dbarjs","gist":"## Answer **Yes.** Full findings, with the…  {"author":"dbarjs","gist":"Yes; one GraphQL query returns all needed …
+#9    warnings               0                                                                       1                                                                     
+#10   type             same  research                                                                research                                                              
+#10   partOf           same  null                                                                    null                                                                  
+#10   textBlockedBy    same  []                                                                      []                                                                    
+#10   legacyClaim      same  false                                                                   false                                                                 
+#10   question         same  Which conventions has `mattpocock/skills` shipped for wayfinder maps …  Which conventions has `mattpocock/skills` shipped for wayfinder maps …
+#10   resolution       same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/w…  {"author":"dbarjs","gist":"Three generations of tracker maps document…
+#10   warnings               0                                                                       0                                                                     
+#11   type             same  research                                                                research                                                              
+#11   partOf           same  null                                                                    null                                                                  
+#11   textBlockedBy    same  []                                                                      []                                                                    
+#11   legacyClaim      same  false                                                                   false                                                                 
+#11   question         DIFF  What breaks, or needs different handling, when the Cockpit launches s…  What breaks, or needs different handling, when the Cockpit launches s…
+#11   resolution       same  {"author":"dbarjs","gist":"## Answer Full findings, with twelve concr…  {"author":"dbarjs","gist":"Research documented with specific findings…
+#11   warnings               0                                                                       0                                                                     
+#12   type             same  research                                                                research                                                              
+#12   partOf           same  null                                                                    null                                                                  
+#12   textBlockedBy    same  []                                                                      []                                                                    
+#12   legacyClaim      same  false                                                                   false                                                                 
+#12   question         same  Which VS Code API version does each fork currently ship, and what is …  Which VS Code API version does each fork currently ship, and what is …
+#12   resolution       same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/f…  {"author":"dbarjs","gist":"Recommend engines.vscode ^1.105.0 and @typ…
+#12   warnings               0                                                                       0                                                                     
+#13   type             same  research                                                                research                                                              
+#13   partOf           same  null                                                                    null                                                                  
+#13   textBlockedBy    same  []                                                                      []                                                                    
+#13   legacyClaim      same  false                                                                   false                                                                 
+#13   question         DIFF  What are the working ways to integration-test a VS Code extension tod…  What are the working ways to integration-test a VS Code extension tod…
+#13   resolution       same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/e…  {"author":"dbarjs","gist":"Use Mocha for extension-host testing, Vite…
+#13   warnings               0                                                                       0                                                                     
+#14   type             same  task                                                                    task                                                                  
+#14   partOf           same  null                                                                    null                                                                  
+#14   textBlockedBy    same  []                                                                      []                                                                    
+#14   legacyClaim      same  false                                                                   false                                                                 
+#14   question         DIFF  Does `@effect/vitest` 4.0.0 run under the Vitest 5 that Vite+ bundles…  Does `@effect/vitest` 4.0.0 run under the Vitest 5 that Vite+ bundles?
+#14   resolution       same  {"author":"dbarjs","gist":"## Answer **Yes.** `@effect/vitest` 4.0.0 …  {"author":"dbarjs","gist":"@effect/vitest 4.0.0 runs under Vitest 5.0…
+#14   warnings               0                                                                       0                                                                     
+#15   type             same  grilling                                                                grilling                                                              
+#15   partOf           same  null                                                                    null                                                                  
+#15   textBlockedBy    same  []                                                                      []                                                                    
+#15   legacyClaim      same  false                                                                   false                                                                 
+#15   question         same  Which library models the data that crosses a boundary (the snapshot, …  Which library models the data that crosses a boundary (the snapshot, …
+#15   resolution       same  {"author":"dbarjs","gist":"## Resolution **Effect Schema models all b…  {"author":"dbarjs","gist":"Effect Schema models all boundary data; zo…
+#15   warnings               0                                                                       0                                                                     
+#16   type             same  prototype                                                               prototype                                                             
+#16   partOf           same  null                                                                    null                                                                  
+#16   textBlockedBy    same  []                                                                      []                                                                    
+#16   legacyClaim      same  false                                                                   false                                                                 
+#16   question         DIFF  Does the scout's hybrid pipeline (collect with code, interpret with H…  Does the scout's hybrid pipeline (collect with code, interpret with H…
+#16   resolution       same  null                                                                    null                                                                  
+#16   warnings               0                                                                       1                                                                     
+#17   type             same  grilling                                                                grilling                                                              
+#17   partOf           same  null                                                                    null                                                                  
+#17   textBlockedBy    same  []                                                                      []                                                                    
+#17   legacyClaim      same  false                                                                   false                                                                 
+#17   question         same  Which operating systems and editors does v0.1.0 promise to work on?
+
+…  Which operating systems and editors does v0.1.0 promise to work on?
+
+…
+#17   resolution       same  {"author":"dbarjs","gist":"## Answer v0.1.0 promises **VS Code 1.105 …  {"author":"dbarjs","gist":"Supports VS Code 1.105+ on macOS and Linux…
+#17   warnings               0                                                                       1                                                                     
+#18   type             same  grilling                                                                grilling                                                              
+#18   partOf           same  null                                                                    null                                                                  
+#18   textBlockedBy    same  []                                                                      []                                                                    
+#18   legacyClaim      same  false                                                                   false                                                                 
+#18   question         DIFF  What does the test setup for v0.1.0 look like, and what does CI run?
+…  What does the test setup for v0.1.0 look like, and what does CI run?  
+#18   resolution       same  null                                                                    null                                                                  
+#18   warnings               0                                                                       1                                                                     
+#19   type             same  grilling                                                                grilling                                                              
+#19   partOf           same  null                                                                    null                                                                  
+#19   textBlockedBy    same  []                                                                      []                                                                    
+#19   legacyClaim      same  false                                                                   false                                                                 
+#19   question         DIFF  Under which names is hero-synergy published?
+
+To decide:
+
+- The Marke…  Under which names is hero-synergy published?                          
+#19   resolution       same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo on 2026-10-…  {"author":"dbarjs","gist":"Publisher ID `dbarjs`, extension ID `dbarj…
+#19   warnings               0                                                                       1                                                                     
+#20   type             same  grilling                                                                grilling                                                              
+#20   partOf           same  null                                                                    null                                                                  
+#20   textBlockedBy    same  []                                                                      []                                                                    
+#20   legacyClaim      same  false                                                                   false                                                                 
+#20   question         DIFF  Where must v0.1.0 be installable from on release day?
+
+To decide:
+
+- …  Where must v0.1.0 be installable from on release day?                 
+#20   resolution       same  null                                                                    null                                                                  
+#20   warnings               0                                                                       0                                                                     
+#21   type             same  grilling                                                                grilling                                                              
+#21   partOf           same  null                                                                    null                                                                  
+#21   textBlockedBy    same  []                                                                      []                                                                    
+#21   legacyClaim      same  false                                                                   false                                                                 
+#21   question         DIFF  A ticket has at most one live session, and a session lives in a VS Co…  A ticket has at most one live session, and a session lives in a VS Co…
+#21   resolution       same  null                                                                    null                                                                  
+#21   warnings               0                                                                       1                                                                     
+
+fields compared: 127, differing: 16
+code-only: 3 ms for 21 items
+model: {"items":21,"calls":21,"cacheHits":0,"wallMs":222194,"perCallMs":37953,"costUsd":0.5048,"inputTokens":61486,"cacheWriteTokens":10786,"cacheReadTokens":0,"outputTokens":84345}
+
+frontier of #1 — code: 20, 21 | model: 20, 21 (same)
+
+warnings (code):
+warnings (model):
+  #3: Answer notes Claim wording not yet pushed to main; session was on prototype branch where main push was not permitted.
+  #4: Body includes '## Context' section after '## Question', departing from stated convention.
+  #5: Resolution intro claims 'all eleven points' but only 9 are explicitly numbered in the Decided section.
+  #7: Body mixes question with procedural instructions and discovery criteria rather than pure question form
+  #7: References `/prototype` command convention not mentioned in standard wayfinder rules
+  #9: Body includes ## Context section, which is non-standard for ticket format (current convention is ## Question section only)
+  #16: Body has '## Context' section instead of standard Notes/Decisions so far/Not yet specified/Out of scope sections
+  #17: Body mentions blockers but not in 'Blocked by:' format; issue numbers #11 and #12 appear only in closing comment sources
+  #18: Body mentions a blocking research ticket but does not specify its issue number
+  #19: Body mentions blocking research ticket without issue number
+  #21: Body includes non-standard '## Context' section (convention expects only '## Question')
+
+model summaries vs code first sentences:
+  #2 model: What does the workspace look like after scaffolding and what seed issues were found?
+      code:  What does the repo look like once the seed's stack is actually installed, and what did installing it reveal that the seed got wrong?
+  #3 model: Determine which trackers and workspace shapes v0.1.0 should support.
+      code:  Which trackers and which workspace shapes must the Cockpit handle in v0.1.0, and which are left for later?
+  #4 model: What components should ship in the v0.1.0 release?
+      code:  Besides the VS Code extension, what does v0.1.0 ship?
+  #5 model: How do session worktree edits get back to main and who cleans up?
+      code:  A Cockpit session runs in its own worktree (`claude -w <ticket-slug>`).
+  #6 model: Can a plugin loaded with --plugin-dir provide trustworthy live status?
+      code:  Does a small Claude Code plugin, loaded with `--plugin-dir`, give the Cockpit a trustworthy live status for a session?
+  #7 model: Should maps render in the Cockpit as lists, graphs, or both, and what layout should each use?
+      code:  How does the Cockpit draw a map: a list, a graph, or both?
+  #8 model: Determine which hero-synergy names are available across npm, Marketplace, and Open VSX, and learn their registration rules.
+      code:  Which of the names hero-synergy wants are free, taken, or already owned by Eduardo, and what are each registry's rules for claiming them?
+  #9 model: Can a single GraphQL query collect everything the scout needs from wayfinder issues?
+      code:  Can a single `gh api graphql` query return everything the scout's collect step needs for every wayfinder issue in a repo?
+  #10 model: What wayfinder conventions has mattpocock/skills shipped over time and how are they expressed?
+      code:  Which conventions has `mattpocock/skills` shipped for wayfinder maps and tickets over time, and what does each one look like on a tracker?
+  #11 model: How do VS Code terminals and Claude Code hooks behave on Windows?
+      code:  What breaks, or needs different handling, when the Cockpit launches sessions and reads status events on Windows?
+  #12 model: What VS Code version should engines.vscode be set to, given the versions shipped by Cursor, Windsurf, VSCodium and Node requirements?
+      code:  Which VS Code API version does each fork currently ship, and what is the lowest `engines.vscode` that still gives the Cockpit the APIs it needs?
+  #13 model: Ways to integration-test a VS Code extension in a Vite+ workspace.
+      code:  What are the working ways to integration-test a VS Code extension today, and do they fit a Vite+ workspace?
+  #14 model: Whether @effect/vitest 4 works with Vitest 5 under Vite+
+      code:  Does `@effect/vitest` 4.0.0 run under the Vitest 5 that Vite+ bundles?
+  #15 model: Which library should model data crossing boundaries: zod, Effect Schema, or both?
+      code:  Which library models the data that crosses a boundary (the snapshot, config, webview messages): zod, Effect Schema, or both?
+  #16 model: Does the hybrid scout pipeline justify its model costs over code-only parsing?
+      code:  Does the scout's hybrid pipeline (collect with code, interpret with Haiku, reconcile with code) beat code-only parsing by enough to justify a model call?
+  #17 model: Which operating systems and editors does v0.1.0 promise to work on?
+      code:  Which operating systems and editors does v0.1.0 promise to work on?
+  #18 model: What is the test setup and CI configuration for v0.1.0?
+      code:  What does the test setup for v0.1.0 look like, and what does CI run?
+  #19 model: Decide the publisher ID, npm names, and Open VSX namespace for hero-synergy.
+      code:  Under which names is hero-synergy published?
+  #20 model: Which registries must host v0.1.0 on release day for it to count as published?
+      code:  Where must v0.1.0 be installable from on release day?
+  #21 model: How the Cockpit handles a session's lifecycle
+      code:  A ticket has at most one live session, and a session lives in a VS Code terminal that can close, be resumed, or sit at a dialog no hook reports.

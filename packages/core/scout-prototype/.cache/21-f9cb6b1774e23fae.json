@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "A ticket has at most one live session, and a session lives in a VS Code terminal that can close, be resumed, or sit at a dialog no hook reports. What does the Cockpit do at each point?\n\nTo decide:\n\n- **Resume.** When a ticket's terminal closes, what the Cockpit offers: `claude --resume \\\"<ticket title>\\\"` (which returns to the worktree by itself), a fresh launch, or both; and how the Cockpit tells \\\"ended on purpose\\\" from \\\"terminal died\\\".\n- **One live session per ticket.** How the Cockpit holds to it when a ticket is claimed on the tracker but no terminal is open here, or a terminal is open but the tracker shows the ticket unclaimed. Status belongs to the ticket and its terminal, not to a session id, which changes on `/clear`.\n- **AFK tickets.** Whether research and AFK task tickets run without a terminal in v0.1.0 (`claude --bg` with `claude attach <id>` later), or always in a terminal. Headless runs never see the worktree exit prompt and leave the worktree in place.\n- **Local tracker launch.** The command without `-w`, with file paths in place of URLs.\n- **Dialogs no hook reports.** Workspace trust at launch, and the keep-or-remove worktree prompt at `/exit` (accepted as a gap in [How do a session's worktree edits get back to main?](https://github.com/dbarjs/hero-synergy/issues/5)): what the Cockpit shows while the session sits there.",
+  "summary": "How the Cockpit handles a session's lifecycle",
+  "resolution": null,
+  "warnings": [
+    "Body includes non-standard '## Context' section (convention expects only '## Question')"
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "kind": "map",
+  "bodyForm": "partial",
+  "destination": "One-page checkout live before Q4",
+  "notes": "Addresses trial-to-paid conversion drop at step 3; open questions tracked as sub-issues",
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 8,
+      "gist": "Stripe Elements chosen over hosted page to support per-seat pricing"
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "How tax displays for EU customers before address entry",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [
+    {
+      "text": "Apple Pay and Google Pay",
+      "tickets": []
+    }
+  ],
+  "taskList": [],
+  "warnings": [
+    "'Done so far' instead of 'Decisions so far' heading",
+    "Inline 'Not doing this round' and 'Still fuzzy' instead of H2 sections",
+    "Decision #8 lacks explicit title and URL in body text",
+    "Non-standard structure departs from M5 (2026) convention"
+  ]
+}

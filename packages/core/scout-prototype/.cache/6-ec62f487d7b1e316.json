@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Does a small Claude Code plugin, loaded with `--plugin-dir`, give the Cockpit a trustworthy live status for a session?",
+  "summary": "Can a plugin loaded with --plugin-dir provide trustworthy live status?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Yes; plugin stays as status source with corrected table and tool call hooks."
+  },
+  "warnings": []
+}

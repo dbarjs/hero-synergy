@@ -1,0 +1,11 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does the scout's interpret step justify the cost of a model call?",
+  "resolution": null,
+  "warnings": []
+}

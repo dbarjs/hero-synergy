@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "## Question\n\nBesides the VS Code extension, what does v0.1.0 ship?\n\nTo decide:\n\n- **The CLI.** Does `@hero-synergy/cli` ship in v0.1.0, and with which commands (`snapshot --json`, `frontier`, `launch <ticket>`)? Who is it for: scripts, or agents inside sessions?\n- **Core as a public package.** If the CLI is cut, is `@hero-synergy/core` still published to npm, or does it stay internal to the extension for now?\n- **Nitro.** The stack names Nitro, but it has no role yet. Candidates in the seed are a locally served browser Cockpit and a docs site. Nitro 3 is still in beta.",
+  "summary": "What components should ship in the v0.1.0 release?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "v0.1.0 ships the VS Code extension and nothing else; CLI is cut, core stays private, and no packages publish to npm."
+  },
+  "warnings": [
+    "Body includes '## Context' section after '## Question', departing from stated convention."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which role may approve a manual credit above 1,000, and does it need two people?",
+  "summary": "Which role can approve a manual credit above 1,000 and whether approval requires two people.",
+  "resolution": null,
+  "warnings": [
+    "Ticket has two type labels (wayfinder:grilling and wayfinder:research); convention expects exactly one type label per ticket"
+  ]
+}

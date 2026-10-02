@@ -1,0 +1,19 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which VS Code versions do Cursor, Windsurf and VSCodium ship?",
+  "resolution": {
+    "author": null,
+    "gist": "Pin `engines.vscode` to `^1.105.0` and `@types/vscode` to `~1.105.0` based on Node version constraints, not API requirements."
+  },
+  "warnings": [
+    "Full findings in external git branch file, not inline in comment",
+    "Fork internals, Cursor switch dates, and Windsurf history remain unverified",
+    "@types/vscode only published for selected versions after 1.110; some pins won't resolve",
+    "Windsurf renamed Devin Desktop since 2026-06-02; seed docs may reference old name"
+  ]
+}

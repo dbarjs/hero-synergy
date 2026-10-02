@@ -1,0 +1,15 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    3
+  ],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Should a refund reopen the original invoice or create a credit note?",
+  "resolution": null,
+  "warnings": [
+    "ticket is open with no closing comment; resolutionGist cannot be determined"
+  ]
+}

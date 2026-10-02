@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What does the scaffolded repo look like and what seed errors were revealed?",
+  "resolution": {
+    "author": null,
+    "gist": "The workspace scaffolds successfully and passes all checks; the seed had minor, non-structural errors in several places."
+  },
+  "warnings": []
+}

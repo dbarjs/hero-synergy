@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Who approves a manual credit above 1,000?",
+  "resolution": null,
+  "warnings": [
+    "Multiple type labels present (wayfinder:grilling and wayfinder:research); convention expects one type per ticket",
+    "Ticket is open with no comments; no closing answer available"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "kind": "map",
+  "bodyForm": "M3",
+  "destination": null,
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 3,
+      "gist": "Postgres, one schema per tenant"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 5,
+      "gist": "was dropped, see the comment there"
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [],
+  "taskList": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "warnings": [
+    "body uses 'Fog' section instead of current 'Not yet specified'",
+    "body includes a task list (Tickets section) — current convention is native sub-issues only",
+    "decision #5 text is vague ('was dropped, see the comment there') and may need clarification",
+    "no Destination section found"
+  ]
+}

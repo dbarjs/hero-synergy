@@ -1,0 +1,11 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "How does the Cockpit handle a session's lifecycle?",
+  "resolution": null,
+  "warnings": []
+}

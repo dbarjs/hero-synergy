@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    3
+  ],
+  "legacyClaim": false,
+  "question": "Should a refund reopen the original invoice, or always create a credit note that references it? Accountants in two pilot tenants disagree.",
+  "summary": "Should refunds reopen invoices or create credit notes?",
+  "resolution": null,
+  "warnings": [
+    "Uses older 'Part of #n' format in body instead of native parent",
+    "Uses older 'Blocked by:' line format in body instead of native dependencies",
+    "Ticket is open with no comments, so no resolution available"
+  ]
+}

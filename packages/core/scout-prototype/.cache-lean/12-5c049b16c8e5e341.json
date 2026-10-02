@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which VS Code versions do Cursor, Windsurf and VSCodium ship?",
+  "resolution": {
+    "author": null,
+    "gist": "Recommend engines.vscode ^1.105.0 and @types/vscode ~1.105.0 as the floor, since Node 22.18 (not API availability) determines the minimum version the forks shipped."
+  },
+  "warnings": []
+}

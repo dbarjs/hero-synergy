@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Do status hooks report a session's state reliably?",
+  "resolution": {
+    "author": null,
+    "gist": "A plugin loaded with `--plugin-dir` provides reliable live session status with a corrected six-status table, as tested on Claude Code 2.1.287."
+  },
+  "warnings": []
+}

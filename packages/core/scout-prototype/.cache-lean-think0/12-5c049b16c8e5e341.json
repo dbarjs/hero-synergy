@@ -1,0 +1,18 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which VS Code versions do Cursor, Windsurf and VSCodium ship, and what floor should the Cockpit set?",
+  "resolution": {
+    "author": null,
+    "gist": "Recommended floor is VS Code 1.105.0 (Node constraint, not APIs) with @types/vscode ~1.105.0; Windsurf caps it at 1.126.0; the forks lag 2–8.5 months behind VS Code releases."
+  },
+  "warnings": [
+    "Answer in closing comment only; body is the question",
+    "Node versions checked only on Linux x64 builds",
+    "Cursor and Windsurf behavior inside the forks not verified, only declared versions"
+  ]
+}

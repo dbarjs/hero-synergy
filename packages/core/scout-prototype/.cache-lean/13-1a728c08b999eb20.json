@@ -1,0 +1,18 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "How can a VS Code extension be integration-tested under Vite+?",
+  "resolution": {
+    "author": null,
+    "gist": "Use vp test for unit/component tests, @vscode/test-cli with Mocha for extension-host tests, and Playwright for end-to-end testing."
+  },
+  "warnings": [
+    "Answer documented in external research file on branch, not fully in comment",
+    "Identifies new dependencies requiring ADR",
+    "Several findings marked as not verified"
+  ]
+}

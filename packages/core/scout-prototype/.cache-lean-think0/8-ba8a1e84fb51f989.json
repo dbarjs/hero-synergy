@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which Stripe integration lets us show a per-seat price breakdown next to the card form: Elements, or Checkout?",
+  "resolution": {
+    "author": null,
+    "gist": "Elements allows showing a per-seat price breakdown next to the card form, while Checkout renders Stripe's own line items and cannot show a custom seat breakdown."
+  },
+  "warnings": []
+}

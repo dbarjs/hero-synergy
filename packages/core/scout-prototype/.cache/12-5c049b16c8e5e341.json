@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which VS Code API version does each fork currently ship, and what is the lowest `engines.vscode` that still gives the Cockpit the APIs it needs?\n\nTo find out:\n\n- The VS Code version behind the current Cursor, Windsurf and VSCodium releases, and how far each usually lags.\n- When the APIs the Cockpit relies on landed: webview views, extension-created terminals with a name, icon, environment and editor-area location, and file watching.\n- How `@types/vscode` should be pinned against the chosen floor.",
+  "summary": "What VS Code version should engines.vscode be set to, given the versions shipped by Cursor, Windsurf, VSCodium and Node requirements?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Recommend engines.vscode ^1.105.0 and @types/vscode ~1.105.0; Node support, not API availability, sets the floor."
+  },
+  "warnings": []
+}

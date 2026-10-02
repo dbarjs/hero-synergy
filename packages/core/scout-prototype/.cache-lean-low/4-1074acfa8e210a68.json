@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    2
+  ],
+  "legacyClaim": true,
+  "question": null,
+  "summary": "How do invoice numbers stay unique per tenant?",
+  "resolution": null,
+  "warnings": [
+    "Part of #1 in body text (use native sub-issues)",
+    "Blocked by: #2 in body text (use native blockers)",
+    "wayfinder:claimed label (use assignee)"
+  ]
+}

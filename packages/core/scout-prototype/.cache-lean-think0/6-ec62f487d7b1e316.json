@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Do status hooks report a session's state reliably?",
+  "resolution": {
+    "author": null,
+    "gist": "Yes, a plugin loaded with --plugin-dir provides trustworthy live status, with a corrected table replacing the seed's six-row version because three rows were inaccurate in ordinary use."
+  },
+  "warnings": []
+}

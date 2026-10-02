@@ -1,0 +1,11 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Where must v0.1.0 be installable from on release day?",
+  "summary": "Which registries must host v0.1.0 on release day for it to count as published?",
+  "resolution": null,
+  "warnings": []
+}

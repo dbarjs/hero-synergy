@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does the scout's hybrid pipeline justify a model call over code-only parsing?",
+  "resolution": null,
+  "warnings": [
+    "Body has ## Context section, not current convention; comment is a reference to issue #3, not a resolution"
+  ]
+}

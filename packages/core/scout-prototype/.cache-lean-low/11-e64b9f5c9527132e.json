@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What breaks or needs different handling when launching sessions on Windows?",
+  "resolution": {
+    "author": null,
+    "gist": "Windows requires special handling for Claude spawning, terminal quoting, hooks, and file watching."
+  },
+  "warnings": [
+    "Research explicitly marks five findings as needing real Windows system validation"
+  ]
+}

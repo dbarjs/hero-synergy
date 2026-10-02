@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which publisher ID and npm names should hero-synergy use?",
+  "resolution": {
+    "author": null,
+    "gist": "Use `dbarjs` as the Marketplace publisher ID and Open VSX namespace (not the brand name), give the extension ID as `dbarjs.hero-synergy`, do not claim the unscoped `hero-synergy` npm name, and keep scoped names under `@hero-synergy`."
+  },
+  "warnings": []
+}

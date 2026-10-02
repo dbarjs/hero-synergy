@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Does an inline PDF preview of the invoice help support staff, or is the emailed PDF enough?",
+  "summary": "Does an inline PDF preview in the admin UI earn its place?",
+  "resolution": {
+    "author": "ana",
+    "gist": "Dropped: support staff use the emailed PDF, inline preview not needed for this effort."
+  },
+  "warnings": [
+    "Body uses older 'Part of #n' convention instead of native sub-issue link"
+  ]
+}

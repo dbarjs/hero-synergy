@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Can one GraphQL query collect everything the scout needs?",
+  "resolution": {
+    "author": null,
+    "gist": "One GraphQL query can return all data the scout needs for every wayfinder issue in a repo, in one request at 6 rate-limit points."
+  },
+  "warnings": []
+}

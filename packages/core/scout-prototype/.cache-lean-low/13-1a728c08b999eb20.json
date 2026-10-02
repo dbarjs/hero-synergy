@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What are the working ways to integration-test a VS Code extension today, and do they fit a Vite+ workspace?",
+  "resolution": {
+    "author": null,
+    "gist": "Three options are workable: unit/component tests with Vitest, extension-host tests with Mocha via @vscode/test-cli (30s in CI), and Playwright for e2e testing (4-12 min in CI), though Vitest cannot run in the extension host."
+  },
+  "warnings": [
+    "Research includes 'Not verified' section indicating unconfirmed findings requiring follow-up",
+    "Resolution mentions separate findings for ticket #2 (Scaffold the workspace)"
+  ]
+}

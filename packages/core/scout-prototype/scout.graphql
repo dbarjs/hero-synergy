@@ -1,0 +1,45 @@
+query WayfinderCollect(
+  $owner: String!
+  $repo: String!
+  $labels: [String!]!
+  $pageSize: Int = 100
+  $endCursor: String
+) {
+  repository(owner: $owner, name: $repo) {
+    labels(query: "wayfinder:", first: 100) {
+      nodes { name }
+    }
+    issues(
+      labels: $labels
+      states: [OPEN, CLOSED]
+      first: $pageSize
+      after: $endCursor
+      orderBy: { field: CREATED_AT, direction: ASC }
+    ) {
+      totalCount
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number
+        title
+        url
+        state
+        stateReason
+        updatedAt
+        body
+        labels(first: 50) { totalCount nodes { name } }
+        assignees(first: 10) { totalCount nodes { login } }
+        parent { number url }
+        subIssues(first: 100) { totalCount nodes { number } }
+        subIssuesSummary { total completed percentCompleted }
+        blockedBy(first: 50) { totalCount nodes { number title state url } }
+        blocking(first: 50) { totalCount nodes { number title state url } }
+        issueDependenciesSummary { blockedBy totalBlockedBy blocking totalBlocking }
+        comments(last: 5) {
+          totalCount
+          nodes { author { login } createdAt body }
+        }
+      }
+    }
+  }
+  rateLimit { cost remaining limit nodeCount resetAt }
+}

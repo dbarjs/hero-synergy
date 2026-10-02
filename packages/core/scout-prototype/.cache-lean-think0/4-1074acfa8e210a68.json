@@ -1,0 +1,15 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    2
+  ],
+  "legacyClaim": true,
+  "question": null,
+  "summary": "How do invoice numbers stay unique per tenant?",
+  "resolution": null,
+  "warnings": [
+    "No closing comment found; ticket is open and unanswered"
+  ]
+}

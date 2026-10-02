@@ -1,0 +1,131 @@
+item  field          same  code                                                                    model                                                                 
+----  -------------  ----  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+#1    bodyForm       same  M2                                                                      M2                                                                    
+#1    decisions      DIFF  [{"title":"Which database holds the ledger?","url":"https://github.co…  [{"title":null,"url":null,"number":3,"gist":"Postgres, one schema per…
+#1    outOfScope     same  []                                                                      []                                                                    
+#1    taskList       same  [2,3,4,5]                                                               [2,3,4,5]                                                             
+#1    warnings             4                                                                       4                                                                     
+#2    type           same  grilling                                                                grilling                                                              
+#2    partOf         same  1                                                                       1                                                                     
+#2    textBlockedBy  same  [3]                                                                     [3]                                                                   
+#2    legacyClaim    same  false                                                                   false                                                                 
+#2    resolution     same  null                                                                    null                                                                  
+#2    warnings             2                                                                       1                                                                     
+#3    type           same  research                                                                research                                                              
+#3    partOf         same  1                                                                       1                                                                     
+#3    textBlockedBy  same  []                                                                      []                                                                    
+#3    legacyClaim    same  false                                                                   false                                                                 
+#3    resolution     same  {"author":"ana","gist":"Postgres."}                                     {"author":null,"gist":"Postgres with one schema per tenant keeps isol…
+#3    warnings             2                                                                       2                                                                     
+#4    type           same  grilling                                                                grilling                                                              
+#4    partOf         same  1                                                                       1                                                                     
+#4    textBlockedBy  same  [2]                                                                     [2]                                                                   
+#4    legacyClaim    same  true                                                                    true                                                                  
+#4    resolution     same  null                                                                    null                                                                  
+#4    warnings             3                                                                       3                                                                     
+#5    type           same  prototype                                                               prototype                                                             
+#5    partOf         same  1                                                                       1                                                                     
+#5    textBlockedBy  same  []                                                                      []                                                                    
+#5    legacyClaim    same  false                                                                   false                                                                 
+#5    resolution     same  {"author":"ana","gist":"Dropped: support staff open the emailed PDF a…  {"author":null,"gist":"Support staff open the emailed PDF anyway, so …
+#5    warnings             1                                                                       2                                                                     
+#6    bodyForm       DIFF  free-form                                                               partial                                                               
+#6    decisions      DIFF  []                                                                      [{"title":null,"url":null,"number":8,"gist":"Picked Stripe Elements o…
+#6    outOfScope     same  []                                                                      []                                                                    
+#6    taskList       same  []                                                                      []                                                                    
+#6    warnings             2                                                                       3                                                                     
+#7    type           same  prototype                                                               prototype                                                             
+#7    partOf         same  null                                                                    null                                                                  
+#7    textBlockedBy  same  [8]                                                                     [8]                                                                   
+#7    legacyClaim    same  false                                                                   false                                                                 
+#7    resolution     same  null                                                                    null                                                                  
+#7    warnings             3                                                                       3                                                                     
+#8    type           same  research                                                                research                                                              
+#8    partOf         same  null                                                                    null                                                                  
+#8    textBlockedBy  same  []                                                                      []                                                                    
+#8    legacyClaim    same  false                                                                   false                                                                 
+#8    resolution     same  {"author":"ana","gist":"Elements."}                                     {"author":null,"gist":"Elements supports per-seat price breakdown dis…
+#8    warnings             0                                                                       0                                                                     
+#9    type           same  grilling                                                                grilling                                                              
+#9    partOf         same  1                                                                       1                                                                     
+#9    textBlockedBy  same  []                                                                      []                                                                    
+#9    legacyClaim    same  false                                                                   false                                                                 
+#9    resolution     same  null                                                                    null                                                                  
+#9    warnings             2                                                                       2                                                                     
+
+fields compared: 43, differing: 3
+code-only: 3 ms for 9 items
+model: {"items":9,"calls":9,"cacheHits":0,"wallMs":58900,"perCallMs":21952,"costUsd":0.1324,"inputTokens":20029,"cacheWriteTokens":0,"cacheReadTokens":0,"outputTokens":22469,"thinkingTokens":19717}
+  #1: 49844 ms, in 2377+0+0, out 6132 (thinking 5565), $0.0330
+  #2: 28918 ms, in 2170+0+0, out 2915 (thinking 2705), $0.0167
+  #3: 16834 ms, in 2239+0+0, out 1776 (thinking 1562), $0.0111
+  #4: 16676 ms, in 2173+0+0, out 1700 (thinking 1317), $0.0107
+  #5: 11500 ms, in 2221+0+0, out 1049 (thinking 826), $0.0075
+  #6: 42061 ms, in 2320+0+0, out 5653 (thinking 5161), $0.0306
+  #7: 9993 ms, in 2152+0+0, out 967 (thinking 737), $0.0070
+  #8: 9448 ms, in 2218+0+0, out 930 (thinking 718), $0.0069
+  #9: 12296 ms, in 2159+0+0, out 1347 (thinking 1126), $0.0089
+
+frontier of #1 — code: 2, 9 | model: 2, 9 (same)
+
+frontier of #6 — code: 7 | model: 7 (same)
+
+warnings (code):
+  #1: map body is M2, not the current five-section form
+  #1: no Destination section
+  #1: decision line is not "[title](link) — gist": #5 was dropped, see the comment there
+  #1: children listed as a task list in the map body (text fallback)
+  #6: map body is free-form, not the current five-section form
+  #6: no Destination section
+  #2: parent given as a "Part of #n" line (text fallback)
+  #2: blockers given as a "Blocked by:" line (text fallback)
+  #3: parent given as a "Part of #n" line (text fallback)
+  #3: no "## Question" heading
+  #4: parent given as a "Part of #n" line (text fallback)
+  #4: blockers given as a "Blocked by:" line (text fallback)
+  #4: legacy "wayfinder:claimed" label
+  #5: parent given as a "Part of #n" line (text fallback)
+  #5: closed, but the map neither lists it under Decisions so far nor under Out of scope
+  #7: blockers given as a "Blocked by:" line (text fallback)
+  #7: type given as a "Type:" line, not a label (single-file form)
+  #7: no "## Question" heading
+  #8: closed, but the map neither lists it under Decisions so far nor under Out of scope
+  #9: parent given as a "Part of #n" line (text fallback)
+  #9: several type labels: grilling, research
+warnings (model):
+  #1: Uses 'Fog' instead of 'Not yet specified'
+  #1: Uses ':' instead of '—' in decision lines
+  #1: Task list in body (should use native sub-issues)
+  #1: Second decision line not in standard [title](link) format
+  #6: Body doesn't use standard H2 sections (uses inline labels: Done so far, Not doing this round, Still fuzzy)
+  #6: Decision references #8 without title in standard format
+  #6: Out of scope items (Apple Pay, Google Pay) named but not linked to issue numbers
+  #2: Uses legacy 'Part of #n' and 'Blocked by:' text lines instead of native relationships
+  #3: Uses older 'Part of #n' line instead of native sub-issue
+  #3: Body lacks '## Question' heading
+  #4: Part of #1 in body text (use native sub-issues)
+  #4: Blocked by: #2 in body text (use native blockers)
+  #4: wayfinder:claimed label (use assignee)
+  #5: Uses older 'Part of #n' convention in body (not native parent)
+  #5: Comment indicates work was dropped/descoped
+  #7: Uses older 'Type: prototype' convention instead of wayfinder:prototype label
+  #7: Uses older 'Blocked by: #8' convention instead of native blocker dependency
+  #7: No '## Question' heading in body
+  #9: Multiple type labels present (wayfinder:grilling and wayfinder:research); convention expects one type per ticket
+  #9: Ticket is open with no comments; no closing answer available
+
+model summaries vs code first sentences:
+  #2 model: Refund: reopen the invoice or issue a credit note?
+      code:  Should a refund reopen the original invoice, or always create a credit note that references it?
+  #3 model: Which database should hold the ledger?
+      code:  Which database should hold the ledger?
+  #4 model: How do invoice numbers stay unique per tenant?
+      code:  Does each tenant get its own sequence, or is there one global sequence with a tenant prefix?
+  #5 model: Does an inline PDF preview in the admin UI help support staff?
+      code:  Does an inline PDF preview of the invoice help support staff, or is the emailed PDF enough?
+  #7 model: What does the one-page checkout look like on mobile?
+      code:  What does the one-page checkout look like on a phone?
+  #8 model: Which Stripe integration lets us show a per-seat price breakdown next to the card form?
+      code:  Which Stripe integration lets us show a per-seat price breakdown next to the card form: Elements, or the hosted Checkout page?
+  #9 model: Who approves a manual credit above 1,000?
+      code:  Which role may approve a manual credit above 1,000, and does it need two people?

@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Are the hero-synergy names free on npm, the Marketplace and Open VSX?",
+  "resolution": {
+    "author": null,
+    "gist": "All target names are available or owned by Eduardo; the Marketplace publisher ID is irreversible and must precede Open VSX namespace claiming."
+  },
+  "warnings": [
+    "Closing comment is an extensive research report with table, subsections, and structured findings rather than a brief summary",
+    "Second comment adds clarification that npm organization is Eduardo's"
+  ]
+}

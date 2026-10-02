@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What does the test setup for v0.1.0 look like, and what does CI run?",
+  "resolution": null,
+  "warnings": [
+    "no closing comment found; ticket remains open and unanswered"
+  ]
+}

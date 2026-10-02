@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which platforms and editors does v0.1.0 support?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 promises VS Code 1.105 or later on macOS and Linux, with native Windows and forks reachable but untested."
+  },
+  "warnings": []
+}

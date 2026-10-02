@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does a PDF preview in the admin UI earn its place?",
+  "resolution": {
+    "author": null,
+    "gist": "Support staff open the emailed PDF anyway; not part of this effort."
+  },
+  "warnings": []
+}

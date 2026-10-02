@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which library (zod, Effect Schema, or both) should model data crossing boundaries?",
+  "resolution": {
+    "author": null,
+    "gist": "Effect Schema models all boundary data and zod is dropped from the stack, recorded in ADR 0002."
+  },
+  "warnings": []
+}

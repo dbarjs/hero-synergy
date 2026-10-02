@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Scaffold the workspace by installing the seed's stack and document the result and issues found.",
+  "resolution": {
+    "author": null,
+    "gist": "The stack installs and works; the seed was wrong in small, non-structural places."
+  },
+  "warnings": []
+}

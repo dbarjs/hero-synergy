@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which library models the data that crosses a boundary (the snapshot, config, webview messages): zod, Effect Schema, or both?\n\nTo decide:\n\n- The seed's default is zod for boundary data and Effect for workflows. Does that mean modeling the snapshot twice once it flows through Effect code?\n- The scout needs a JSON Schema for `claude -p --json-schema`. zod has `z.toJSONSchema()`; what does Effect Schema give?\n- What the webview bundle pays for each choice.",
+  "summary": "Which library should model data crossing boundaries: zod, Effect Schema, or both?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Effect Schema models all boundary data; zod is dropped from the stack."
+  },
+  "warnings": []
+}

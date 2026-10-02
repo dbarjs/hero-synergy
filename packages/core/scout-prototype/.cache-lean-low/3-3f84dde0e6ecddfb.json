@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which database should hold the ledger?",
+  "resolution": {
+    "author": null,
+    "gist": "Postgres with one schema per tenant keeps isolation and restore simple."
+  },
+  "warnings": [
+    "Uses older 'Part of #n' line instead of native sub-issue",
+    "Body lacks '## Question' heading"
+  ]
+}

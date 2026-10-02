@@ -1,0 +1,161 @@
+{
+  "kind": "map",
+  "bodyForm": "M5",
+  "destination": "hero-synergy v0.1.0 fully decided: every question it depends on is resolved and every hard-to-reverse default has been challenged, so the result goes straight to `/to-spec`. The product is the VS Code Cockpit described in the seed. Its five capabilities are the outer bound: a ticket may cut one down, but nothing is added.",
+  "notes": "Domain: An unofficial VS Code cockpit for Matt Pocock's agent skills (glossary in `CONTEXT.md`, reference in `docs/seed.md` frozen 2026-10-02). Plan, don't build: this map decides; the build follows via `/to-spec`, `/to-tickets`, `/implement`. Seed tags document which items are fixed defaults versus challenged. Skills organized by type: grilling (`/grilling`, `/domain-modeling`), prototype (`/prototype`), research (`/research` with findings in `docs/research/<name>.md`). Worktree approach: every ticket session works in its own worktree and pushes edits to `main` when closing. ADRs used only for hard-to-reverse, surprising decisions from real trade-offs. Toolchain: use `vp` exclusively via `pnpm exec vp <command>`; run `vp check --fix` before pushing to `main`. Driver: Eduardo (dbarjs).",
+  "decisions": [
+    {
+      "number": 10,
+      "title": "Which wayfinder conventions exist in the wild?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/10",
+      "gist": "Three generations upstream; old forms are recognizable by headings and `Status:` lines; legacy claim labels were never released."
+    },
+    {
+      "number": 8,
+      "title": "Are the hero-synergy names free on npm, the Marketplace and Open VSX?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/8",
+      "gist": "The npm organization exists; the unscoped npm name, both Marketplace publisher IDs and both Open VSX namespaces look free; publisher ID can never be changed."
+    },
+    {
+      "number": 9,
+      "title": "Can one GraphQL query collect everything the scout needs?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/9",
+      "gist": "One query returns a whole map for 6 rate-limit points; `updatedAt` doesn't move when a parent or blocker is added."
+    },
+    {
+      "number": 11,
+      "title": "How do VS Code terminals and Claude Code hooks behave on Windows?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/11",
+      "gist": "Shell quoting, npm `.cmd` shims and missing `SessionEnd` are the Windows risks; running `claude` as the terminal's own process avoids the quoting."
+    },
+    {
+      "number": 13,
+      "title": "How can a VS Code extension be integration-tested under Vite+?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/13",
+      "gist": "Extension-host tests need Mocha through `@vscode/test-cli` as a separate script; the webview is tested as a Vue app outside VS Code."
+    },
+    {
+      "number": 12,
+      "title": "Which VS Code versions do Cursor, Windsurf and VSCodium ship?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/12",
+      "gist": "VSCodium on 1.135, Cursor on 1.128, Windsurf on 1.126; recommended floor is `^1.105.0`."
+    },
+    {
+      "number": 2,
+      "title": "Scaffold the workspace",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/2",
+      "gist": "On `main` and green in CI: Vite+ 1.0.0, Node 26.10, pnpm 12.8.1 and TypeScript 7 work together; seed needed fourteen small corrections."
+    },
+    {
+      "number": 19,
+      "title": "Which publisher ID and npm names?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/19",
+      "gist": "Publisher `dbarjs` created; extension ID is `dbarjs.hero-synergy`; bare name `hero-synergy` belongs to the extension."
+    },
+    {
+      "number": 6,
+      "title": "Do the status hooks report a session's state reliably?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/6",
+      "gist": "Yes, with corrected table: plugin stays and hooks tool calls; `PermissionRequest` tells a question from an approval; terminal closing is the truth for ended."
+    },
+    {
+      "number": 14,
+      "title": "Does @effect/vitest 4 work with Vitest 5 under Vite+?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/14",
+      "gist": "Yes, with no override and no peer warning; it shares the one Vitest 5.0.1 that Vite+ pins; Effect tests import from `@effect/vitest`."
+    },
+    {
+      "number": 3,
+      "title": "Which trackers and workspace shapes does v0.1.0 support?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/3",
+      "gist": "GitHub on github.com with native relationships, and local markdown; one repo per window, every open map shown."
+    },
+    {
+      "number": 4,
+      "title": "What ships in v0.1.0 besides the extension?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/4",
+      "gist": "Only the extension: the CLI is cut and its package removed; `@hero-synergy/core` stays a private workspace package bundled into the extension."
+    },
+    {
+      "number": 15,
+      "title": "zod or Effect Schema for the snapshot?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/15",
+      "gist": "Effect Schema for all boundary data; zod is dropped; one library is enough; boundary data is plain JSON."
+    },
+    {
+      "number": 5,
+      "title": "How do a session's worktree edits get back to main?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/5",
+      "gist": "Every ticket session gets `claude -w` and pushes its own edits straight to `main` after a rebase; Cockpit never runs git or writes to the tracker."
+    },
+    {
+      "number": 17,
+      "title": "Which platforms and editors does v0.1.0 support?",
+      "url": "https://github.com/dbarjs/hero-synergy/issues/17",
+      "gist": "VS Code `^1.105.0` on macOS and Linux, WSL remote as the Windows route; a session runs `claude` as the terminal's own process."
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "The snapshot's fields. What a snapshot holds for each map and ticket, and which fields are facts from the tracker rather than a model's reading. It has to fit both trackers: a ticket is a URL on GitHub and a file path on a local tracker, and a local claim has no person.",
+      "tickets": [
+        10,
+        16
+      ]
+    },
+    {
+      "text": "The scout budget. Refresh cadence, bundle size limits, cache keys, behavior on rate limits, and a fallback if `--safe-mode` changes.",
+      "tickets": [
+        16
+      ]
+    },
+    {
+      "text": "Scout against status hooks. When a session has claimed a ticket and the tracker doesn't show it yet, which side the Cockpit believes, and for how long. Status belongs to the ticket and its terminal, not to a session id, which changes on `/clear`.",
+      "tickets": [
+        16
+      ]
+    },
+    {
+      "text": "Actions in the Cockpit. Where actions sit, how the command is shown, and how the command name follows the install route (plugin or skills.sh).",
+      "tickets": [
+        7
+      ]
+    }
+  ],
+  "outOfScope": [
+    {
+      "text": "Building and releasing v0.1.0. The build, the release pipeline run and the one-time registry setup happen after this map.",
+      "tickets": []
+    },
+    {
+      "text": "A polished README for the extension and the repository. Comes after the v0.1.0 release; the release ships with the plain README the platform decision asks for.",
+      "tickets": [
+        22
+      ]
+    },
+    {
+      "text": "From the seed, for v0.1.0: a TUI; Claude Code's agent view; the official Claude Code VS Code extension; sandcastle and container sandboxes; agents other than Claude Code; writing to the tracker from the Cockpit; chaining user-invoked skills automatically; telemetry; a hosted service.",
+      "tickets": []
+    },
+    {
+      "text": "Trackers and workspace shapes, for v0.1.0: GitLab; 'Other' trackers and the agentic collect step; any promise for GitHub Enterprise Server, the text fallbacks or cross-repo relationships; grouping maps per folder or a repo picker in a multi-root workspace; a folder holding several repos; closed maps.",
+      "tickets": [
+        3
+      ]
+    },
+    {
+      "text": "Beyond the extension, for v0.1.0: the `@hero-synergy/cli` package and its commands; `@hero-synergy/core` as a public npm package; anything published to npm; Nitro, a browser Cockpit and a docs site.",
+      "tickets": [
+        4
+      ]
+    },
+    {
+      "text": "Platform verification, for v0.1.0: the twelve-item real-Windows test from the Windows research, and verifying terminals, icons and webview views inside Cursor, Devin Desktop and VSCodium.",
+      "tickets": [
+        17
+      ]
+    }
+  ],
+  "taskList": [],
+  "warnings": []
+}

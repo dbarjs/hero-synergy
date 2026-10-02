@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which publisher ID and npm names should hero-synergy use?",
+  "resolution": {
+    "author": null,
+    "gist": "Decided to publish with Marketplace publisher ID and Open VSX namespace `dbarjs`, extension ID `dbarjs.hero-synergy`, extension name `hero-synergy`, no unscoped npm claim, and scoped npm names `@hero-synergy/core` and `@hero-synergy/cli`."
+  },
+  "warnings": [
+    "Body mentions a blocking research ticket but doesn't name it with explicit 'Blocked by: #n' format"
+  ]
+}

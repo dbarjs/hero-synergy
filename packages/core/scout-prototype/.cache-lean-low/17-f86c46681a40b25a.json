@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which platforms and editors does v0.1.0 support?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 supports VS Code 1.105+ on macOS and Linux (including WSL as the documented route for Windows), best-effort native Windows, does not block forks, and requires Claude Code ≥2.1.139 and Node ≥22.18."
+  },
+  "warnings": [
+    "Body mentions two blocking research tickets (#11 and #12 per sources comment) but omits the 'Blocked by: #n, #n' line format",
+    "Answer is very detailed with implementation decisions (terminal launch strategy, path resolution) that might indicate task scope rather than grilling scope"
+  ]
+}

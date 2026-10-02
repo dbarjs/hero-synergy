@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What wayfinder conventions has mattpocock/skills shipped?",
+  "resolution": {
+    "author": null,
+    "gist": "Upstream has shipped three documented generations of wayfinder state with specific conventions for map structure, claims, ticket types, and fallback methods."
+  },
+  "warnings": []
+}

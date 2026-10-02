@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [
+    8
+  ],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What does the one-page checkout look like on mobile?",
+  "resolution": null,
+  "warnings": [
+    "Uses older 'Type: prototype' convention instead of wayfinder:prototype label",
+    "Uses older 'Blocked by: #8' convention instead of native blocker dependency",
+    "No '## Question' heading in body"
+  ]
+}

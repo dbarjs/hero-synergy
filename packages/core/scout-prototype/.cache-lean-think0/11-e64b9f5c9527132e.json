@@ -1,0 +1,19 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What breaks or needs different handling when the Cockpit launches sessions and reads status events on Windows?",
+  "resolution": {
+    "author": null,
+    "gist": "Full findings documented in docs/research/windows-behavior.md: native vs WSL vs Git Bash installations affect how claude.exe vs claude.cmd can be spawned; PowerShell/cmd/Git Bash quote arguments differently; running claude as the terminal process avoids quoting issues; exec-form hooks with node and ${CLAUDE_PLUGIN_ROOT} paths work on Windows with Claude Code 2.1.139+; file watching needs careful implementation due to event coalescing; WSL behaves like Linux."
+  },
+  "warnings": [
+    "The closing comment is marked '## Answer' (non-standard convention); the research includes findings and gaps but no definitive resolution items",
+    "The ticket references 'the seed' and 'Cockpit' which are external documents not provided",
+    "The answer identifies 'Needs a real Windows test' section—the research is acknowledged as incomplete (reading only, not run on Windows)",
+    "Multiple unresolved blockers noted: whether exec-form hooks truly work, whether shellPath with npm shim works, Git Bash argument conversion, SessionEnd behavior, cmd special character handling"
+  ]
+}

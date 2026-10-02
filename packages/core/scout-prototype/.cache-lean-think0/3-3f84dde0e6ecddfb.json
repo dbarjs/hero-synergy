@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which database should hold the ledger?",
+  "resolution": {
+    "author": null,
+    "gist": "Postgres, using one schema per tenant for isolation and restore; DynamoDB would need convention and lose ad-hoc reporting."
+  },
+  "warnings": []
+}

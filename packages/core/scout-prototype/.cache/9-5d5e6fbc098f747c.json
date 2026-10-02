@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Can a single `gh api graphql` query return everything the scout's collect step needs for every wayfinder issue in a repo?",
+  "summary": "Can a single GraphQL query collect everything the scout needs from wayfinder issues?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Yes; one GraphQL query returns all needed data without preview headers, costing 6 rate-limit points per 100 issues."
+  },
+  "warnings": [
+    "Body includes ## Context section, which is non-standard for ticket format (current convention is ## Question section only)"
+  ]
+}

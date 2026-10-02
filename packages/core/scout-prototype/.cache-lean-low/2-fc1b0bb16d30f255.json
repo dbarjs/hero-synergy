@@ -1,0 +1,15 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    3
+  ],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Refund: reopen the invoice or issue a credit note?",
+  "resolution": null,
+  "warnings": [
+    "Uses legacy 'Part of #n' and 'Blocked by:' text lines instead of native relationships"
+  ]
+}

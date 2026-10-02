@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Are the hero-synergy names free on npm, the Marketplace, and Open VSX?",
+  "resolution": {
+    "author": null,
+    "gist": "The npm organization is Eduardo's; the unscoped npm package and all Marketplace and Open VSX names are free to claim."
+  },
+  "warnings": []
+}

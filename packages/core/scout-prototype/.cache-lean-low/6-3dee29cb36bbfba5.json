@@ -1,0 +1,27 @@
+{
+  "kind": "map",
+  "bodyForm": "partial",
+  "destination": "One-page checkout live before Q4 to stop trial-to-paid rate bleeding on step 3.",
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 8,
+      "gist": "Picked Stripe Elements over a hosted page because the hosted page can't show per-seat price breakdown."
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [],
+  "taskList": [],
+  "warnings": [
+    "Body doesn't use standard H2 sections (uses inline labels: Done so far, Not doing this round, Still fuzzy)",
+    "Decision references #8 without title in standard format",
+    "Out of scope items (Apple Pay, Google Pay) named but not linked to issue numbers"
+  ]
+}

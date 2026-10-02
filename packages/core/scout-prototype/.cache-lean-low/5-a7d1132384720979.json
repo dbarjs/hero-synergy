@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does an inline PDF preview in the admin UI help support staff?",
+  "resolution": {
+    "author": null,
+    "gist": "Support staff open the emailed PDF anyway, so inline preview is not needed."
+  },
+  "warnings": [
+    "Uses older 'Part of #n' convention in body (not native parent)",
+    "Comment indicates work was dropped/descoped"
+  ]
+}

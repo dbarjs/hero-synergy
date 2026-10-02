@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which database should hold the ledger? Compare Postgres and DynamoDB for per-tenant isolation, point-in-time restore and cost at 500 tenants.",
+  "summary": "Which database should hold the ledger?",
+  "resolution": {
+    "author": "ana",
+    "gist": "Postgres with one schema per tenant for isolation and restore."
+  },
+  "warnings": [
+    "no ## Question heading; body uses older free-form style"
+  ]
+}

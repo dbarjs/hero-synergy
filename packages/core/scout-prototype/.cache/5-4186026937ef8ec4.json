@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "A Cockpit session runs in its own worktree (`claude -w <ticket-slug>`). Grilling tickets edit `CONTEXT.md` and ADRs inline, so those edits land in the worktree. How do they get back to `main`, and who cleans up?\n\nTo decide:\n\n- Whether every session gets a worktree, or only some ticket types.\n- How glossary and ADR edits reach `main`: a commit straight to `main`, a branch and PR per ticket, or something the Cockpit offers as an action.\n- What happens when two sessions edit `CONTEXT.md` at the same time.\n- Who removes worktrees, and what the Cockpit shows about them.\n- The local `.scratch` tracker exception: the seed says to run without `-w` there, or claims land in a private copy of the map.",
+  "summary": "How do session worktree edits get back to main and who cleans up?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Every ticket session runs in its own worktree and pushes edits to main; the Cockpit only shows worktree state."
+  },
+  "warnings": [
+    "Resolution intro claims 'all eleven points' but only 9 are explicitly numbered in the Decided section."
+  ]
+}

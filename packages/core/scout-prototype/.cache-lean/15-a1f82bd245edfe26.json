@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which schema library should model boundary data: zod or Effect Schema?",
+  "resolution": {
+    "author": null,
+    "gist": "Effect Schema models all boundary data and replaces zod in the stack."
+  },
+  "warnings": []
+}

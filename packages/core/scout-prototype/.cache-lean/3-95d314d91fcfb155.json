@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which trackers and workspace shapes does v0.1.0 support?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 supports two trackers (GitHub and local markdown) and one repo per window."
+  },
+  "warnings": []
+}

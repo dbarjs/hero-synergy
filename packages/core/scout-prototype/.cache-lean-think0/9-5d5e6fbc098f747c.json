@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Can one GraphQL query collect everything the scout needs from wayfinder issues?",
+  "resolution": {
+    "author": null,
+    "gist": "Yes, a single gh api graphql query returns everything needed with no preview header, costing 6 rate-limit points per 100 issues and executing in 1.6s for this repo's 20-issue map."
+  },
+  "warnings": []
+}

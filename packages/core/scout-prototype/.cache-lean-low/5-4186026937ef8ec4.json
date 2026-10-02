@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "How do a session's worktree edits get back to main and who cleans up?",
+  "resolution": {
+    "author": null,
+    "gist": "Every ticket session runs in its own worktree and pushes its own edits to main; the Cockpit only shows worktree state."
+  },
+  "warnings": []
+}

@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which publisher ID and npm names should hero-synergy use?",
+  "resolution": {
+    "author": null,
+    "gist": "Use `dbarjs` as publisher ID for extension and Open VSX, don't claim unscoped npm `hero-synergy`, and publish scoped packages under `@hero-synergy`."
+  },
+  "warnings": [
+    "Body mentions a blocking research ticket but omits its issue number"
+  ]
+}

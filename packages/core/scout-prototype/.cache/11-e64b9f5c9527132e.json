@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "What breaks, or needs different handling, when the Cockpit launches sessions and reads status events on Windows?\n\nTo find out:\n\n- How Claude Code runs on Windows today (native, WSL, Git Bash) and what that means for the `claude` command an extension spawns.\n- How a VS Code terminal created by an extension passes a command with a quoted slash-command argument and environment variables across PowerShell, cmd and Git Bash.\n- Whether exec-form hooks (`command: node`, `args`) and `${CLAUDE_PLUGIN_ROOT}` paths work on Windows.\n- Whether appending to and watching the events file behaves the same there.\n\n## Context\n\n- See [Sessions](https://github.com/dbarjs/hero-synergy/blob/main/docs/seed.md#sessions) and [Live status](https://github.com/dbarjs/hero-synergy/blob/main/docs/seed.md#live-status) in the seed.\n- \"Which platforms and editors does v0.1.0 support?\" waits on this answer.",
+  "summary": "How do VS Code terminals and Claude Code hooks behave on Windows?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Research documented with specific findings on Windows behavior; identified key compatibility issues with `claude` installation method, shell quoting, and file watching; several aspects flagged for real Windows testing."
+  },
+  "warnings": []
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which of the hero-synergy names are free on npm, VS Code Marketplace, and Open VSX, and what are the registry rules for claiming them?",
+  "resolution": {
+    "author": null,
+    "gist": "The npm organization @hero-synergy and scoped packages are owned by Eduardo; the unscoped hero-synergy name is free; Marketplace and Open VSX publisher IDs hero-synergy and dbarjs are likely free; Marketplace publisher IDs are immutable once created; Open VSX namespace claims require human review and the Marketplace publisher must exist first."
+  },
+  "warnings": []
+}

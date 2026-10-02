@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "What does the repo look like once the seed's stack is actually installed, and what did installing it reveal that the seed got wrong?",
+  "summary": "What does the workspace look like after scaffolding and what seed issues were found?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Workspace scaffolded on main with all checks passing; the seed had only minor issues to fix."
+  },
+  "warnings": []
+}

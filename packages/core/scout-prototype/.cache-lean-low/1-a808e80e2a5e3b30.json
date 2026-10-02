@@ -1,0 +1,144 @@
+{
+  "kind": "map",
+  "bodyForm": "M5",
+  "destination": "v0.1.0 fully decided with all questions resolved and defaults challenged.",
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 10,
+      "gist": "Three generations of conventions upstream; old forms recognizable by headings and Status lines."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 8,
+      "gist": "npm organization exists; unscoped npm name and Marketplace/Open VSX namespaces appear free."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 9,
+      "gist": "One query returns whole map for 6 rate-limit points; relationships must be collected fresh each time."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 11,
+      "gist": "Shell quoting and npm shims are Windows risks; running claude as terminal process avoids quoting issues."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 13,
+      "gist": "Extension-host tests need Mocha through @vscode/test-cli; webview tested as Vue app outside VS Code."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 12,
+      "gist": "VSCodium 1.135, Cursor 1.128, Windsurf 1.126; recommended floor ^1.105.0 set by extension host Node version."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 2,
+      "gist": "On main and green in CI: Vite+ 1.0.0, Node 26.10, pnpm 12.8.1 and TypeScript 7 work together."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 19,
+      "gist": "Publisher dbarjs chosen; extension ID dbarjs.hero-synergy; unscoped npm name and @hero-synergy packages stand."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 6,
+      "gist": "Status hooks reliable with corrected table; plugin stays and hooks tool calls; PermissionRequest distinguishes questions from approvals."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 14,
+      "gist": "@effect/vitest 4 works with Vitest 5 under Vite+ on Node 24 and 26 with no override needed."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 3,
+      "gist": "GitHub on github.com with native relationships and local markdown only; GitLab and Other trackers cut for v0.1.0."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 4,
+      "gist": "Only extension ships; CLI and Nitro cut; @hero-synergy/core stays private, bundled into extension, nothing to npm."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 15,
+      "gist": "Effect Schema for all boundary data; zod dropped; one library sufficient for 25 KB gzipped in webview."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 5,
+      "gist": "Every ticket session pushes its own edits straight to main after rebase; Cockpit never writes to tracker or repo."
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 17,
+      "gist": "VS Code ^1.105.0 on macOS and Linux; WSL as Windows route; no gating on editor or OS beyond stated requirements."
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [
+    {
+      "text": "",
+      "tickets": [
+        22
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        3
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        4
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        17
+      ]
+    }
+  ],
+  "taskList": [],
+  "warnings": []
+}

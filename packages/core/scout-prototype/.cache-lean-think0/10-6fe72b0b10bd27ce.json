@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which wayfinder conventions exist in the wild across versions of `mattpocock/skills`?",
+  "resolution": {
+    "author": null,
+    "gist": "Three generations of wayfinder state shipped: a single Markdown file with Type:/Status:/Blocked by: lines, an early tracker map with Notes/Decisions/Fog body, and the current tracker map with Destination/Notes/Decisions/Not yet specified/Out of scope; the wayfinder:claimed label was never released and assignees are the claim since then."
+  },
+  "warnings": []
+}

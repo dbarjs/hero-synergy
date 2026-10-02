@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [
+    8
+  ],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What does the one-page checkout look like on a phone?",
+  "resolution": null,
+  "warnings": [
+    "Type: <type> line found instead of wayfinder:<type> label",
+    "No closing comment; ticket is open and unanswered"
+  ]
+}

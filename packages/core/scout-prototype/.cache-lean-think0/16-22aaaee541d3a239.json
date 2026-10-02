@@ -1,0 +1,11 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does the scout's hybrid pipeline beat code-only parsing well enough to justify a model call?",
+  "resolution": null,
+  "warnings": []
+}

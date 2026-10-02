@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Do the status hooks report a session's state reliably?",
+  "resolution": {
+    "author": null,
+    "gist": "A plugin loaded with --plugin-dir provides reliable live status, though the seed's table required correction."
+  },
+  "warnings": [
+    "Body references a map assumption ('[P]') but lacks explicit 'Part of #n' markup to link the parent map"
+  ]
+}

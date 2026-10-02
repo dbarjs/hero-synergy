@@ -1,0 +1,11 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "How does the Cockpit draw a map: a list, a graph, or both?",
+  "resolution": null,
+  "warnings": []
+}

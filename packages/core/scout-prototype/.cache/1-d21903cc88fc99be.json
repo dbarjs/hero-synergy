@@ -1,0 +1,38 @@
+{
+  "kind": "map",
+  "bodyForm": "M2",
+  "destination": null,
+  "notes": "Domain: invoicing for a multi-tenant SaaS. Grilling tickets use /grilling. Driver: Ana.",
+  "decisions": [
+    {
+      "title": "Which database holds the ledger?",
+      "url": "https://github.com/acme/legacy/issues/3",
+      "number": 3,
+      "gist": "Postgres, one schema per tenant"
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "How invoice numbers stay unique across tenants once #2 is settled",
+      "tickets": [
+        2
+      ]
+    },
+    {
+      "text": "Retry policy for failed charges",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [],
+  "taskList": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "warnings": [
+    "Uses 'Fog' section (M2/M3 older convention) instead of 'Not yet specified' (M5 current convention)",
+    "Decisions so far line '#5 was dropped, see the comment there' doesn't follow standard '- [title](url): gist' format",
+    "Task list in body is older convention for listing children; current convention uses native sub-issues"
+  ]
+}

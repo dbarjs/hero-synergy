@@ -1,0 +1,144 @@
+{
+  "kind": "map",
+  "bodyForm": "M5",
+  "destination": "hero-synergy v0.1.0 fully decided: every question it depends on is resolved and every hard-to-reverse default has been challenged, so the result goes straight to `/to-spec`.",
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 10,
+      "gist": "three generations upstream (single file, early tracker map, current map); old forms are recognizable by headings and `Status:` lines, legacy claim labels were never released, and the tracker templates still lag behind `SKILL.md`"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 8,
+      "gist": "the npm organization exists (almost certainly Eduardo's, unconfirmed); the unscoped npm name, both Marketplace publisher IDs and both Open VSX namespaces look free; the publisher ID can never be changed"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 9,
+      "gist": "yes: one query returns a whole map for 6 rate-limit points, but `updatedAt` doesn't move when a parent or blocker is added, so relationships must be collected fresh every time"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 11,
+      "gist": "by reading only: shell quoting, npm `.cmd` shims and a missing `SessionEnd` are the Windows risks; running `claude` as the terminal's own process avoids the quoting, and twelve items still need a real Windows test"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 13,
+      "gist": "extension-host tests need Mocha through `@vscode/test-cli` as a separate script beside `vp test`; the webview is tested as a Vue app outside VS Code; real end-to-end means experimental Playwright on Electron"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 12,
+      "gist": "VSCodium is on 1.135, Cursor on 1.128, Windsurf on 1.126; the recommended floor is `^1.105.0`, set by the extension host's Node version rather than by any API"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 2,
+      "gist": "on `main` and green in CI: Vite+ 1.0.0, Node 26.10, pnpm 12.8.1 and TypeScript 7 work together; the seed needed fourteen small corrections (missing `@vitejs/plugin-vue`, `@types/node`, `activationEvents` and a pnpm `allowBuilds` decision among them), and the devcontainer can't install the global `vp`"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 19,
+      "gist": "publisher `dbarjs` (created), so the extension ID is `dbarjs.hero-synergy` and the Open VSX namespace is `dbarjs`; the bare name `hero-synergy` belongs to the extension, the unscoped npm name is not claimed, and `@hero-synergy/core` and `@hero-synergy/cli` stand"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 6,
+      "gist": "yes, with a corrected table: the plugin stays and also hooks tool calls, `PermissionRequest` replaces the 6-second-late notification and tells a question from an approval, the terminal closing is the truth for \"ended\", and Esc is an accepted gap shown as time since the last status event"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 14,
+      "gist": "yes, with no override and no peer warning: it shares the one Vitest 5.0.1 that Vite+ pins, on Node 24 and 26; Effect tests import from `@effect/vitest` instead of `vite-plus/test`"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 3,
+      "gist": "GitHub on github.com with native relationships, and local markdown; one repo per window, every open map shown; the tracker doc's heading decides which tracker is read; GitLab, \"Other\" trackers, closed maps and multi-root grouping are cut"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 4,
+      "gist": "only the extension: the CLI is cut and its package removed, `@hero-synergy/core` stays a private workspace package bundled into the extension, nothing goes to npm, and Nitro has no role"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 15,
+      "gist": "Effect Schema for all boundary data, and zod is dropped: both libraries feed `claude -p --json-schema` and cost about 25 KB gzipped in the webview, so one library is enough; boundary data is plain JSON, the webview imports types only, and core exports no schema objects"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 5,
+      "gist": "every ticket session gets `claude -w` and pushes its own edits straight to `main` after a rebase; the Cockpit never runs git or writes to the tracker, only shows each worktree's uncommitted and unpushed state"
+    },
+    {
+      "title": null,
+      "url": null,
+      "number": 17,
+      "gist": "VS Code `^1.105.0` (`@types/vscode ~1.105.0`) on macOS and Linux, WSL remote as the Windows route, native Windows best-effort, forks not blocked but unsupported via Open VSX; README states Claude Code ≥ 2.1.139 and Node ≥ 22.18 on `PATH`; a session runs `claude` as the terminal's own process, never through a shell; no gating on editor or OS"
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    },
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [
+    {
+      "text": "",
+      "tickets": [
+        22
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        3
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        4
+      ]
+    },
+    {
+      "text": "",
+      "tickets": [
+        17
+      ]
+    }
+  ],
+  "taskList": [],
+  "warnings": []
+}

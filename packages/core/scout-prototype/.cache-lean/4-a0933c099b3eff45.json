@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What ships in v0.1.0 besides the VS Code extension?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 ships only the VS Code extension; the CLI is cut from v0.1.0 and core stays internal to the extension."
+  },
+  "warnings": []
+}

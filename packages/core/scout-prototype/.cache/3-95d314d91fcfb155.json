@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which trackers and which workspace shapes must the Cockpit handle in v0.1.0, and which are left for later?\n\nTo decide:\n\n- **Trackers.** GitHub through `gh`, local markdown under `.scratch/`, GitLab through `glab`, and \"Other\" trackers described in prose (the seed proposes an agentic collect step for those).\n- **Workspace shapes.** A single repo, a multi-root workspace, and a workspace folder that is not the repo root.\n- **Several maps.** A repo with more than one open map, and whether closed maps are shown.",
+  "summary": "Determine which trackers and workspace shapes v0.1.0 should support.",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "v0.1.0 supports GitHub and local markdown trackers with one repo per window; multi-root workspace picks first folder with tracker doc; all open maps displayed, closed maps hidden."
+  },
+  "warnings": [
+    "Answer notes Claim wording not yet pushed to main; session was on prototype branch where main push was not permitted."
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "How does the Cockpit draw a map: a list, a graph, or both?\n\nMake rough variants with `/prototype`, using this repo's own map as the data, and react to them.\n\nTo find out:\n\n- Which view makes the frontier obvious at a glance.\n- How a blocked ticket shows its blockers by name.\n- Where claims, ticket types and live session status sit on a ticket.\n- Where the destination, the decisions so far and the fog go.\n- Whether a graph needs a layout library, and which one.",
+  "summary": "Should maps render in the Cockpit as lists, graphs, or both, and what layout should each use?",
+  "resolution": null,
+  "warnings": [
+    "Body mixes question with procedural instructions and discovery criteria rather than pure question form",
+    "References `/prototype` command convention not mentioned in standard wayfinder rules"
+  ]
+}

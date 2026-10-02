@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Should the Cockpit render maps as a list, a graph, or both?",
+  "resolution": null,
+  "warnings": [
+    "Ticket has no closing comment; issue remains open and unanswered"
+  ]
+}

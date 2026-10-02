@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [
+    11,
+    12
+  ],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which platforms and editors does v0.1.0 support?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 supports VS Code 1.105+ on macOS and Linux, with WSL remote and native Windows best-effort, and publishes to Open VSX for fork reach without support guarantees."
+  },
+  "warnings": []
+}

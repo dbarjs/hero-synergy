@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Does the scout's hybrid pipeline (collect with code, interpret with Haiku, reconcile with code) beat code-only parsing by enough to justify a model call?",
+  "summary": "Does the hybrid scout pipeline justify its model costs over code-only parsing?",
+  "resolution": null,
+  "warnings": [
+    "Body has '## Context' section instead of standard Notes/Decisions so far/Not yet specified/Out of scope sections"
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [
+    2
+  ],
+  "legacyClaim": true,
+  "question": "Does each tenant get its own sequence, or is there one global sequence with a tenant prefix? Legal requires gapless numbering in two countries.",
+  "summary": "Should invoice numbers use per-tenant sequences or a single global sequence with tenant prefixes?",
+  "resolution": null,
+  "warnings": []
+}

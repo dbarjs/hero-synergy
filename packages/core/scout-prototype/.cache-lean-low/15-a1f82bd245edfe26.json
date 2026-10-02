@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Should snapshot and boundary data use zod, Effect Schema, or both?",
+  "resolution": {
+    "author": null,
+    "gist": "Effect Schema models all boundary data, and zod is dropped from the stack."
+  },
+  "warnings": []
+}

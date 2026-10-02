@@ -1,0 +1,206 @@
+item  field          same  code                                                                    model                                                                 
+----  -------------  ----  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+#1    bodyForm       same  M5                                                                      M5                                                                    
+#1    decisions      DIFF  [{"title":"Which wayfinder conventions exist in the wild?","url":"htt…  [{"title":null,"url":null,"number":10,"gist":"three generations upstr…
+#1    outOfScope     DIFF  [{"text":"**Building and releasing v0.1.0.** The build, the release p…  [{"text":"","tickets":[22]},{"text":"","tickets":[3]},{"text":"","tic…
+#1    taskList       same  []                                                                      []                                                                    
+#1    warnings             0                                                                       0                                                                     
+#2    type           same  task                                                                    task                                                                  
+#2    partOf         same  null                                                                    null                                                                  
+#2    textBlockedBy  same  []                                                                      []                                                                    
+#2    legacyClaim    same  false                                                                   false                                                                 
+#2    resolution     same  {"author":"dbarjs","gist":"## Answer The workspace is scaffolded on `…  {"author":null,"gist":"The stack installs and works; the seed was wro…
+#2    warnings             0                                                                       0                                                                     
+#3    type           same  grilling                                                                grilling                                                              
+#3    partOf         same  null                                                                    null                                                                  
+#3    textBlockedBy  same  []                                                                      []                                                                    
+#3    legacyClaim    same  false                                                                   false                                                                 
+#3    resolution     same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo in a grilli…  {"author":null,"gist":"v0.1.0 supports two trackers (GitHub and local…
+#3    warnings             0                                                                       0                                                                     
+#4    type           same  grilling                                                                grilling                                                              
+#4    partOf         same  null                                                                    null                                                                  
+#4    textBlockedBy  same  []                                                                      []                                                                    
+#4    legacyClaim    same  false                                                                   false                                                                 
+#4    resolution     same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo on 2026-10-…  {"author":null,"gist":"v0.1.0 ships only the VS Code extension; the C…
+#4    warnings             0                                                                       0                                                                     
+#5    type           same  grilling                                                                grilling                                                              
+#5    partOf         same  null                                                                    null                                                                  
+#5    textBlockedBy  same  []                                                                      []                                                                    
+#5    legacyClaim    same  false                                                                   false                                                                 
+#5    resolution     same  {"author":"dbarjs","gist":"## Resolution **Every ticket session runs …  {"author":null,"gist":"Every ticket session runs in its own worktree …
+#5    warnings             0                                                                       1                                                                     
+#6    type           same  prototype                                                               prototype                                                             
+#6    partOf         same  null                                                                    null                                                                  
+#6    textBlockedBy  same  []                                                                      []                                                                    
+#6    legacyClaim    same  false                                                                   false                                                                 
+#6    resolution     same  {"author":"dbarjs","gist":"## Resolution **Yes, with a corrected tabl…  {"author":null,"gist":"A plugin loaded with `--plugin-dir` provides r…
+#6    warnings             0                                                                       0                                                                     
+#7    type           same  prototype                                                               prototype                                                             
+#7    partOf         same  null                                                                    null                                                                  
+#7    textBlockedBy  same  []                                                                      []                                                                    
+#7    legacyClaim    same  false                                                                   false                                                                 
+#7    resolution     same  null                                                                    null                                                                  
+#7    warnings             0                                                                       0                                                                     
+#8    type           same  research                                                                research                                                              
+#8    partOf         same  null                                                                    null                                                                  
+#8    textBlockedBy  same  []                                                                      []                                                                    
+#8    legacyClaim    same  false                                                                   false                                                                 
+#8    resolution     same  {"author":"dbarjs","gist":"The hero-synergy npm org is mine"}           {"author":null,"gist":"The npm organization is Eduardo's; the unscope…
+#8    warnings             0                                                                       0                                                                     
+#9    type           same  research                                                                research                                                              
+#9    partOf         same  null                                                                    null                                                                  
+#9    textBlockedBy  same  []                                                                      []                                                                    
+#9    legacyClaim    same  false                                                                   false                                                                 
+#9    resolution     same  {"author":"dbarjs","gist":"## Answer **Yes.** Full findings, with the…  {"author":null,"gist":"A single GraphQL query returns everything the …
+#9    warnings             0                                                                       0                                                                     
+#10   type           same  research                                                                research                                                              
+#10   partOf         same  null                                                                    null                                                                  
+#10   textBlockedBy  same  []                                                                      []                                                                    
+#10   legacyClaim    same  false                                                                   false                                                                 
+#10   resolution     same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/w…  {"author":null,"gist":"Upstream has shipped three documented generati…
+#10   warnings             0                                                                       0                                                                     
+#11   type           same  research                                                                research                                                              
+#11   partOf         same  null                                                                    null                                                                  
+#11   textBlockedBy  same  []                                                                      []                                                                    
+#11   legacyClaim    same  false                                                                   false                                                                 
+#11   resolution     same  {"author":"dbarjs","gist":"## Answer Full findings, with twelve concr…  {"author":null,"gist":"Windows behavior varies by installation method…
+#11   warnings             0                                                                       0                                                                     
+#12   type           same  research                                                                research                                                              
+#12   partOf         same  null                                                                    null                                                                  
+#12   textBlockedBy  same  []                                                                      []                                                                    
+#12   legacyClaim    same  false                                                                   false                                                                 
+#12   resolution     same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/f…  {"author":null,"gist":"Recommend engines.vscode ^1.105.0 and @types/v…
+#12   warnings             0                                                                       0                                                                     
+#13   type           same  research                                                                research                                                              
+#13   partOf         same  null                                                                    null                                                                  
+#13   textBlockedBy  same  []                                                                      []                                                                    
+#13   legacyClaim    same  false                                                                   false                                                                 
+#13   resolution     same  {"author":"dbarjs","gist":"## Answer Full findings: [`docs/research/e…  {"author":null,"gist":"Use vp test for unit/component tests, @vscode/…
+#13   warnings             0                                                                       3                                                                     
+#14   type           same  task                                                                    task                                                                  
+#14   partOf         same  null                                                                    null                                                                  
+#14   textBlockedBy  same  []                                                                      []                                                                    
+#14   legacyClaim    same  false                                                                   false                                                                 
+#14   resolution     same  {"author":"dbarjs","gist":"## Answer **Yes.** `@effect/vitest` 4.0.0 …  {"author":null,"gist":"Yes; @effect/vitest 4.0.0 runs under Vitest 5.…
+#14   warnings             0                                                                       0                                                                     
+#15   type           same  grilling                                                                grilling                                                              
+#15   partOf         same  null                                                                    null                                                                  
+#15   textBlockedBy  same  []                                                                      []                                                                    
+#15   legacyClaim    same  false                                                                   false                                                                 
+#15   resolution     same  {"author":"dbarjs","gist":"## Resolution **Effect Schema models all b…  {"author":null,"gist":"Effect Schema models all boundary data and rep…
+#15   warnings             0                                                                       0                                                                     
+#16   type           same  prototype                                                               prototype                                                             
+#16   partOf         same  null                                                                    null                                                                  
+#16   textBlockedBy  same  []                                                                      []                                                                    
+#16   legacyClaim    same  false                                                                   false                                                                 
+#16   resolution     same  null                                                                    null                                                                  
+#16   warnings             0                                                                       0                                                                     
+#17   type           same  grilling                                                                grilling                                                              
+#17   partOf         same  null                                                                    null                                                                  
+#17   textBlockedBy  same  []                                                                      []                                                                    
+#17   legacyClaim    same  false                                                                   false                                                                 
+#17   resolution     same  {"author":"dbarjs","gist":"## Answer v0.1.0 promises **VS Code 1.105 …  {"author":null,"gist":"v0.1.0 promises VS Code 1.105 or later on macO…
+#17   warnings             0                                                                       0                                                                     
+#18   type           same  grilling                                                                grilling                                                              
+#18   partOf         same  null                                                                    null                                                                  
+#18   textBlockedBy  same  []                                                                      []                                                                    
+#18   legacyClaim    same  false                                                                   false                                                                 
+#18   resolution     same  null                                                                    null                                                                  
+#18   warnings             0                                                                       2                                                                     
+#19   type           same  grilling                                                                grilling                                                              
+#19   partOf         same  null                                                                    null                                                                  
+#19   textBlockedBy  same  []                                                                      []                                                                    
+#19   legacyClaim    same  false                                                                   false                                                                 
+#19   resolution     same  {"author":"dbarjs","gist":"## Answer Decided with Eduardo on 2026-10-…  {"author":null,"gist":"Decided to publish with Marketplace publisher …
+#19   warnings             0                                                                       1                                                                     
+#20   type           same  grilling                                                                grilling                                                              
+#20   partOf         same  null                                                                    null                                                                  
+#20   textBlockedBy  same  []                                                                      []                                                                    
+#20   legacyClaim    same  false                                                                   false                                                                 
+#20   resolution     same  null                                                                    null                                                                  
+#20   warnings             0                                                                       0                                                                     
+#21   type           same  grilling                                                                grilling                                                              
+#21   partOf         same  null                                                                    null                                                                  
+#21   textBlockedBy  same  []                                                                      []                                                                    
+#21   legacyClaim    same  false                                                                   false                                                                 
+#21   resolution     same  null                                                                    null                                                                  
+#21   warnings             0                                                                       0                                                                     
+
+fields compared: 104, differing: 2
+code-only: 2 ms for 21 items
+model: {"items":21,"calls":21,"cacheHits":0,"wallMs":144146,"perCallMs":26686,"costUsd":0.3608,"inputTokens":60365,"cacheWriteTokens":10617,"cacheReadTokens":0,"outputTokens":55850,"thinkingTokens":48746}
+  #1: 70228 ms, in 10+5605+0, out 9082 (thinking 7838), $0.0566
+  #2: 31071 ms, in 10+5012+0, out 2709 (thinking 2336), $0.0236
+  #3: 24617 ms, in 3693+0+0, out 2241 (thinking 1797), $0.0149
+  #4: 14956 ms, in 3471+0+0, out 1297 (thinking 1079), $0.0100
+  #5: 23745 ms, in 3694+0+0, out 2236 (thinking 1821), $0.0149
+  #6: 15193 ms, in 3466+0+0, out 1328 (thinking 1115), $0.0101
+  #7: 12929 ms, in 2369+0+0, out 1123 (thinking 935), $0.0080
+  #8: 38595 ms, in 3185+0+0, out 4036 (thinking 3547), $0.0234
+  #9: 29125 ms, in 3304+0+0, out 2704 (thinking 2281), $0.0168
+  #10: 49956 ms, in 3409+0+0, out 4783 (thinking 4375), $0.0273
+  #11: 13960 ms, in 3309+0+0, out 1270 (thinking 1016), $0.0097
+  #12: 41731 ms, in 3434+0+0, out 4578 (thinking 4342), $0.0263
+  #13: 44316 ms, in 3369+0+0, out 4118 (thinking 3653), $0.0240
+  #14: 13687 ms, in 3398+0+0, out 1333 (thinking 1081), $0.0101
+  #15: 25412 ms, in 3178+0+0, out 2422 (thinking 2225), $0.0153
+  #16: 14402 ms, in 2621+0+0, out 1467 (thinking 1285), $0.0100
+  #17: 30901 ms, in 3779+0+0, out 2937 (thinking 2719), $0.0185
+  #18: 14689 ms, in 2293+0+0, out 1352 (thinking 1117), $0.0091
+  #19: 22726 ms, in 2970+0+0, out 2387 (thinking 2111), $0.0149
+  #20: 10716 ms, in 2528+0+0, out 977 (thinking 789), $0.0074
+  #21: 17454 ms, in 2875+0+0, out 1470 (thinking 1284), $0.0102
+
+frontier of #1 — code: 20, 21 | model: 20, 21 (same)
+
+warnings (code):
+warnings (model):
+  #5: Body includes ## Context section, beyond current convention of only ## Question
+  #13: Answer documented in external research file on branch, not fully in comment
+  #13: Identifies new dependencies requiring ADR
+  #13: Several findings marked as not verified
+  #18: Body references 'the research ticket that blocks this one' without explicit 'Blocked by:' format
+  #18: Body contains subsections ('To decide:', '## Context') beyond standard '## Question' heading
+  #19: Body mentions a blocking research ticket but doesn't name it with explicit 'Blocked by: #n' format
+
+model summaries vs code first sentences:
+  #2 model: Scaffold the workspace by installing the seed's stack and document the result and issues found.
+      code:  What does the repo look like once the seed's stack is actually installed, and what did installing it reveal that the seed got wrong?
+  #3 model: Which trackers and workspace shapes does v0.1.0 support?
+      code:  Which trackers and which workspace shapes must the Cockpit handle in v0.1.0, and which are left for later?
+  #4 model: What ships in v0.1.0 besides the VS Code extension?
+      code:  Besides the VS Code extension, what does v0.1.0 ship?
+  #5 model: How do a session's worktree edits get back to main?
+      code:  A Cockpit session runs in its own worktree (`claude -w <ticket-slug>`).
+  #6 model: Do status hooks report a session's state reliably?
+      code:  Does a small Claude Code plugin, loaded with `--plugin-dir`, give the Cockpit a trustworthy live status for a session?
+  #7 model: How does the Cockpit draw a map: a list, a graph, or both?
+      code:  How does the Cockpit draw a map: a list, a graph, or both?
+  #8 model: Are the hero-synergy names free on npm, the Marketplace, and Open VSX?
+      code:  Which of the names hero-synergy wants are free, taken, or already owned by Eduardo, and what are each registry's rules for claiming them?
+  #9 model: Can one GraphQL query collect everything the scout needs?
+      code:  Can a single `gh api graphql` query return everything the scout's collect step needs for every wayfinder issue in a repo?
+  #10 model: What wayfinder conventions has mattpocock/skills shipped?
+      code:  Which conventions has `mattpocock/skills` shipped for wayfinder maps and tickets over time, and what does each one look like on a tracker?
+  #11 model: What breaks or needs different handling when Claude Code sessions run on Windows with VS Code terminals and hooks?
+      code:  What breaks, or needs different handling, when the Cockpit launches sessions and reads status events on Windows?
+  #12 model: Which VS Code versions do Cursor, Windsurf and VSCodium ship?
+      code:  Which VS Code API version does each fork currently ship, and what is the lowest `engines.vscode` that still gives the Cockpit the APIs it needs?
+  #13 model: How can a VS Code extension be integration-tested under Vite+?
+      code:  What are the working ways to integration-test a VS Code extension today, and do they fit a Vite+ workspace?
+  #14 model: Does @effect/vitest 4 work with Vitest 5 under Vite+?
+      code:  Does `@effect/vitest` 4.0.0 run under the Vitest 5 that Vite+ bundles?
+  #15 model: Which schema library should model boundary data: zod or Effect Schema?
+      code:  Which library models the data that crosses a boundary (the snapshot, config, webview messages): zod, Effect Schema, or both?
+  #16 model: Does the scout's interpret step justify the cost of a model call?
+      code:  Does the scout's hybrid pipeline (collect with code, interpret with Haiku, reconcile with code) beat code-only parsing by enough to justify a model call?
+  #17 model: Which platforms and editors does v0.1.0 support?
+      code:  Which operating systems and editors does v0.1.0 promise to work on?
+  #18 model: What does the test setup for v0.1.0 look like and what does CI run?
+      code:  What does the test setup for v0.1.0 look like, and what does CI run?
+  #19 model: Which publisher ID and npm names should hero-synergy use?
+      code:  Under which names is hero-synergy published?
+  #20 model: Which registries must be live for v0.1.0 to count as published?
+      code:  Where must v0.1.0 be installable from on release day?
+  #21 model: What does the Cockpit do at each point in a session's lifecycle?
+      code:  A ticket has at most one live session, and a session lives in a VS Code terminal that can close, be resumed, or sit at a dialog no hook reports.

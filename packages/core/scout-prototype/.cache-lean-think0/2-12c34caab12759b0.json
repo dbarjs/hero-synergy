@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What does the repo look like once the seed's stack is actually installed, and what did installing it reveal that the seed got wrong?",
+  "resolution": {
+    "author": null,
+    "gist": "The workspace is scaffolded on main; vp run -r build, vp check, and vp test pass locally and in CI; the stack installs and works, with only small non-structural corrections needed to the seed."
+  },
+  "warnings": []
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Does @effect/vitest 4 work with Vitest 5 under Vite+?",
+  "resolution": {
+    "author": null,
+    "gist": "Yes; @effect/vitest 4.0.0 runs under Vitest 5.0.1 bundled by Vite+ 1.0.0 with no override or warnings."
+  },
+  "warnings": []
+}

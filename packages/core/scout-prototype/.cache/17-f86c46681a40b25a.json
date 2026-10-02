@@ -1,0 +1,16 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which operating systems and editors does v0.1.0 promise to work on?\n\nTo decide:\n\n- Whether Windows is supported, best-effort, or out of scope for v0.1.0, and whether WSL counts.\n- The `engines.vscode` floor and the matching `@types/vscode` pin.\n- Whether Cursor, Windsurf and VSCodium are supported targets or merely not blocked.",
+  "summary": "Which operating systems and editors does v0.1.0 promise to work on?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Supports VS Code 1.105+ on macOS and Linux (WSL as Linux); Windows best-effort; forks unsupported but not blocked."
+  },
+  "warnings": [
+    "Body mentions blockers but not in 'Blocked by:' format; issue numbers #11 and #12 appear only in closing comment sources"
+  ]
+}

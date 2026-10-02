@@ -1,0 +1,132 @@
+item  field            same  code                                                                    model                                                                 
+----  ---------------  ----  ----------------------------------------------------------------------  ----------------------------------------------------------------------
+#1    bodyForm         same  M2                                                                      M2                                                                    
+#1    destination      same  null                                                                    null                                                                  
+#1    notes            DIFF  - Domain: invoicing for a multi-tenant SaaS. Grilling tickets use /gr…  Domain: invoicing for a multi-tenant SaaS. Grilling tickets use /gril…
+#1    decisions        DIFF  [{"title":"Which database holds the ledger?","url":"https://github.co…  [{"title":"Which database holds the ledger?","url":"https://github.co…
+#1    notYetSpecified  DIFF  [{"text":"How invoice numbers stay unique across tenants once #2 is s…  [{"text":"How invoice numbers stay unique across tenants once #2 is s…
+#1    outOfScope       same  []                                                                      []                                                                    
+#1    taskList         same  [2,3,4,5]                                                               [2,3,4,5]                                                             
+#1    warnings               4                                                                       3                                                                     
+#2    type             same  grilling                                                                grilling                                                              
+#2    partOf           same  1                                                                       1                                                                     
+#2    textBlockedBy    same  [3]                                                                     [3]                                                                   
+#2    legacyClaim      same  false                                                                   false                                                                 
+#2    question         same  Should a refund reopen the original invoice, or always create a credi…  Should a refund reopen the original invoice, or always create a credi…
+#2    resolution       same  null                                                                    null                                                                  
+#2    warnings               2                                                                       3                                                                     
+#3    type             same  research                                                                research                                                              
+#3    partOf           same  1                                                                       1                                                                     
+#3    textBlockedBy    same  []                                                                      []                                                                    
+#3    legacyClaim      same  false                                                                   false                                                                 
+#3    question         same  Which database should hold the ledger? Compare Postgres and DynamoDB …  Which database should hold the ledger? Compare Postgres and DynamoDB …
+#3    resolution       same  {"author":"ana","gist":"Postgres."}                                     {"author":"ana","gist":"Postgres with one schema per tenant for isola…
+#3    warnings               2                                                                       1                                                                     
+#4    type             same  grilling                                                                grilling                                                              
+#4    partOf           same  1                                                                       1                                                                     
+#4    textBlockedBy    same  [2]                                                                     [2]                                                                   
+#4    legacyClaim      same  true                                                                    true                                                                  
+#4    question         same  Does each tenant get its own sequence, or is there one global sequenc…  Does each tenant get its own sequence, or is there one global sequenc…
+#4    resolution       same  null                                                                    null                                                                  
+#4    warnings               3                                                                       0                                                                     
+#5    type             same  prototype                                                               prototype                                                             
+#5    partOf           same  1                                                                       1                                                                     
+#5    textBlockedBy    same  []                                                                      []                                                                    
+#5    legacyClaim      same  false                                                                   false                                                                 
+#5    question         same  Does an inline PDF preview of the invoice help support staff, or is t…  Does an inline PDF preview of the invoice help support staff, or is t…
+#5    resolution       same  {"author":"ana","gist":"Dropped: support staff open the emailed PDF a…  {"author":"ana","gist":"Dropped: support staff use the emailed PDF, i…
+#5    warnings               1                                                                       1                                                                     
+#6    bodyForm         DIFF  free-form                                                               partial                                                               
+#6    destination      DIFF  null                                                                    One-page checkout live before Q4                                      
+#6    notes            DIFF  null                                                                    Addresses trial-to-paid conversion drop at step 3; open questions tra…
+#6    decisions        DIFF  []                                                                      [{"title":null,"url":null,"number":8,"gist":"Stripe Elements chosen o…
+#6    notYetSpecified  DIFF  []                                                                      [{"text":"How tax displays for EU customers before address entry","ti…
+#6    outOfScope       DIFF  []                                                                      [{"text":"Apple Pay and Google Pay","tickets":[]}]                    
+#6    taskList         same  []                                                                      []                                                                    
+#6    warnings               2                                                                       4                                                                     
+#7    type             same  prototype                                                               prototype                                                             
+#7    partOf           same  null                                                                    null                                                                  
+#7    textBlockedBy    same  [8]                                                                     [8]                                                                   
+#7    legacyClaim      same  false                                                                   false                                                                 
+#7    question         same  What does the one-page checkout look like on a phone? Three rough var…  What does the one-page checkout look like on a phone? Three rough var…
+#7    resolution       same  null                                                                    null                                                                  
+#7    warnings               3                                                                       3                                                                     
+#8    type             same  research                                                                research                                                              
+#8    partOf           same  null                                                                    null                                                                  
+#8    textBlockedBy    same  []                                                                      []                                                                    
+#8    legacyClaim      same  false                                                                   false                                                                 
+#8    question         same  Which Stripe integration lets us show a per-seat price breakdown next…  Which Stripe integration lets us show a per-seat price breakdown next…
+#8    resolution       same  {"author":"ana","gist":"Elements."}                                     {"author":"ana","gist":"Elements allows per-seat breakdown; Checkout …
+#8    warnings               0                                                                       0                                                                     
+#9    type             same  grilling                                                                grilling                                                              
+#9    partOf           same  1                                                                       1                                                                     
+#9    textBlockedBy    same  []                                                                      []                                                                    
+#9    legacyClaim      same  false                                                                   false                                                                 
+#9    question         same  Which role may approve a manual credit above 1,000, and does it need …  Which role may approve a manual credit above 1,000, and does it need …
+#9    resolution       same  null                                                                    null                                                                  
+#9    warnings               2                                                                       1                                                                     
+
+fields compared: 56, differing: 9
+code-only: 1 ms for 9 items
+model: {"items":9,"calls":9,"cacheHits":0,"wallMs":52124,"perCallMs":18764,"costUsd":0.1102,"inputTokens":20662,"cacheWriteTokens":0,"cacheReadTokens":0,"outputTokens":17913}
+
+frontier of #1 — code: 2, 9 | model: 2, 9 (same)
+
+frontier of #6 — code: 7 | model: 7 (same)
+
+warnings (code):
+  #1: map body is M2, not the current five-section form
+  #1: no Destination section
+  #1: decision line is not "[title](link) — gist": #5 was dropped, see the comment there
+  #1: children listed as a task list in the map body (text fallback)
+  #6: map body is free-form, not the current five-section form
+  #6: no Destination section
+  #2: parent given as a "Part of #n" line (text fallback)
+  #2: blockers given as a "Blocked by:" line (text fallback)
+  #3: parent given as a "Part of #n" line (text fallback)
+  #3: no "## Question" heading
+  #4: parent given as a "Part of #n" line (text fallback)
+  #4: blockers given as a "Blocked by:" line (text fallback)
+  #4: legacy "wayfinder:claimed" label
+  #5: parent given as a "Part of #n" line (text fallback)
+  #5: closed, but the map neither lists it under Decisions so far nor under Out of scope
+  #7: blockers given as a "Blocked by:" line (text fallback)
+  #7: type given as a "Type:" line, not a label (single-file form)
+  #7: no "## Question" heading
+  #8: closed, but the map neither lists it under Decisions so far nor under Out of scope
+  #9: parent given as a "Part of #n" line (text fallback)
+  #9: several type labels: grilling, research
+warnings (model):
+  #1: Uses 'Fog' section (M2/M3 older convention) instead of 'Not yet specified' (M5 current convention)
+  #1: Decisions so far line '#5 was dropped, see the comment there' doesn't follow standard '- [title](url): gist' format
+  #1: Task list in body is older convention for listing children; current convention uses native sub-issues
+  #6: 'Done so far' instead of 'Decisions so far' heading
+  #6: Inline 'Not doing this round' and 'Still fuzzy' instead of H2 sections
+  #6: Decision #8 lacks explicit title and URL in body text
+  #6: Non-standard structure departs from M5 (2026) convention
+  #2: Uses older 'Part of #n' format in body instead of native parent
+  #2: Uses older 'Blocked by:' line format in body instead of native dependencies
+  #2: Ticket is open with no comments, so no resolution available
+  #3: no ## Question heading; body uses older free-form style
+  #5: Body uses older 'Part of #n' convention instead of native sub-issue link
+  #5: closed, but the map neither lists it under Decisions so far nor under Out of scope
+  #7: Type specified as 'Type: prototype' line in body (old format)
+  #7: Blocked by specified as 'Blocked by: #8' line in body (old format)
+  #7: No '## Question' section heading
+  #9: Ticket has two type labels (wayfinder:grilling and wayfinder:research); convention expects exactly one type label per ticket
+
+model summaries vs code first sentences:
+  #2 model: Should refunds reopen invoices or create credit notes?
+      code:  Should a refund reopen the original invoice, or always create a credit note that references it?
+  #3 model: Which database should hold the ledger?
+      code:  Which database should hold the ledger?
+  #4 model: Should invoice numbers use per-tenant sequences or a single global sequence with tenant prefixes?
+      code:  Does each tenant get its own sequence, or is there one global sequence with a tenant prefix?
+  #5 model: Does an inline PDF preview in the admin UI earn its place?
+      code:  Does an inline PDF preview of the invoice help support staff, or is the emailed PDF enough?
+  #7 model: What does the one-page checkout look like on mobile?
+      code:  What does the one-page checkout look like on a phone?
+  #8 model: Should we use Stripe Elements or Checkout to display per-seat pricing?
+      code:  Which Stripe integration lets us show a per-seat price breakdown next to the card form: Elements, or the hosted Checkout page?
+  #9 model: Which role can approve a manual credit above 1,000 and whether approval requires two people.
+      code:  Which role may approve a manual credit above 1,000, and does it need two people?

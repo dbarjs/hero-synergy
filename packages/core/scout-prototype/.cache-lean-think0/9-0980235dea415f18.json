@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": 1,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which role may approve a manual credit above 1,000, and does it need two people?",
+  "resolution": null,
+  "warnings": [
+    "Issue has two type labels (grilling and research); using the first one"
+  ]
+}

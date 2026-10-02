@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Which conventions has `mattpocock/skills` shipped for wayfinder maps and tickets over time, and what does each one look like on a tracker?\n\nTo find out, from the history of `skills/engineering/wayfinder/SKILL.md` and the `issue-tracker-*.md` templates:\n\n- Every version of the map body (section names and order).\n- How a claim was expressed (a `wayfinder:claimed` label, then the assignee).\n- The ticket types and their labels.\n- How children and blockers are expressed when native sub-issues or dependencies are off (task list, `Part of #n`, `Blocked by: #n`).\n- The local `.scratch` layout and the GitLab template.\n\nThe result is a catalogue of drift: each convention, when it applied, and how to recognize it.",
+  "summary": "What wayfinder conventions has mattpocock/skills shipped over time and how are they expressed?",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Three generations of tracker maps documented with conventions for body structure, claims, types, and relationships; all patterns catalogued with corrections to existing documentation."
+  },
+  "warnings": []
+}

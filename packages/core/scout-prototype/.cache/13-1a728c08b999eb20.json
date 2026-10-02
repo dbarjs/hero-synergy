@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "What are the working ways to integration-test a VS Code extension today, and do they fit a Vite+ workspace?",
+  "summary": "Ways to integration-test a VS Code extension in a Vite+ workspace.",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "Use Mocha for extension-host testing, Vitest for core logic, Playwright for webview E2E."
+  },
+  "warnings": []
+}

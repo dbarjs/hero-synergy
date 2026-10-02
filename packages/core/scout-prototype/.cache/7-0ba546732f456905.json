@@ -1,0 +1,17 @@
+{
+  "kind": "ticket",
+  "type": "prototype",
+  "partOf": null,
+  "textBlockedBy": [
+    8
+  ],
+  "legacyClaim": false,
+  "question": "What does the one-page checkout look like on a phone? Three rough variants to react to: stacked, accordion, and a two-step with the payment form last.",
+  "summary": "What does the one-page checkout look like on mobile?",
+  "resolution": null,
+  "warnings": [
+    "Type specified as 'Type: prototype' line in body (old format)",
+    "Blocked by specified as 'Blocked by: #8' line in body (old format)",
+    "No '## Question' section heading"
+  ]
+}

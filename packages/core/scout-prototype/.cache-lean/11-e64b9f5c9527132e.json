@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What breaks or needs different handling when Claude Code sessions run on Windows with VS Code terminals and hooks?",
+  "resolution": {
+    "author": null,
+    "gist": "Windows behavior varies by installation method (native PowerShell/cmd vs WSL), shell-specific quoting, hook requirements (Claude Code 2.1.139+ with node), and file watching implementation; several edge cases need real Windows testing."
+  },
+  "warnings": []
+}

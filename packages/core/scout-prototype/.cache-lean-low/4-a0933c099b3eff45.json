@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which packages besides the VS Code extension ship in v0.1.0?",
+  "resolution": {
+    "author": null,
+    "gist": "v0.1.0 ships the VS Code extension and nothing else; the CLI is cut, core stays private and unbundled from npm, and Nitro has no role."
+  },
+  "warnings": []
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "What are the working ways to integration-test a VS Code extension in a Vite+ workspace?",
+  "resolution": {
+    "author": null,
+    "gist": "Unit and component tests use vp test with webviews stubbed; extension-host tests need Mocha via @vscode/test-cli; end-to-end uses Playwright driving Electron—all three approaches coexist, each covering different layers."
+  },
+  "warnings": []
+}

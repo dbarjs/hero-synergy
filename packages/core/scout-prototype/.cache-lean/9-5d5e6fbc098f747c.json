@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "research",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Can one GraphQL query collect everything the scout needs?",
+  "resolution": {
+    "author": null,
+    "gist": "A single GraphQL query returns everything the scout's collect step needs, with no preview header."
+  },
+  "warnings": []
+}

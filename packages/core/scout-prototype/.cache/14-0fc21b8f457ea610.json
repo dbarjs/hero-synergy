@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "task",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "Does `@effect/vitest` 4.0.0 run under the Vitest 5 that Vite+ bundles?",
+  "summary": "Whether @effect/vitest 4 works with Vitest 5 under Vite+",
+  "resolution": {
+    "author": "dbarjs",
+    "gist": "@effect/vitest 4.0.0 runs under Vitest 5.0.1 with no override and no peer-dependency warning."
+  },
+  "warnings": []
+}

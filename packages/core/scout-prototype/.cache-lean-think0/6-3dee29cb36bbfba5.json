@@ -1,0 +1,27 @@
+{
+  "kind": "map",
+  "bodyForm": "M2",
+  "destination": "Deliver a one-page checkout before Q4 to improve trial-to-paid conversion.",
+  "notes": null,
+  "decisions": [
+    {
+      "title": null,
+      "url": null,
+      "number": 8,
+      "gist": "Chose Stripe Elements over hosted page because hosted page can't show per-seat price breakdown."
+    }
+  ],
+  "notYetSpecified": [
+    {
+      "text": "",
+      "tickets": []
+    }
+  ],
+  "outOfScope": [],
+  "taskList": [],
+  "warnings": [
+    "Body has Fog (fuzzy items) instead of 'Not yet specified' section heading",
+    "Out of scope items (Apple Pay, Google Pay) stated as prose rather than linked tickets",
+    "No 'Decisions so far' heading; decision stated in prose"
+  ]
+}

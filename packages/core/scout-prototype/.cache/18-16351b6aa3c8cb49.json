@@ -1,0 +1,13 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": "What does the test setup for v0.1.0 look like, and what does CI run?",
+  "summary": "What is the test setup and CI configuration for v0.1.0?",
+  "resolution": null,
+  "warnings": [
+    "Body mentions a blocking research ticket but does not specify its issue number"
+  ]
+}

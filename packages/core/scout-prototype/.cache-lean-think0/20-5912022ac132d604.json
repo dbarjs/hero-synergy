@@ -1,0 +1,14 @@
+{
+  "kind": "ticket",
+  "type": "grilling",
+  "partOf": null,
+  "textBlockedBy": [],
+  "legacyClaim": false,
+  "question": null,
+  "summary": "Which registries must be live for v0.1.0 to count as published?",
+  "resolution": null,
+  "warnings": [
+    "ticket is open; no resolution gist available",
+    "question asks about registry requirements but no decision comment found"
+  ]
+}
