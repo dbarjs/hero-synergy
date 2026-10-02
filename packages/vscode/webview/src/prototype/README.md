@@ -32,7 +32,7 @@ Flip variants with the yellow bar or the `←` `→` keys. Everything is in the 
 
 - **M1, Maps, then drill in.** Sessions that need you, then one card per active map (progress, counts, its next ticket, or why nothing is takeable). Finished maps fold into one line with a filter. Click a map to open it.
 - **M2, One tree.** Every map is a node that unfolds in place, like the file explorer. No drilling in; finished maps are one folder.
-- **M4, Tree + focus (the default).** Eduardo's merge of M2 and C: the tree on the left, and clicking any map, ticket or fog row shows C's focus pane on the right (inline under the row at sidebar width). A "cards" toggle swaps the active maps' rows for M1's cards.
+- **M4, Tree + focus (the default).** Eduardo's merge of M2 and C: the tree on the left, and clicking any map, ticket or fog row shows C's focus pane on the right. At sidebar width the pane sits inline under the row, and a second click or ✕ closes it. A "cards" density toggle (M1's cards inside the tree) was tried and removed; `screenshots/m4-cards.png` keeps what it looked like.
 - **M3, Frontier across maps.** Tickets first, maps second: everything takeable right now across all active maps, grouped by map. Maps with nothing takeable are called out; a select narrows the view to one map.
 
 ## One map

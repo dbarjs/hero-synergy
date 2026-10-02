@@ -25,8 +25,8 @@ import {
 } from './data.ts'
 import { allMaps } from './maps.ts'
 
-const props = defineProps<{ id: string }>()
-const emit = defineEmits<{ pick: [id: string] }>()
+const props = defineProps<{ id: string; closable?: boolean }>()
+const emit = defineEmits<{ pick: [id: string]; close: [] }>()
 
 const t = computed(() => (props.id.startsWith('t') ? ticket(Number(props.id.slice(1))) : null))
 // Ids: `t<ticket>`, `m<map>` (or `map` for the open one), `f<map>:<index>` (or `f<index>`).
@@ -45,6 +45,7 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
 
 <template>
   <div v-if="t" class="focus">
+    <button v-if="closable" class="close" title="Close" @click="emit('close')">✕</button>
     <div class="kicker">
       {{ typeOf(t).glyph }} {{ typeOf(t).name }} · {{ typeOf(t).mode }} ·
       <span :class="`s-${stateOf(t)}`">{{ stateOf(t) }}</span>
@@ -120,6 +121,7 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
   </div>
 
   <div v-else-if="fog" class="focus">
+    <button v-if="closable" class="close" title="Close" @click="emit('close')">✕</button>
     <div class="kicker">≋ fog · not yet specified</div>
     <h1>{{ fog.title }}</h1>
     <p>{{ fog.text }}</p>
@@ -136,15 +138,18 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
   </div>
 
   <div v-else-if="shownMap && summary" class="focus">
+    <button v-if="closable" class="close" title="Close" @click="emit('close')">✕</button>
     <div class="kicker">map · {{ summary.frontier.length }} takeable · {{ summary.claimed.length }} claimed · {{ summary.blocked.length }} blocked · {{ shownMap.fog.length }} fog</div>
     <h1><span class="num">#{{ shownMap.number }}</span> {{ shownMap.title }}</h1>
     <h2>⚑ Destination</h2>
     <p class="pre">{{ shownMap.destination }}</p>
-    <h2>Decisions so far ({{ summary.decided.length }})</h2>
-    <button v-for="d in summary.decided" :key="d.number" class="decision" @click="emit('pick', `t${d.number}`)">
-      <strong>✓ <span class="num">#{{ d.number }}</span> {{ d.title }}</strong>
-      <span>{{ d.gist }}</span>
-    </button>
+    <details :open="!closable">
+      <summary><h2>Decisions so far ({{ summary.decided.length }})</h2></summary>
+      <button v-for="d in summary.decided" :key="d.number" class="decision" @click="emit('pick', `t${d.number}`)">
+        <strong>✓ <span class="num">#{{ d.number }}</span> {{ d.title }}</strong>
+        <span>{{ d.gist }}</span>
+      </button>
+    </details>
     <h2>Out of scope</h2>
     <p v-for="line in shownMap.outOfScope" :key="line" class="muted">{{ line }}</p>
     <p v-if="!shownMap.outOfScope.length" class="muted">nothing ruled out</p>
@@ -153,6 +158,7 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
 
 <style scoped>
 .focus {
+  position: relative;
   padding: 14px 16px;
   max-width: 820px;
 }
@@ -270,5 +276,31 @@ p {
 }
 .decision span {
   color: var(--fg-muted);
+}
+.close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 0;
+  background: none;
+  color: var(--fg-muted);
+}
+.close:hover {
+  color: var(--fg);
+}
+summary {
+  cursor: pointer;
+  list-style: none;
+}
+summary h2 {
+  display: inline;
+}
+summary::before {
+  content: '▸ ';
+  color: var(--fg-muted);
+  font-size: 11px;
+}
+details[open] summary::before {
+  content: '▾ ';
 }
 </style>
