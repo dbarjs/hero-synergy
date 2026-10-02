@@ -1,0 +1,151 @@
+/* PROTOTYPE — stands in for the --vscode-* theme variables a real webview inherits. */
+:root {
+  --bg: var(--vscode-sideBar-background, #181818);
+  --bg-raised: var(--vscode-editorWidget-background, #202020);
+  --bg-hover: var(--vscode-list-hoverBackground, #2a2d2e);
+  --bg-selected: var(--vscode-list-inactiveSelectionBackground, #37373d);
+  --fg: var(--vscode-foreground, #cccccc);
+  --fg-muted: var(--vscode-descriptionForeground, #9d9d9d);
+  --border: var(--vscode-panel-border, #2b2b2b);
+  --accent: var(--vscode-focusBorder, #0078d4);
+  --button-bg: var(--vscode-button-background, #0078d4);
+  --button-fg: var(--vscode-button-foreground, #ffffff);
+  --badge-bg: var(--vscode-badge-background, #616161);
+  --badge-fg: var(--vscode-badge-foreground, #f8f8f8);
+  --code-bg: var(--vscode-textCodeBlock-background, #2b2b2b);
+  --green: var(--vscode-testing-iconPassed, #73c991);
+  --amber: var(--vscode-editorWarning-foreground, #cca700);
+  --red: var(--vscode-errorForeground, #f14c4c);
+  --blue: var(--vscode-charts-blue, #3794ff);
+  --frame-bg: #0c0c0c;
+  --mono: var(--vscode-editor-font-family, ui-monospace, 'SF Mono', Menlo, Consolas, monospace);
+}
+:root[data-theme='light'] {
+  --bg: #f8f8f8;
+  --bg-raised: #ffffff;
+  --bg-hover: #e8e8e8;
+  --bg-selected: #e4e6f1;
+  --fg: #3b3b3b;
+  --fg-muted: #6f6f6f;
+  --border: #e5e5e5;
+  --accent: #005fb8;
+  --button-bg: #005fb8;
+  --badge-bg: #c4c4c4;
+  --badge-fg: #333333;
+  --code-bg: #ececec;
+  --green: #388a34;
+  --amber: #9a6700;
+  --red: #c72e2e;
+  --blue: #1a73d1;
+  --frame-bg: #dcdcdc;
+}
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#app {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--frame-bg);
+  color: var(--fg);
+  font:
+    13px/1.4 -apple-system,
+    'Segoe UI',
+    system-ui,
+    sans-serif;
+}
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+code {
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+/* Bits every variant is free to use. */
+.cmd {
+  display: block;
+  padding: 4px 6px;
+  border-radius: 3px;
+  background: var(--code-bg);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fg-muted);
+  overflow-wrap: anywhere;
+}
+.btn {
+  border: 0;
+  border-radius: 2px;
+  padding: 3px 10px;
+  background: var(--button-bg);
+  color: var(--button-fg);
+  white-space: nowrap;
+}
+.glyph {
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  color: var(--fg-muted);
+  flex: none;
+}
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border: 1px solid currentColor;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 11px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.status::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.st-started,
+.st-ended {
+  color: var(--fg-muted);
+}
+.st-working {
+  color: var(--blue);
+}
+.st-working::before {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.st-waiting-for-you {
+  color: var(--amber);
+}
+.st-needs-approval,
+.st-failed {
+  color: var(--red);
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+.claim {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  flex: none;
+}

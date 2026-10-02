@@ -5,3 +5,9 @@ declare module '*.vue' {
   const component: DefineComponent
   export default component
 }
+
+// PROTOTYPE — enough of vite/client for the map-rendering prototype.
+declare module '*.css'
+interface ImportMeta {
+  readonly env: { readonly DEV: boolean }
+}
