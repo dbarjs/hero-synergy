@@ -10,9 +10,9 @@ What was measured on 2026-10-02, with Effect 4.0.0 and zod 4.6.5:
 
 Three rules come with the decision:
 
-- **Boundary data is plain JSON.** A schema's decoded type and its encoded form are the same shape: timestamps stay ISO strings and schemas don't transform. The JSON Schema the model fills, the webview message, `hero-synergy snapshot --json` and the scout's cache then all share one shape.
+- **Boundary data is plain JSON.** A schema's decoded type and its encoded form are the same shape: timestamps stay ISO strings and schemas don't transform. The JSON Schema the model fills, the webview message and the scout's cache then all share one shape.
 - **The webview doesn't validate.** It imports types only. The host and the webview ship in one `.vsix`, so they can't be on different versions, and the host already validated the snapshot. The host validates messages arriving from the webview.
-- **`@hero-synergy/core` doesn't export schema objects.** It exports types and functions that parse. Schema exports can be added later without a breaking release, but can't be removed without one.
+- **`@hero-synergy/core` doesn't export schema objects.** It exports types and functions that parse, which keeps its interface small. Core is a private workspace package in v0.1.0, so this rule is cheap to change; it becomes hard to change if core is ever published.
 
 ## Considered options
 
