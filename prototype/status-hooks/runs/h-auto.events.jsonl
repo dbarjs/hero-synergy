@@ -1,0 +1,5 @@
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#h-auto","hook":"SessionStart","detail":"startup","session":"820a8773-a62d-4f12-921d-b3b55edfd745","at":1790972438636}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#h-auto","hook":"UserPromptSubmit","detail":null,"session":"820a8773-a62d-4f12-921d-b3b55edfd745","at":1790972447310}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#h-auto","hook":"Notification","detail":"permission_prompt","session":"820a8773-a62d-4f12-921d-b3b55edfd745","at":1790972457219}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#h-auto","hook":"Stop","detail":null,"session":"820a8773-a62d-4f12-921d-b3b55edfd745","at":1790972488736}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#h-auto","hook":"SessionEnd","detail":"prompt_input_exit","session":"820a8773-a62d-4f12-921d-b3b55edfd745","at":1790972496148}

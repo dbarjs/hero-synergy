@@ -1,0 +1,4 @@
+{
+  "name": "hero-synergy-probe",
+  "description": "PROTOTYPE. Records every hook event with its full input, as ground truth to compare the status plugin against."
+}

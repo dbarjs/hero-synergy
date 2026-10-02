@@ -1,0 +1,3 @@
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#i-interrupt","hook":"SessionStart","detail":"startup","session":"2e5bcf9f-312e-4b0f-88fa-0b798c2f3ff7","at":1790972562774}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#i-interrupt","hook":"UserPromptSubmit","detail":null,"session":"2e5bcf9f-312e-4b0f-88fa-0b798c2f3ff7","at":1790972570533}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#i-interrupt","hook":"SessionEnd","detail":"prompt_input_exit","session":"2e5bcf9f-312e-4b0f-88fa-0b798c2f3ff7","at":1790972651336}

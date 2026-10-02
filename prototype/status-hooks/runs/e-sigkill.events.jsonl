@@ -1,0 +1,3 @@
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#e-sigkill","hook":"SessionStart","detail":"startup","session":"233000c8-46eb-408e-a696-de0e2f2a8234","at":1790972302491}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#e-sigkill","hook":"UserPromptSubmit","detail":null,"session":"233000c8-46eb-408e-a696-de0e2f2a8234","at":1790972308817}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#e-sigkill","hook":"Stop","detail":null,"session":"233000c8-46eb-408e-a696-de0e2f2a8234","at":1790972310232}

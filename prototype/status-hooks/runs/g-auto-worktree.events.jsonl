@@ -1,0 +1,6 @@
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"SessionStart","detail":"startup","session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972374569}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"UserPromptSubmit","detail":null,"session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972383280}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"Notification","detail":"permission_prompt","session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972391330}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"Notification","detail":"permission_prompt","session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972411379}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"Stop","detail":null,"session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972415380}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#g-auto-worktree","hook":"SessionEnd","detail":"prompt_input_exit","session":"5d16d11a-fa82-4738-9bc8-ec3e98012b94","at":1790972433921}
