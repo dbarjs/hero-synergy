@@ -51,7 +51,11 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
       <span :class="`s-${stateOf(t)}`">{{ stateOf(t) }}</span>
       <template v-if="t.assignee && isOpen(t)"> · claimed by {{ t.assignee }}</template>
     </div>
-    <h1><span class="num">#{{ t.number }}</span> {{ t.title }}</h1>
+    <h1>
+      <a :href="t.url" target="_blank" rel="noreferrer" title="Open the issue">
+        <span class="num">#{{ t.number }}</span> {{ t.title }} <span class="ext">↗</span>
+      </a>
+    </h1>
 
     <div class="hood">
       <div class="col">
@@ -66,10 +70,6 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
           {{ isOpen(b) ? '⊘' : '✓' }} <span class="num">#{{ b.number }}</span> {{ b.title }}
         </button>
         <div v-if="!t.blockedBy.length" class="none">nothing</div>
-      </div>
-      <div class="arrow">→</div>
-      <div class="col">
-        <div class="chip self"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
       </div>
       <div class="arrow">→</div>
       <div class="col">
@@ -93,8 +93,6 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
       <h2>Decision</h2>
       <p>{{ t.gist }}</p>
     </template>
-    <h2>Question</h2>
-    <p>{{ t.question }}</p>
 
     <template v-if="session">
       <h2>Session</h2>
@@ -140,7 +138,11 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
   <div v-else-if="shownMap && summary" class="focus">
     <button v-if="closable" class="close" title="Close" @click="emit('close')">✕</button>
     <div class="kicker">map · {{ summary.frontier.length }} takeable · {{ summary.claimed.length }} claimed · {{ summary.blocked.length }} blocked · {{ shownMap.fog.length }} fog</div>
-    <h1><span class="num">#{{ shownMap.number }}</span> {{ shownMap.title }}</h1>
+    <h1>
+      <a :href="shownMap.url" target="_blank" rel="noreferrer" title="Open the map issue">
+        <span class="num">#{{ shownMap.number }}</span> {{ shownMap.title }} <span class="ext">↗</span>
+      </a>
+    </h1>
     <h2>⚑ Destination</h2>
     <p class="pre">{{ shownMap.destination }}</p>
     <details :open="!closable">
@@ -230,10 +232,6 @@ p {
   font-size: 12px;
   text-align: left;
 }
-.chip.self {
-  border-color: var(--accent);
-  font-weight: 600;
-}
 .chip.done {
   color: var(--fg-muted);
 }
@@ -302,5 +300,16 @@ summary::before {
 }
 details[open] summary::before {
   content: '▾ ';
+}
+h1 a {
+  color: inherit;
+  text-decoration: none;
+}
+h1 a:hover {
+  color: var(--accent);
+}
+.ext {
+  font-size: 12px;
+  color: var(--fg-muted);
 }
 </style>

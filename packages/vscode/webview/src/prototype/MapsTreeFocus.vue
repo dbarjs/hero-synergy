@@ -1,7 +1,8 @@
 <script setup lang="ts">
 // PROTOTYPE — Maps variant M4, "Tree + focus": Eduardo's merge of M2 and C. The tree from M2 on
-// the left; clicking any row (map, ticket, fog) shows C's focus pane on the right, or inline
-// under the row at sidebar width, where clicking the row again (or ✕) closes it.
+// the left; a map row unfolds, and clicking a ticket, a fog patch or the "Map" item inside a map
+// shows C's focus pane on the right, or inline under the row at sidebar width, where clicking
+// the row again (or ✕) closes it.
 // A "cards" density toggle was tried and removed; see screenshots/m4-cards.png.
 import { computed, reactive, ref } from 'vue'
 
@@ -48,22 +49,22 @@ const needsYou = computed(() => orderedActive.value.flatMap((s) => needsYouIn(s.
       </div>
 
       <template v-for="s in orderedActive" :key="s.map.number">
-        <!-- Map row: click = select; twisty = unfold. -->
-        <div
-          class="row map"
-          :class="{ picked: picked === `m${s.map.number}` }"
-          @click="pick(`m${s.map.number}`)"
-        >
-          <span class="twisty" @click.stop="toggle(`m${s.map.number}`)">{{ twisty(`m${s.map.number}`) }}</span>
+        <!-- Map row: click = unfold. The map's own detail is the "Map" item inside it. -->
+        <div class="row map" @click="toggle(`m${s.map.number}`)">
+          <span class="twisty">{{ twisty(`m${s.map.number}`) }}</span>
           <span class="label"><span class="num">#{{ s.map.number }}</span> {{ s.map.title }}</span>
           <span v-if="needsYouIn(s.map).length" class="badge you">{{ needsYouIn(s.map).length }}</span>
           <span v-if="s.frontier.length" class="badge takeable">{{ s.frontier.length }}</span>
           <span v-else-if="stuck(s)" class="badge" title="nothing takeable">⊘</span>
           <span class="desc">{{ s.decided.length }}/{{ s.map.tickets.length }}</span>
         </div>
-        <VariantCFocus v-if="narrow && picked === `m${s.map.number}`" :id="picked" class="inline" closable @pick="picked = $event" @close="picked = ''" />
 
         <template v-if="unfolded.has(`m${s.map.number}`)">
+          <div class="row d1 dim" :class="{ picked: picked === `m${s.map.number}` }" @click="pick(`m${s.map.number}`)">
+            <span class="mark">⚑</span><span class="label">Map</span>
+            <span class="desc">destination · out of scope</span>
+          </div>
+          <VariantCFocus v-if="narrow && picked === `m${s.map.number}`" :id="picked" class="inline" closable @pick="picked = $event" @close="picked = ''" />
           <template v-for="t in openTickets(s)" :key="t.number">
             <div class="row d1" :class="[stateOf(t), { picked: picked === `t${t.number}` }]" @click="pick(`t${t.number}`)">
               <span class="mark" :title="stateOf(t)">{{ MARK[stateOf(t)] }}</span>
@@ -142,13 +143,16 @@ const needsYou = computed(() => orderedActive.value.flatMap((s) => needsYouIn(s.
       </div>
       <template v-if="unfolded.has('finished')">
         <template v-for="s in finishedMaps" :key="s.map.number">
-          <div class="row d1 dim" :class="{ picked: picked === `m${s.map.number}` }" @click="pick(`m${s.map.number}`)">
-            <span class="twisty" @click.stop="toggle(`m${s.map.number}`)">{{ twisty(`m${s.map.number}`) }}</span>
+          <div class="row d1 dim" @click="toggle(`m${s.map.number}`)">
+            <span class="twisty">{{ twisty(`m${s.map.number}`) }}</span>
             <span class="label"><span class="num">#{{ s.map.number }}</span> {{ s.map.title }}</span>
             <span class="desc">{{ s.decided.length }} · {{ finishedText(s.map) }}</span>
           </div>
-          <VariantCFocus v-if="narrow && picked === `m${s.map.number}`" :id="picked" class="inline" closable @pick="picked = $event" @close="picked = ''" />
           <template v-if="unfolded.has(`m${s.map.number}`)">
+            <div class="row d2 dim" :class="{ picked: picked === `m${s.map.number}` }" @click="pick(`m${s.map.number}`)">
+              <span class="mark">⚑</span><span class="label">Map</span>
+            </div>
+            <VariantCFocus v-if="narrow && picked === `m${s.map.number}`" :id="picked" class="inline" closable @pick="picked = $event" @close="picked = ''" />
             <template v-for="t in s.decided" :key="t.number">
               <div class="row d2 dim" :class="{ picked: picked === `t${t.number}` }" @click="pick(`t${t.number}`)">
                 <span class="mark">✓</span><span class="label"><span class="num">#{{ t.number }}</span> {{ t.title }}</span>
