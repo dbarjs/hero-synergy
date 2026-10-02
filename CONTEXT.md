@@ -1,0 +1,72 @@
+# hero-synergy
+
+An unofficial VS Code cockpit for Matt Pocock's agent skills. It reads the wayfinder maps on a repo's issue tracker, shows which tickets can be taken right now, and opens one named Claude Code CLI session per ticket in a VS Code terminal, with live status for each.
+
+## Language
+
+**Cockpit**:
+The hero-synergy VS Code view that shows a repo's maps, live sessions and available actions.
+_Avoid_: dashboard, control panel
+
+**Map**:
+A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.md` on a local tracker) that indexes one effort's decisions.
+_Avoid_: board, plan, epic
+
+**Ticket**:
+A child issue of a map holding one question, typed by a `wayfinder:<type>` label: research, prototype, grilling or task.
+_Avoid_: card, story
+
+**Frontier**:
+The open, unblocked, unclaimed tickets of a map. The first one in map order is next.
+_Avoid_: backlog, ready list
+
+**Claim**:
+The assignment of a ticket to the developer driving the map, made by the session before any work.
+_Avoid_: lock, reservation
+
+**Fog**:
+In-scope work too vague to ticket yet, written in the map's "Not yet specified" section.
+_Avoid_: backlog, unknowns
+
+**Destination**:
+What reaching the end of a map looks like. It fixes the map's scope.
+
+**Tracker**:
+Where a repo's issues live, as recorded by `/setup-matt-pocock-skills` in `docs/agents/issue-tracker.md`: GitHub, GitLab, local markdown or another tool.
+_Avoid_: backend, issue host
+
+**Scout**:
+The background pipeline that turns a tracker's contents into a snapshot: collect with code, interpret with a fast model, reconcile with code.
+_Avoid_: crawler, analyzer, sync
+
+**Snapshot**:
+The typed, normalized state of every map in a repo at one moment.
+_Avoid_: state dump
+
+**Drift**:
+Any way a map or ticket differs from the current wayfinder conventions: legacy labels, text fallbacks, free-form markdown.
+_Avoid_: corruption, invalid map
+
+**Session**:
+One Claude Code CLI process in a VS Code terminal, launched by the Cockpit for one ticket or action and named after it.
+_Avoid_: agent, run, job
+
+**Status event**:
+One line the session plugin's hooks append when a session starts, works, waits, needs approval, fails or ends.
+_Avoid_: log line, heartbeat
+
+**Action**:
+A user-invoked skill the Cockpit offers in a given context, shown with the exact command it will run.
+_Avoid_: command, button
+
+### Relationships
+
+- A tracker holds many maps; a map holds many tickets.
+- The scout reads one tracker and produces one snapshot.
+- An action launches a session; a ticket has at most one live session.
+- A session emits status events.
+
+### Flagged ambiguities
+
+- "task" is both a ticket type and everyday English: say "task ticket" for the type.
+- "Background session" in this project means the scout's child process, never `claude --bg`.
