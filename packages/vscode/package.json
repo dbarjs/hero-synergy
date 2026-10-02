@@ -10,7 +10,7 @@
     "url": "git+https://github.com/dbarjs/hero-synergy.git",
     "directory": "packages/vscode"
   },
-  "publisher": "hero-synergy",
+  "publisher": "dbarjs",
   "files": [
     "dist",
     "claude-plugin",
