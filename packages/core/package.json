@@ -24,6 +24,12 @@
   "scripts": {
     "build": "vp pack"
   },
+  "dependencies": {
+    "effect": "4.0.0"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0"
+  },
   "engines": {
     "node": ">=22.18"
   }
