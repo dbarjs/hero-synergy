@@ -173,7 +173,7 @@ export const agoText = (s: Session): string => (s.ago === 0 ? 'just now' : `${s.
 
 export const command = (t: Ticket): string => `/mattpocock-skills:wayfinder ${mapOf(t).url} ${t.url}`
 export const terminalCommand = (t: Ticket): string =>
-  `claude -n "${t.title}" -w ticket-${t.number} --plugin-dir <extension>/claude-plugin "${command(t)}"`
+  `claude -n "${named(t)}" -w ticket-${t.number} --plugin-dir <extension>/claude-plugin "${command(t)}"`
 
 /** Active maps, most urgent first: a session needs you, then something is takeable, then stuck. */
 export const orderedActive = computed(() => {
