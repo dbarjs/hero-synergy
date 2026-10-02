@@ -31,7 +31,7 @@ const MARK: Record<TicketState, string> = { decided: '✓', frontier: '●', cla
   <div class="c" :class="{ narrow }">
     <div class="list">
       <button class="map-row" :class="{ picked: picked === 'map' }" @click="picked = 'map'">
-        <strong>{{ map.title }}</strong>
+        <strong><span class="num">#{{ map.number }}</span> {{ map.title }}</strong>
         <span>⚑ destination · {{ decided.length }} decisions · out of scope</span>
       </button>
       <div class="chips">
@@ -44,7 +44,7 @@ const MARK: Record<TicketState, string> = { decided: '✓', frontier: '●', cla
         <button class="row" :class="[stateOf(t), { picked: picked === `t${t.number}` }]" @click="picked = `t${t.number}`">
           <span class="mark" :title="stateOf(t)">{{ MARK[stateOf(t)] }}</span>
           <span class="glyph" :title="typeOf(t).name">{{ typeOf(t).glyph }}</span>
-          <span class="title">{{ t.title }}</span>
+          <span class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</span>
           <span v-if="t === next" class="next">next</span>
           <span
             v-if="sessions.has(t.number)"

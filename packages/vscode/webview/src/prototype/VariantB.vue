@@ -21,6 +21,7 @@ import {
   typeOf,
   unblocks,
   waveOf,
+  named,
 } from './data.ts'
 import type { Dir, LEdge, LNode } from './layout.ts'
 import { dagreLayout, edgePath, layered, longestPath } from './layout.ts'
@@ -116,7 +117,7 @@ const style = (id: string): Record<string, string> => {
 <template>
   <div class="b">
     <div class="toolbar">
-      <strong>{{ map.title }}</strong>
+      <strong><span class="num">#{{ map.number }}</span> {{ map.title }}</strong>
       <span class="spacer" />
       <label>
         layout
@@ -174,7 +175,7 @@ const style = (id: string): Record<string, string> => {
         >
           <div class="title">
             <span class="glyph" :title="typeOf(t).name">{{ stateOf(t) === 'decided' ? '✓' : typeOf(t).glyph }}</span>
-            <span class="text">{{ t.title }}</span>
+            <span class="text"><span class="num">#{{ t.number }}</span> {{ t.title }}</span>
           </div>
           <div class="foot">
             <span v-if="sessions.has(t.number)" class="status" :class="statusClass(sessions.get(t.number)!.status)">
@@ -201,13 +202,13 @@ const style = (id: string): Record<string, string> => {
         <div class="title"><span class="glyph">≋</span><span class="text">{{ f.title }}</span></div>
       </div>
       <div class="node dest" :style="style('dest')" :title="map.destination">
-        <div class="title"><span class="glyph">⚑</span><span class="text">Destination: v0.1.0 fully decided</span></div>
+        <div class="title"><span class="glyph">⚑</span><span class="text">Destination</span></div>
       </div>
     </div>
 
     <div v-if="pickedTicket" class="detail">
       <div class="head">
-        <strong>{{ pickedTicket.title }}</strong>
+        <strong><span class="num">#{{ pickedTicket.number }}</span> {{ pickedTicket.title }}</strong>
         <span class="muted">{{ typeOf(pickedTicket).name }} · {{ typeOf(pickedTicket).mode }}</span>
         <button
           v-if="sessions.has(pickedTicket.number)"
@@ -220,11 +221,11 @@ const style = (id: string): Record<string, string> => {
       </div>
       <div>{{ pickedTicket.gist ?? pickedTicket.question }}</div>
       <div v-if="openBlockers(pickedTicket).length" class="muted">
-        ⊘ waits on {{ openBlockers(pickedTicket).map((b) => b.title).join(' · ') }}
+        ⊘ waits on {{ openBlockers(pickedTicket).map(named).join(' · ') }}
       </div>
       <div v-if="unblocks(pickedTicket).length || fogBehind(pickedTicket).length" class="muted">
         → clears the way for
-        {{ [...unblocks(pickedTicket).map((u) => u.title), ...fogBehind(pickedTicket).map((f) => `≋ ${f.title}`)].join(' · ') }}
+        {{ [...unblocks(pickedTicket).map(named), ...fogBehind(pickedTicket).map((f) => `≋ ${f.title}`)].join(' · ') }}
       </div>
       <div v-if="stateOf(pickedTicket) === 'frontier' && !sessions.has(pickedTicket.number)" class="act">
         <button class="btn" @click="launch(pickedTicket.number)">▶ Work ticket</button>
@@ -234,7 +235,7 @@ const style = (id: string): Record<string, string> => {
     <div v-else-if="pickedFog" class="detail">
       <div class="head"><strong>≋ {{ pickedFog.title }}</strong> <span class="muted">fog</span></div>
       <div>{{ pickedFog.text }}</div>
-      <div class="muted">⊘ waits on {{ pickedFog.waitsOn.map((n) => ticket(n).title).join(' · ') }}</div>
+      <div class="muted">⊘ waits on {{ pickedFog.waitsOn.map((n) => named(ticket(n))).join(' · ') }}</div>
     </div>
   </div>
 </template>

@@ -32,7 +32,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
 <template>
   <div class="a">
     <header>
-      <div class="map-title">{{ map.title }}</div>
+      <div class="map-title"><span class="num">#{{ map.number }}</span> {{ map.title }}</div>
       <div
         class="destination"
         :class="{ clamp: !open.destination }"
@@ -56,7 +56,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
       <div v-for="t in needsYou" :key="t.number" class="row">
         <span class="glyph" :title="typeOf(t).name">{{ typeOf(t).glyph }}</span>
         <div class="main">
-          <div class="title">{{ t.title }}</div>
+          <div class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
           <div class="sub">
             <button
               class="status"
@@ -85,7 +85,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
         <span class="glyph" :title="typeOf(t).name">{{ typeOf(t).glyph }}</span>
         <div class="main" @click="toggle(t.number)">
           <div class="title">
-            {{ t.title }}
+            <span class="num">#{{ t.number }}</span> {{ t.title }}
             <span v-if="t === next" class="next">next</span>
           </div>
           <template v-if="sessions.has(t.number)">
@@ -124,7 +124,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
       <div v-for="t in claimed" :key="t.number" class="row">
         <span class="glyph" :title="typeOf(t).name">{{ typeOf(t).glyph }}</span>
         <div class="main">
-          <div class="title">{{ t.title }}</div>
+          <div class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
           <div class="sub">
             <button
               v-if="sessions.has(t.number)"
@@ -149,9 +149,9 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
       <div v-for="t in blocked" :key="t.number" class="row dim">
         <span class="glyph" :title="typeOf(t).name">{{ typeOf(t).glyph }}</span>
         <div class="main">
-          <div class="title">{{ t.title }}</div>
+          <div class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
           <div v-for="b in openBlockers(t)" :key="b.number" class="sub waits">
-            ⊘ waits on <em>{{ b.title }}</em>
+            ⊘ waits on <em><span class="num">#{{ b.number }}</span> {{ b.title }}</em>
           </div>
         </div>
       </div>
@@ -172,7 +172,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
               :key="n"
               class="sub waits"
             >
-              ⊘ waits on <em>{{ ticket(n).title }}</em>
+              ⊘ waits on <em><span class="num">#{{ ticket(n).number }}</span> {{ ticket(n).title }}</em>
             </div>
           </div>
         </div>
@@ -188,7 +188,7 @@ const toggle = (n: number): void => void (expanded.has(n) ? expanded.delete(n) :
         <div v-for="t in decided" :key="t.number" class="row">
           <span class="glyph done">✓</span>
           <div class="main">
-            <div class="title">{{ t.title }}</div>
+            <div class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
             <div class="sub">{{ t.gist }}</div>
           </div>
         </div>

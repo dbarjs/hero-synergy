@@ -149,3 +149,9 @@ code {
   text-transform: uppercase;
   flex: none;
 }
+.num {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  color: var(--fg-muted);
+  white-space: nowrap;
+}

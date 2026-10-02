@@ -36,7 +36,7 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
       <span :class="`s-${stateOf(t)}`">{{ stateOf(t) }}</span>
       <template v-if="t.assignee && isOpen(t)"> · claimed by {{ t.assignee }}</template>
     </div>
-    <h1>{{ t.title }}</h1>
+    <h1><span class="num">#{{ t.number }}</span> {{ t.title }}</h1>
 
     <div class="hood">
       <div class="col">
@@ -48,19 +48,19 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
           :class="{ done: !isOpen(b), blocking: isOpen(b) }"
           @click="emit('pick', `t${b.number}`)"
         >
-          {{ isOpen(b) ? '⊘' : '✓' }} {{ b.title }}
+          {{ isOpen(b) ? '⊘' : '✓' }} <span class="num">#{{ b.number }}</span> {{ b.title }}
         </button>
         <div v-if="!t.blockedBy.length" class="none">nothing</div>
       </div>
       <div class="arrow">→</div>
       <div class="col">
-        <div class="chip self">{{ t.title }}</div>
+        <div class="chip self"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
       </div>
       <div class="arrow">→</div>
       <div class="col">
         <div class="col-head">Clears the way for</div>
         <button v-for="u in unblocks(t)" :key="u.number" class="chip" @click="emit('pick', `t${u.number}`)">
-          {{ typeOf(u).glyph }} {{ u.title }}
+          {{ typeOf(u).glyph }} <span class="num">#{{ u.number }}</span> {{ u.title }}
         </button>
         <button
           v-for="f in fogBehind(t)"
@@ -117,18 +117,18 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
       :class="{ done: !isOpen(ticket(n)), blocking: isOpen(ticket(n)) }"
       @click="emit('pick', `t${n}`)"
     >
-      {{ isOpen(ticket(n)) ? '⊘' : '✓' }} {{ ticket(n).title }}
+      {{ isOpen(ticket(n)) ? '⊘' : '✓' }} <span class="num">#{{ ticket(n).number }}</span> {{ ticket(n).title }}
     </button>
   </div>
 
   <div v-else class="focus">
     <div class="kicker">map</div>
-    <h1>{{ map.title }}</h1>
+    <h1><span class="num">#{{ map.number }}</span> {{ map.title }}</h1>
     <h2>⚑ Destination</h2>
     <p class="pre">{{ map.destination }}</p>
     <h2>Decisions so far ({{ decided.length }})</h2>
     <button v-for="d in decided" :key="d.number" class="decision" @click="emit('pick', `t${d.number}`)">
-      <strong>✓ {{ d.title }}</strong>
+      <strong>✓ <span class="num">#{{ d.number }}</span> {{ d.title }}</strong>
       <span>{{ d.gist }}</span>
     </button>
     <h2>Out of scope</h2>

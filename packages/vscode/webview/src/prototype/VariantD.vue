@@ -22,6 +22,7 @@ import {
   ticket,
   typeOf,
   waveOf,
+  named,
 } from './data.ts'
 import type { Fog, Ticket } from './data.ts'
 
@@ -68,7 +69,7 @@ function lit(s: Stop): boolean {
 
 <template>
   <div class="d">
-    <div class="map-title">{{ map.title }}</div>
+    <div class="map-title"><span class="num">#{{ map.number }}</span> {{ map.title }}</div>
 
     <div class="stage">
       <div class="stage-name fold" @click="walkedOpen = !walkedOpen">
@@ -76,7 +77,7 @@ function lit(s: Stop): boolean {
       </div>
       <div v-if="!walkedOpen" class="stop compact">
         <span class="pin done">✓</span>
-        <div class="trail-dots" :title="decided.map((t) => t.title).join('\n')">
+        <div class="trail-dots" :title="decided.map(named).join('\n')">
           <span v-for="t in decided" :key="t.number" :title="t.title">✓</span>
         </div>
       </div>
@@ -84,7 +85,7 @@ function lit(s: Stop): boolean {
         <div v-for="t in decided" :key="t.number" class="stop walked">
           <span class="pin done">✓</span>
           <div class="body">
-            <div class="title">{{ t.title }}</div>
+            <div class="title"><span class="num">#{{ t.number }}</span> {{ t.title }}</div>
             <div class="sub">{{ t.gist }}</div>
           </div>
         </div>
@@ -113,7 +114,7 @@ function lit(s: Stop): boolean {
           <div class="body">
             <div class="title">
               <span class="glyph" :title="typeOf(s.ticket).name">{{ typeOf(s.ticket).glyph }}</span>
-              {{ s.ticket.title }}
+              <span class="num">#{{ s.ticket.number }}</span> {{ s.ticket.title }}
               <span v-if="s.ticket === next" class="next">next</span>
             </div>
             <div v-if="sessions.has(s.ticket.number)" class="sub">
@@ -129,7 +130,7 @@ function lit(s: Stop): boolean {
               <template v-else> · not claimed on the tracker yet</template>
             </div>
             <div v-else-if="s.ticket.assignee" class="sub">claimed by {{ s.ticket.assignee }} · no live session</div>
-            <div v-for="b in s.waitsOn" :key="b.number" class="sub waits">↳ after <em>{{ b.title }}</em></div>
+            <div v-for="b in s.waitsOn" :key="b.number" class="sub waits">↳ after <em><span class="num">#{{ b.number }}</span> {{ b.title }}</em></div>
             <code v-if="s.ticket === next && !sessions.has(s.ticket.number)" class="cmd">{{ command(s.ticket) }}</code>
           </div>
           <button
@@ -146,7 +147,7 @@ function lit(s: Stop): boolean {
           <div class="body">
             <div class="title"><span class="glyph">≋</span> {{ s.fog!.title }}</div>
             <div class="sub clamp">{{ s.fog!.text }}</div>
-            <div v-for="b in s.waitsOn" :key="b.number" class="sub waits">↳ after <em>{{ b.title }}</em></div>
+            <div v-for="b in s.waitsOn" :key="b.number" class="sub waits">↳ after <em><span class="num">#{{ b.number }}</span> {{ b.title }}</em></div>
           </div>
         </template>
       </div>
