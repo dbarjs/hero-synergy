@@ -67,6 +67,10 @@ _Avoid_: agent, run, job
 One line the session plugin's hooks append when a session starts, works, waits, needs approval, fails or ends.
 _Avoid_: log line, heartbeat
 
+**Worktree**:
+The git worktree a ticket session runs in, created by `claude -w` at `.claude/worktrees/<slug>` on branch `worktree-<slug>`. Sessions on a local tracker have none.
+_Avoid_: sandbox, checkout
+
 **Action**:
 A user-invoked skill the Cockpit offers in a given context, shown with the exact command it will run.
 _Avoid_: command, button
@@ -78,6 +82,7 @@ _Avoid_: command, button
 - An action launches a session; a ticket has at most one live session.
 - A session emits status events.
 - The Cockpit has one tree and at most one detail; both show the same selection.
+- A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 
 ### Flagged ambiguities
 
