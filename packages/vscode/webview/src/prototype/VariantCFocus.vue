@@ -3,16 +3,19 @@
 // three-column graph that needs no layout engine.
 import { computed } from 'vue'
 
+import type { MapData } from './data.ts'
+
 import {
   agoText,
   command,
   cycleStatus,
-  decided,
   fogBehind,
   isOpen,
   launch,
   map,
+  mapOf,
   sessions,
+  summarize,
   stateOf,
   statusClass,
   terminalCommand,
@@ -20,12 +23,23 @@ import {
   typeOf,
   unblocks,
 } from './data.ts'
+import { allMaps } from './maps.ts'
 
 const props = defineProps<{ id: string }>()
 const emit = defineEmits<{ pick: [id: string] }>()
 
 const t = computed(() => (props.id.startsWith('t') ? ticket(Number(props.id.slice(1))) : null))
-const fog = computed(() => (props.id.startsWith('f') ? map.fog[Number(props.id.slice(1))] : null))
+// Ids: `t<ticket>`, `m<map>` (or `map` for the open one), `f<map>:<index>` (or `f<index>`).
+const byNumber = (n: string): MapData => allMaps.find((m) => m.number === Number(n))!
+const fog = computed(() => {
+  if (!props.id.startsWith('f')) return null
+  const [a, b] = props.id.slice(1).split(':')
+  return b === undefined ? map.fog[Number(a)] : byNumber(a!).fog[Number(b)]
+})
+const shownMap = computed(() =>
+  props.id === 'map' ? map : props.id.startsWith('m') ? byNumber(props.id.slice(1)) : null,
+)
+const summary = computed(() => (shownMap.value ? summarize(shownMap.value) : null))
 const session = computed(() => (t.value ? sessions.get(t.value.number) : undefined))
 </script>
 
@@ -66,7 +80,7 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
           v-for="f in fogBehind(t)"
           :key="f.title"
           class="chip fog"
-          @click="emit('pick', `f${map.fog.indexOf(f)}`)"
+          @click="emit('pick', `f${mapOf(t).number}:${mapOf(t).fog.indexOf(f)}`)"
         >
           ≋ {{ f.title }}
         </button>
@@ -121,18 +135,19 @@ const session = computed(() => (t.value ? sessions.get(t.value.number) : undefin
     </button>
   </div>
 
-  <div v-else class="focus">
-    <div class="kicker">map</div>
-    <h1><span class="num">#{{ map.number }}</span> {{ map.title }}</h1>
+  <div v-else-if="shownMap && summary" class="focus">
+    <div class="kicker">map · {{ summary.frontier.length }} takeable · {{ summary.claimed.length }} claimed · {{ summary.blocked.length }} blocked · {{ shownMap.fog.length }} fog</div>
+    <h1><span class="num">#{{ shownMap.number }}</span> {{ shownMap.title }}</h1>
     <h2>⚑ Destination</h2>
-    <p class="pre">{{ map.destination }}</p>
-    <h2>Decisions so far ({{ decided.length }})</h2>
-    <button v-for="d in decided" :key="d.number" class="decision" @click="emit('pick', `t${d.number}`)">
+    <p class="pre">{{ shownMap.destination }}</p>
+    <h2>Decisions so far ({{ summary.decided.length }})</h2>
+    <button v-for="d in summary.decided" :key="d.number" class="decision" @click="emit('pick', `t${d.number}`)">
       <strong>✓ <span class="num">#{{ d.number }}</span> {{ d.title }}</strong>
       <span>{{ d.gist }}</span>
     </button>
     <h2>Out of scope</h2>
-    <p v-for="line in map.outOfScope" :key="line" class="muted">{{ line }}</p>
+    <p v-for="line in shownMap.outOfScope" :key="line" class="muted">{{ line }}</p>
+    <p v-if="!shownMap.outOfScope.length" class="muted">nothing ruled out</p>
   </div>
 </template>
 

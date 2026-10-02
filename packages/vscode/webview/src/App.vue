@@ -13,6 +13,7 @@ import { allMaps, realMap } from './prototype/maps.ts'
 import MapsFrontier from './prototype/MapsFrontier.vue'
 import MapsList from './prototype/MapsList.vue'
 import MapsTree from './prototype/MapsTree.vue'
+import MapsTreeFocus from './prototype/MapsTreeFocus.vue'
 import PrototypeSwitcher from './prototype/PrototypeSwitcher.vue'
 import VariantA from './prototype/VariantA.vue'
 import VariantB from './prototype/VariantB.vue'
@@ -23,6 +24,7 @@ const variants = [
   { key: 'M1', name: 'Maps, then drill in', component: MapsList, width: 'sidebar', scene: 'maps' },
   { key: 'M2', name: 'One tree', component: MapsTree, width: 'sidebar', scene: 'maps' },
   { key: 'M3', name: 'Frontier across maps', component: MapsFrontier, width: 'sidebar', scene: 'maps' },
+  { key: 'M4', name: 'Tree + focus (M2 + C)', component: MapsTreeFocus, width: 'panel', scene: 'maps' },
   { key: 'A', name: 'Frontier list', component: VariantA, width: 'sidebar', scene: 'map' },
   { key: 'B', name: 'Graph', component: VariantB, width: 'panel', scene: 'map' },
   { key: 'C', name: 'List + focus', component: VariantC, width: 'panel', scene: 'map' },
@@ -31,7 +33,7 @@ const variants = [
 const byKey = (key: string | null) => variants.find((v) => v.key === key)
 
 const params = ref(new URLSearchParams(location.search))
-const current = computed(() => byKey(params.value.get('variant')) ?? variants[0]!)
+const current = computed(() => byKey(params.value.get('variant')) ?? byKey('M4')!)
 /** The map opened from a many-maps variant, if any. */
 const opened = computed(() =>
   current.value.scene === 'maps'
