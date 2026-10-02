@@ -1,2 +1,7 @@
 node_modules
 .scratch
+dist
+*.vsix
+*.tsbuildinfo
+.claude/worktrees/
+.vitest

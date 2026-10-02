@@ -1,0 +1,45 @@
+{
+  "name": "hero-synergy",
+  "displayName": "Hero Synergy",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Unofficial cockpit for mattpocock/skills: wayfinder maps, frontier tickets and named Claude Code sessions in VS Code terminals.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dbarjs/hero-synergy.git",
+    "directory": "packages/vscode"
+  },
+  "publisher": "hero-synergy",
+  "files": [
+    "dist",
+    "claude-plugin",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "main": "./dist/extension.cjs",
+  "scripts": {
+    "build": "vp pack && vp build",
+    "typecheck": "vue-tsc --noEmit -p webview",
+    "package": "vsce package --no-dependencies --allow-unused-files-pattern",
+    "publish:marketplace": "vsce publish --packagePath *.vsix --azure-credential --skip-duplicate",
+    "publish:open-vsx": "ovsx publish --packagePath *.vsix --trusted-publishing --skip-duplicate"
+  },
+  "devDependencies": {
+    "@hero-synergy/core": "workspace:*",
+    "@types/vscode": "~1.100.0",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "@vscode/vsce": "^4.0.0",
+    "ovsx": "^1.2.0",
+    "typescript": "^6.0.3",
+    "vue": "^3.5.0",
+    "vue-tsc": "^3.3.0"
+  },
+  "activationEvents": [],
+  "extensionKind": [
+    "workspace"
+  ],
+  "engines": {
+    "vscode": "^1.100.0"
+  }
+}

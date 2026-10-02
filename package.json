@@ -1,0 +1,18 @@
+{
+  "name": "hero-synergy-workspace",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vp run -r build",
+    "changeset": "changeset",
+    "release:status": "changeset status --verbose"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^1.0.1",
+    "@changesets/cli": "^3.0.3",
+    "@types/node": "^22.20.4",
+    "typescript": "^7.0.2",
+    "vite-plus": "catalog:"
+  },
+  "packageManager": "pnpm@12.8.1"
+}
