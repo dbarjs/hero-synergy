@@ -60,8 +60,8 @@ Any way a map or ticket differs from the current wayfinder conventions: legacy l
 _Avoid_: corruption, invalid map
 
 **Session**:
-One Claude Code CLI process in a VS Code terminal, launched by the Cockpit for one ticket or action and named after it.
-_Avoid_: agent, run, job
+One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
+_Avoid_: agent, run, job, conversation
 
 **Status event**:
 One line the session plugin's hooks append when a session starts, works, waits, needs approval, fails or ends.
@@ -81,6 +81,7 @@ _Avoid_: command, button
 - The scout reads one tracker and produces one snapshot.
 - An action launches a session; a ticket has at most one live session.
 - A session emits status events.
+- A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 
