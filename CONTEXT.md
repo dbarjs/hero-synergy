@@ -33,7 +33,7 @@ The open, unblocked, unclaimed tickets of a map. The first one in map order is n
 _Avoid_: backlog, ready list
 
 **Claim**:
-The assignment of a ticket to the developer driving the map, made by the session before any work.
+A ticket marked as taken, made by the session before any work: an assignee on GitHub, a `Status: claimed` line on a local tracker.
 _Avoid_: lock, reservation
 
 **Fog**:
