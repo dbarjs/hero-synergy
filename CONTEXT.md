@@ -5,8 +5,20 @@ An unofficial VS Code cockpit for Matt Pocock's agent skills. It reads the wayfi
 ## Language
 
 **Cockpit**:
-The hero-synergy VS Code view that shows a repo's maps, live sessions and available actions.
+The whole hero-synergy UI in VS Code: the tree and the detail together, showing a repo's maps, live sessions and available actions.
 _Avoid_: dashboard, control panel
+
+**Tree**:
+The Cockpit's side view: every open map unfolding into its tickets, with a focus pane under the selected row.
+_Avoid_: sidebar, panel (VS Code lets the user host it in either)
+
+**Detail**:
+The Cockpit's editor tab, showing one map or one ticket in full and following the tree's selection.
+_Avoid_: preview, page
+
+**Focus pane**:
+The compact block under the selected tree row: state, claim, session status and the actions for that row.
+_Avoid_: popover, inspector
 
 **Map**:
 A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.md` on a local tracker) that indexes one effort's decisions.
@@ -65,6 +77,7 @@ _Avoid_: command, button
 - The scout reads one tracker and produces one snapshot.
 - An action launches a session; a ticket has at most one live session.
 - A session emits status events.
+- The Cockpit has one tree and at most one detail; both show the same selection.
 
 ### Flagged ambiguities
 
