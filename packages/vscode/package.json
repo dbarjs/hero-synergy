@@ -21,25 +21,32 @@
   "scripts": {
     "build": "vp pack && vp build",
     "typecheck": "vue-tsc --noEmit -p webview",
+    "test:integration": "vp pack && vscode-test",
     "package": "vsce package --no-dependencies --allow-unused-files-pattern",
     "publish:marketplace": "vsce publish --packagePath *.vsix --azure-credential --skip-duplicate",
     "publish:open-vsx": "ovsx publish --packagePath *.vsix --trusted-publishing --skip-duplicate"
   },
   "devDependencies": {
     "@hero-synergy/core": "workspace:*",
-    "@types/vscode": "~1.100.0",
+    "@types/mocha": "10.0.10",
+    "@types/vscode": "~1.105.0",
     "@vitejs/plugin-vue": "^6.0.9",
+    "@vscode/test-cli": "0.0.15",
+    "@vscode/test-electron": "3.1.0",
     "@vscode/vsce": "^4.0.0",
     "ovsx": "^1.2.0",
+    "playwright": "1.63.0",
     "typescript": "^6.0.3",
     "vue": "^3.5.0",
     "vue-tsc": "^3.3.0"
   },
-  "activationEvents": [],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "extensionKind": [
     "workspace"
   ],
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.105.0"
   }
 }
