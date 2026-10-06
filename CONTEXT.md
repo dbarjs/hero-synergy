@@ -59,6 +59,10 @@ _Avoid_: state dump, view model
 Any way a map or ticket differs from the current wayfinder conventions: legacy labels, text fallbacks, free-form markdown. Reported as a coded warning on the snapshot, the map or the ticket, never corrected.
 _Avoid_: corruption, invalid map
 
+**Warning**:
+One coded point of drift on the repo, a map or a ticket. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when an old form was read correctly.
+_Avoid_: error, lint
+
 **Session**:
 One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
