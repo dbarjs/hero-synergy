@@ -72,14 +72,16 @@ The git worktree a ticket session runs in, created by `claude -w` at `.claude/wo
 _Avoid_: sandbox, checkout
 
 **Action**:
-A user-invoked skill the Cockpit offers in a given context, shown with the exact command it will run.
-_Avoid_: command, button
+Anything the Cockpit offers that spawns a process in a terminal, always shown with the exact command it will run. A user-invoked skill is the common case; Resume and an install command are Actions too. Opening an issue or focusing a terminal is a button, not an Action.
+_Avoid_: command, launcher
 
 ### Relationships
 
 - A tracker holds many maps; a map holds many tickets.
 - The scout reads one tracker and produces one snapshot.
+- An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a ticket has at most one live session.
+- An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
 - A session emits status events.
 - A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
 - The Cockpit has one tree and at most one detail; both show the same selection.
