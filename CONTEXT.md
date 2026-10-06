@@ -67,8 +67,12 @@ _Avoid_: error, lint
 One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
 
+**Registry**:
+Claude Code's own list of live sessions on the machine, read with `claude agents --json`: whether a session is alive and whether it is busy, idle or waiting, whoever started it.
+_Avoid_: process list, session store
+
 **Status event**:
-One line the session plugin's hooks append when a session starts, works, waits, needs approval, fails or ends.
+One line the session plugin's hooks append when a session starts, fails or ends: what the registry cannot say.
 _Avoid_: log line, heartbeat
 
 **Worktree**:
@@ -88,6 +92,8 @@ _Avoid_: command, launcher
 - An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
 - A session emits status events.
 - A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
+- A live session's status comes from the registry; status events add failed, the ended reason and the session id.
+- The tracker alone says claimed, open or closed and blocked; the session side alone says alive and what status. Neither overrides the other.
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 
