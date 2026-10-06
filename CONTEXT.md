@@ -48,7 +48,7 @@ Where a repo's issues live, as recorded by `/setup-matt-pocock-skills` in `docs/
 _Avoid_: backend, issue host
 
 **Scout**:
-The background pipeline that turns a tracker's contents into a snapshot: collect with code, interpret with a fast model, reconcile with code.
+The code that turns a tracker's open maps and their tickets into a snapshot, reporting anything it cannot read as drift. It runs only when something causes a refresh, never on a timer.
 _Avoid_: crawler, analyzer, sync
 
 **Snapshot**:
