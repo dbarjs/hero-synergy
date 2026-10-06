@@ -52,11 +52,11 @@ The background pipeline that turns a tracker's contents into a snapshot: collect
 _Avoid_: crawler, analyzer, sync
 
 **Snapshot**:
-The typed, normalized state of every map in a repo at one moment.
-_Avoid_: state dump
+The typed state of every open map in a repo at one moment: the facts the tracker reports, what code reads from map and ticket bodies, and drift warnings. It knows nothing about sessions.
+_Avoid_: state dump, view model
 
 **Drift**:
-Any way a map or ticket differs from the current wayfinder conventions: legacy labels, text fallbacks, free-form markdown.
+Any way a map or ticket differs from the current wayfinder conventions: legacy labels, text fallbacks, free-form markdown. Reported as a coded warning on the snapshot, the map or the ticket, never corrected.
 _Avoid_: corruption, invalid map
 
 **Session**:
