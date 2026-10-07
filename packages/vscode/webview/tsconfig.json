@@ -2,7 +2,8 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "lib": ["es2023", "dom", "dom.iterable"],
-    "types": []
+    // The component tests read the fixture workspace from disk. The app itself must not.
+    "types": ["node"]
   },
-  "include": ["src"]
+  "include": ["src", "../src/protocol.ts", "../test/fixtures/workspace-files.ts"]
 }

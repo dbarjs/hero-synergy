@@ -1,0 +1,85 @@
+import * as vscode from 'vscode'
+
+import type { HostMessage, ViewModel } from '../protocol.ts'
+import { makeNonce, webviewHtml } from '../webview-html.ts'
+
+/** The id the manifest contributes the Tree under. */
+export const TREE_VIEW_ID = 'heroSynergy.tree'
+export const REFRESH_COMMAND = 'heroSynergy.refresh'
+
+export interface TreeViewHandlers {
+  /** The view was shown: on resolve, and each time it becomes visible again. */
+  readonly onShown: () => void
+  /** A message from the webview, unvalidated. */
+  readonly onMessage: (message: unknown) => void
+}
+
+export interface TreeView {
+  /** Sends a view model to the webview, if it exists. */
+  readonly post: (viewModel: ViewModel) => void
+  /** Whether VS Code has asked for the view yet. */
+  readonly resolved: () => boolean
+}
+
+/**
+ * Registers the Tree: a webview view that VS Code resolves the first time the
+ * user shows it. Until then nothing is rendered and no handler runs. The page
+ * keeps its context while hidden, so the Tree comes back as it was left.
+ */
+export function registerTreeView(
+  context: vscode.ExtensionContext,
+  handlers: TreeViewHandlers,
+): TreeView {
+  let current: vscode.WebviewView | null = null
+  const bundle = vscode.Uri.joinPath(context.extensionUri, 'dist', 'webview')
+
+  const provider: vscode.WebviewViewProvider = {
+    resolveWebviewView(view) {
+      current = view
+      view.webview.options = { enableScripts: true, localResourceRoots: [bundle] }
+      view.webview.html = webviewHtml({
+        cspSource: view.webview.cspSource,
+        scriptUri: view.webview.asWebviewUri(vscode.Uri.joinPath(bundle, 'main.js')).toString(),
+        styleUri: view.webview.asWebviewUri(vscode.Uri.joinPath(bundle, 'main.css')).toString(),
+        nonce: makeNonce(),
+      })
+      const disposables = [
+        view.webview.onDidReceiveMessage(handlers.onMessage),
+        view.onDidChangeVisibility(() => {
+          if (view.visible) handlers.onShown()
+        }),
+        view.onDidDispose(() => {
+          if (current === view) current = null
+          disposables.forEach((disposable) => disposable.dispose())
+        }),
+      ]
+      handlers.onShown()
+    },
+  }
+
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(TREE_VIEW_ID, provider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+  )
+
+  return {
+    post: (viewModel) => {
+      const message: HostMessage = { type: 'view-model', viewModel }
+      void current?.webview.postMessage(message)
+    },
+    resolved: () => current !== null,
+  }
+}
+
+/** `Hero Synergy: Refresh`, also the Tree's title-bar button. */
+export function registerRefreshCommand(context: vscode.ExtensionContext, run: () => void): void {
+  context.subscriptions.push(vscode.commands.registerCommand(REFRESH_COMMAND, run))
+}
+
+/** The output channel the Cockpit logs to. */
+export function createLog(context: vscode.ExtensionContext): (line: string) => void {
+  const channel = vscode.window.createOutputChannel('Hero Synergy')
+  context.subscriptions.push(channel)
+  return (line) => channel.appendLine(line)
+}

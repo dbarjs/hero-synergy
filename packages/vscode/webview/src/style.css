@@ -1,0 +1,14 @@
+/* A webview inherits the editor's --vscode-* theme variables; these set the page up to match the side bar. */
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--vscode-sideBar-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+}

@@ -3,5 +3,5 @@
   "compilerOptions": {
     "types": ["node", "vscode"]
   },
-  "include": ["src", "test/status-plugin", "vite.config.ts"]
+  "include": ["src", "test/fixtures", "test/status-plugin", "vite.config.ts"]
 }

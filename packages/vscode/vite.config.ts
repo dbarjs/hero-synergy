@@ -21,11 +21,22 @@ export default defineConfig({
       deps: { neverBundle: ['vscode', 'mocha'] },
     },
   ],
-  // Cockpit webview: a Vue app built into dist/webview.
+  // Cockpit webview: a Vue app built into dist/webview. The host writes the page itself and names
+  // the script and the style, so neither carries a hash.
   root: 'webview',
+  // Relative, so the stylesheet finds the codicon font next to it under the webview's own origin.
+  base: './',
   plugins: [vue()],
   build: {
     outDir: '../dist/webview',
     emptyOutDir: true,
+    cssCodeSplit: false,
+    rollupOptions: {
+      output: {
+        entryFileNames: 'main.js',
+        assetFileNames: (asset) =>
+          asset.names.some((name) => name.endsWith('.css')) ? 'main.css' : 'assets/[name][extname]',
+      },
+    },
   },
 })

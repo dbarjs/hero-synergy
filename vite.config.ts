@@ -1,3 +1,4 @@
+import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vite-plus'
 
 // The `e2e` project launches VS Code, so it joins the run only when a `--project` filter is given:
@@ -38,7 +39,17 @@ export default defineConfig({
             '**/.vscode-test/**',
             // The Playwright-driven tier lives in the `e2e` project.
             'packages/vscode/test/e2e/**',
+            // The Cockpit's Vue app runs under happy-dom in the `webview` project.
+            'packages/vscode/webview/**',
           ],
+        },
+      },
+      {
+        plugins: [vue()],
+        test: {
+          name: 'webview',
+          include: ['packages/vscode/webview/src/**/*.test.ts'],
+          environment: 'happy-dom',
         },
       },
       ...(projectFilterGiven
