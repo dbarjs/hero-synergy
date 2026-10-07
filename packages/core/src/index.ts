@@ -28,6 +28,15 @@ export {
   readClaudeVersion,
 } from './claude/version.ts'
 export {
+  collectGitHubMaps,
+  type GitHubCollect,
+  ghTimeout,
+  type RateLimit,
+} from './github/collect.ts'
+export { type GitHubRepo, mapsPerRequest } from './github/query.ts'
+export { collectGitHub, findGitHubRepo, parseRemote } from './github/remote.ts'
+export { GitHubCollectFailed, type GitHubFailureReason } from './github/response.ts'
+export {
   FileSystem,
   FileSystemError,
   type FileSystemErrorCode,

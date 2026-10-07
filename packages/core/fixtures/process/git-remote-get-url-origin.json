@@ -1,0 +1,7 @@
+{
+  "command": "git",
+  "args": ["remote", "get-url", "origin"],
+  "stdout": "https://github.com/dbarjs/hero-synergy.git\n",
+  "stderr": "",
+  "exitCode": 0
+}
