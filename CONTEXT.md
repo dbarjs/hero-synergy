@@ -99,6 +99,14 @@ _Avoid_: minimum version, requirement
 The newest version of an upstream the Cockpit's behaviour was actually run or measured on. Newer versions are expected to work and are not promised.
 _Avoid_: maximum version, latest supported
 
+**Canary**:
+The scheduled CI workflow that runs the Cockpit's parsers and test suites against the newest version of each upstream, while nobody is working on the repo. It watches the codebase, not any user's tracker or machine.
+_Avoid_: nightly, smoke test, upstream drift
+
+**Upstream break**:
+A contract the canary finds broken on a newer upstream: a schema that no longer decodes, a flag gone from the help, a suite that fails. Reported as one issue per upstream, never as a warning in the Cockpit.
+_Avoid_: drift (about the tracker), health (about the machine), regression
+
 ### Relationships
 
 - A tracker holds many maps; a map holds many tickets.
@@ -114,9 +122,11 @@ _Avoid_: maximum version, latest supported
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
+- The canary runs the Cockpit's own checks against the newest upstreams and files an upstream break on the tracker; the Cockpit at runtime reports health. The same contract can surface as either, in different places.
 
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
+- "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary; the same thing found on a user's machine is health.
