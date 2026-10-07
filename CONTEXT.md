@@ -60,7 +60,7 @@ Any way a map or ticket differs from the current wayfinder conventions: legacy l
 _Avoid_: corruption, invalid map
 
 **Warning**:
-One coded point of drift on the repo, a map or a ticket. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when an old form was read correctly.
+One coded point about the tracker or about the machine. _Drift_ is about the tracker: a map or ticket off the current conventions. _Health_ is about the machine: Claude Code, the skills, the registry. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when something old or odd was still read correctly.
 _Avoid_: error, lint
 
 **Session**:
@@ -94,6 +94,7 @@ _Avoid_: command, launcher
 - A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
 - A live session's status comes from the registry; status events add failed, the ended reason and the session id.
 - The tracker alone says claimed, open or closed and blocked; the session side alone says alive and what status. Neither overrides the other.
+- The scout reports drift; the extension host reports health; both are warnings, shown in the same places. A warning never gates: the Cockpit says, it never stops.
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 
