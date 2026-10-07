@@ -61,6 +61,7 @@ export {
 export { type GitHubRepo, mapsPerRequest } from './github/query.ts'
 export { collectGitHub, findGitHubRepo, parseRemote } from './github/remote.ts'
 export { GitHubCollectFailed, type GitHubFailureReason } from './github/response.ts'
+export { collectGitHubPromise } from './github/run.ts'
 export {
   FileSystem,
   FileSystemError,
