@@ -64,3 +64,10 @@ jobs:
         run: ${{ runner.os == 'Linux' && 'xvfb-run -a' || '' }} vp run --filter hero-synergy test:integration
       - name: End-to-end tier
         run: ${{ runner.os == 'Linux' && 'xvfb-run -a' || '' }} vp test --project e2e
+      # What the window showed when an e2e test failed: a screenshot and the workbench text.
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-failures-${{ matrix.name }}
+          path: packages/vscode/out-test/e2e-failures
+          if-no-files-found: ignore
