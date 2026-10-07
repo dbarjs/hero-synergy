@@ -1,0 +1,4 @@
+{"ticket":"46","hook":"SessionStart","session":"34f3b449-f054-4cb3-9327-79624817c13a","detail":"resume","at":1790972260329,"payload":{"session_id":"34f3b449-f054-4cb3-9327-79624817c13a","hook_event_name":"SessionStart","source":"resume"}}
+{"ticket":"46","hook":"UserPromptSubmit","session":"34f3b449-f054-4cb3-9327-79624817c13a","detail":null,"at":1790972267367,"payload":{"session_id":"34f3b449-f054-4cb3-9327-79624817c13a","hook_event_name":"UserPromptSubmit"}}
+{"ticket":"46","hook":"Stop","session":"34f3b449-f054-4cb3-9327-79624817c13a","detail":null,"at":1790972269028,"payload":{"session_id":"34f3b449-f054-4cb3-9327-79624817c13a","hook_event_name":"Stop"}}
+{"ticket":"46","hook":"SessionEnd","session":"34f3b449-f054-4cb3-9327-79624817c13a","detail":"other","at":1790972274161,"payload":{"session_id":"34f3b449-f054-4cb3-9327-79624817c13a","hook_event_name":"SessionEnd","reason":"other"}}

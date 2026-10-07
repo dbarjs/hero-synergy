@@ -1,0 +1,4 @@
+{"ticket":"46","hook":"SessionStart","session":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","detail":"startup","at":1790972363651,"payload":{"session_id":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","hook_event_name":"SessionStart","source":"startup"}}
+{"ticket":"46","hook":"UserPromptSubmit","session":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","detail":null,"at":1790972364491,"payload":{"session_id":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","hook_event_name":"UserPromptSubmit"}}
+{"ticket":"46","hook":"StopFailure","session":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","detail":"model_not_found","at":1790972365253,"payload":{"session_id":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","hook_event_name":"StopFailure","error":"model_not_found"}}
+{"ticket":"46","hook":"SessionEnd","session":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","detail":"other","at":1790972365255,"payload":{"session_id":"f67b80b3-b3bd-4089-b27f-eaaf0146bc30","hook_event_name":"SessionEnd","reason":"other"}}

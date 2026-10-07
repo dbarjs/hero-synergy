@@ -1,0 +1,4 @@
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#a-headless","hook":"SessionStart","detail":"startup","session":"7533eedb-60c6-475a-af31-6be493c96b5b","at":1790971746047}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#a-headless","hook":"UserPromptSubmit","detail":null,"session":"7533eedb-60c6-475a-af31-6be493c96b5b","at":1790971747723}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#a-headless","hook":"Stop","detail":null,"session":"7533eedb-60c6-475a-af31-6be493c96b5b","at":1790971749132}
+{"ticket":"https://github.com/dbarjs/hero-synergy/issues/6#a-headless","hook":"SessionEnd","detail":"other","session":"7533eedb-60c6-475a-af31-6be493c96b5b","at":1790971750183}

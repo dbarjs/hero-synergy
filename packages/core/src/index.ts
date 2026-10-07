@@ -1,3 +1,32 @@
+export type { Decoded } from './claude/decode.ts'
+export {
+  type PluginInstall,
+  type PluginManifest,
+  pluginNameOf,
+  readPluginList,
+  readPluginManifest,
+} from './claude/plugins.ts'
+export {
+  readRegistry,
+  type RegistryEntry,
+  type RegistryStatus,
+  type RegistryStatusWord,
+  registryStatusWord,
+} from './claude/registry.ts'
+export { readSkillFrontmatter, type SkillFrontmatter } from './claude/skill.ts'
+export {
+  type HookPayload,
+  readStatusEvent,
+  readStatusEvents,
+  type StatusEvent,
+} from './claude/status-event.ts'
+export {
+  type ClaudeVersion,
+  claudeVersionFloor,
+  compareClaudeVersions,
+  isBelowClaudeFloor,
+  readClaudeVersion,
+} from './claude/version.ts'
 export {
   FileSystem,
   FileSystemError,
