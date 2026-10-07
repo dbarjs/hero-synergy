@@ -1,0 +1,4 @@
+{
+  "name": "hero-synergy-status",
+  "description": "Reports Claude Code session status to the hero-synergy Cockpit."
+}
