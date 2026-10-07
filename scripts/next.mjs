@@ -7,6 +7,10 @@
 //   node scripts/next.mjs <number>    launch that ticket
 //
 // Plain Node, no dependencies, not part of any workspace package. Needs `gh` (logged in) and `claude`.
+//
+// The launch goes through an interactive zsh and the `cc` alias, not straight from node: Claude
+// Code writes the session name into the terminal title only when it runs as the shell's foreground
+// job. Spawned from node, VS Code's tab keeps saying `node` and `/rename` changes nothing.
 
 import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
@@ -20,6 +24,10 @@ const SPEC = 37
 // against the wrong list. Swap the line to use the implement form instead of the wayfinder form.
 const SKILL_LINE = ({ spec, ticket }) => `/mattpocock-skills:wayfinder ${spec} ${ticket}`
 // const SKILL_LINE = ({ ticket }) => `/mattpocock-skills:implement ${ticket}`
+
+// The word the launch is typed with, resolved by the interactive shell (alias or function).
+const LAUNCHER = 'cc'
+const SHELL = 'zsh'
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const issueUrl = (number) => `https://github.com/${OWNER}/${REPO}/issues/${number}`
@@ -162,10 +170,13 @@ function launch(ticket) {
   const name = `#${ticket.number} ${ticket.title}`
   const skill = SKILL_LINE({ spec: issueUrl(SPEC), ticket: issueUrl(ticket.number) })
   const args = ['-n', name, '-w', String(ticket.number), skill]
-  console.log(['claude', ...args].map(shellQuote).join(' '))
+  console.log([LAUNCHER, ...args].map(shellQuote).join(' '))
   console.log()
-  const result = spawnSync('claude', args, { cwd: REPO_ROOT, stdio: 'inherit' })
-  if (result.error) throw new Error(`claude: ${result.error.message}`)
+  // `zsh -ic '<launcher> "$@"' <argv0> <args…>`: interactive so the alias expands, args passed
+  // positionally so the title and the skill line never go through a second layer of quoting.
+  const shellArgs = ['-ic', `${LAUNCHER} "$@"`, LAUNCHER, ...args]
+  const result = spawnSync(SHELL, shellArgs, { cwd: REPO_ROOT, stdio: 'inherit' })
+  if (result.error) throw new Error(`${SHELL}: ${result.error.message}`)
   process.exit(result.status ?? 1)
 }
 
