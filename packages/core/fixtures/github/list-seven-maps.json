@@ -1,0 +1,19 @@
+{
+  "command": "gh",
+  "args": [
+    "api",
+    "graphql",
+    "-i",
+    "-f",
+    "query=query WayfinderMapList($owner: String!, $repo: String!, $labels: [String!]!, $after: String) {\n  repository(owner: $owner, name: $repo) {\n    labels(query: \"wayfinder:\", first: 100) {\n      nodes { name }\n    }\n    issues(labels: $labels, states: [OPEN], first: 100, after: $after, orderBy: { field: CREATED_AT, direction: ASC }) {\n      pageInfo { hasNextPage endCursor }\n      nodes { number }\n    }\n  }\n  rateLimit { remaining resetAt }\n}\n",
+    "-f",
+    "owner=dbarjs",
+    "-f",
+    "repo=hero-synergy",
+    "-f",
+    "labels[]=wayfinder:map"
+  ],
+  "stdout": "HTTP/2.0 200 OK\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Expose-Headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning\r\nContent-Security-Policy: default-src 'none'\r\nContent-Type: application/json; charset=utf-8\r\nDate: Wed, 07 Oct 2026 18:19:54 GMT\r\nReferrer-Policy: origin-when-cross-origin, strict-origin-when-cross-origin\r\nServer: github.com\r\nStrict-Transport-Security: max-age=31536000; includeSubdomains; preload\r\nVary: Accept-Encoding, Accept, X-Requested-With\r\nX-Accepted-Oauth-Scopes: repo\r\nX-Content-Type-Options: nosniff\r\nX-Frame-Options: deny\r\nX-Github-Edge-Region: brazilsouth\r\nX-Github-Media-Type: github.v4; format=json\r\nX-Github-Request-Id: 98E3:3567F9:13E902:15AC10:6AC68D49\r\nX-Oauth-Client-Id: 178c6fc778ccc68e1d6a\r\nX-Oauth-Scopes: gist, read:org, repo\r\nX-Ratelimit-Limit: 5000\r\nX-Ratelimit-Remaining: 4836\r\nX-Ratelimit-Reset: 1791398868\r\nX-Ratelimit-Resource: graphql\r\nX-Ratelimit-Used: 164\r\nX-Xss-Protection: 0\r\n\r\n{\"data\":{\"repository\":{\"labels\":{\"nodes\":[{\"name\":\"wayfinder:task\"},{\"name\":\"wayfinder:grilling\"},{\"name\":\"wayfinder:prototype\"},{\"name\":\"wayfinder:research\"},{\"name\":\"wayfinder:map\"}]},\"issues\":{\"pageInfo\":{\"hasNextPage\":false,\"endCursor\":\"Y3Vyc29yOnYyOpK0MjAyNi0xMC0wN1QxNToyNjo1OVrPAAAAAVaTjgA=\"},\"nodes\":[{\"number\":1},{\"number\":64},{\"number\":2},{\"number\":3},{\"number\":4},{\"number\":5},{\"number\":6}]}},\"rateLimit\":{\"remaining\":4836,\"resetAt\":\"2026-10-07T18:47:48Z\"}}}",
+  "stderr": "",
+  "exitCode": 0
+}
