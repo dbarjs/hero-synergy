@@ -2,8 +2,10 @@ import {
   FileSystem,
   type FileSystemError,
   findRepo,
+  type GitHubCollectFailed,
   type ProcessError,
   ProcessRunner,
+  readGitHubTracker,
   readLocalTracker,
   type ScoutError,
   type Snapshot,
@@ -11,7 +13,8 @@ import {
 import { Effect, Ref } from 'effect'
 
 import { decodeWebviewMessage } from './messages.ts'
-import type { ViewModel } from './protocol.ts'
+import { describeCollectFailure } from './notices.ts'
+import type { Notice, ViewModel } from './protocol.ts'
 import { Opener, Storage, WorkspaceFolders } from './services.ts'
 import { buildViewModel, defaultExpanded, selectionOf } from './view-model.ts'
 
@@ -46,9 +49,12 @@ export interface Cockpit {
 type Base =
   | { readonly kind: 'loading' }
   | { readonly kind: 'message'; readonly message: string; readonly detail: string | null }
-  | { readonly kind: 'snapshot'; readonly snapshot: Snapshot }
+  | { readonly kind: 'snapshot'; readonly snapshot: Snapshot; readonly notice: Notice | null }
 
-type LoadError = ScoutError | FileSystemError | ProcessError
+/** What one collect came to: a base to show, or a failure that keeps the old snapshot if there is one. */
+type Loaded = Base | { readonly kind: 'failed'; readonly notice: Notice }
+
+type LoadError = ScoutError | FileSystemError | ProcessError | GitHubCollectFailed
 
 /** The one plain message a collect that found no maps shows, per case. */
 const describeError = (error: LoadError): { message: string; detail: string | null } => {
@@ -82,24 +88,28 @@ const describeError = (error: LoadError): { message: string; detail: string | nu
     case 'ProcessSpawnFailed':
     case 'ProcessNotRecorded':
       return { message: 'git could not be run.', detail: error.message }
+    case 'GitHubCollectFailed': {
+      const { message, fix } = describeCollectFailure(error)
+      return { message, detail: fix }
+    }
   }
 }
 
 const load = Effect.gen(function* () {
   const folders = yield* (yield* WorkspaceFolders).paths
   const found = yield* findRepo(folders)
-  if (found.tracker.kind === 'github') {
-    return {
-      kind: 'message',
-      message: 'GitHub trackers are not shown yet.',
-      detail: 'Local Markdown trackers are.',
-    } satisfies Base
-  }
-  const snapshot = yield* readLocalTracker(found.repoRoot)
-  return { kind: 'snapshot', snapshot } satisfies Base
+  const snapshot =
+    found.tracker.kind === 'github'
+      ? yield* readGitHubTracker(found.repoRoot)
+      : yield* readLocalTracker(found.repoRoot)
+  return { kind: 'snapshot', snapshot, notice: null } satisfies Loaded
 }).pipe(
   Effect.catch((error: LoadError) =>
-    Effect.succeed({ kind: 'message', ...describeError(error) } satisfies Base),
+    Effect.succeed<Loaded>(
+      error._tag === 'GitHubCollectFailed'
+        ? { kind: 'failed', notice: describeCollectFailure(error) }
+        : { kind: 'message', ...describeError(error) },
+    ),
   ),
 )
 
@@ -136,7 +146,7 @@ export const makeCockpit = (
       const state = yield* Ref.get(base)
       if (state.kind !== 'snapshot') return state
       const open = (yield* Ref.get(expanded)) ?? defaultExpanded(state.snapshot)
-      return buildViewModel(state.snapshot, open, yield* Ref.get(selected))
+      return buildViewModel(state.snapshot, open, yield* Ref.get(selected), undefined, state.notice)
     })
 
     const publish = current.pipe(Effect.map(options.publish))
@@ -145,7 +155,18 @@ export const makeCockpit = (
       const mine = yield* Ref.updateAndGet(generation, (n) => n + 1)
       const loaded = yield* load.pipe(Effect.provideContext(context))
       if ((yield* Ref.get(generation)) !== mine) return
-      yield* Ref.set(base, loaded)
+      if (loaded.kind === 'failed') {
+        // A failure after a good collect keeps the maps on screen with the reason; without one it is the whole view.
+        const before = yield* Ref.get(base)
+        yield* Ref.set(
+          base,
+          before.kind === 'snapshot'
+            ? { ...before, notice: loaded.notice }
+            : { kind: 'message', message: loaded.notice.message, detail: loaded.notice.fix },
+        )
+      } else {
+        yield* Ref.set(base, loaded)
+      }
       yield* publish
     })
 

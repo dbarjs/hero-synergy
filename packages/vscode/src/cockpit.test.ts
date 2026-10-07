@@ -1,3 +1,7 @@
+import { readFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from '@effect/vitest'
 import {
   FileSystem,
@@ -51,7 +55,8 @@ const countingRunner = (recordings: ReadonlyArray<ProcessRecording>) => {
 interface Setup {
   readonly files?: Record<string, string>
   readonly folders?: ReadonlyArray<string>
-  readonly recordings?: ReadonlyArray<ProcessRecording>
+  /** Read at every run, so a test can change what the next collect gets. */
+  readonly recordings?: ProcessRecording[]
   readonly stored?: Record<string, unknown>
 }
 
@@ -360,4 +365,162 @@ describe('the Cockpit controller when there is nothing to show', () => {
         }),
     ),
   )
+})
+
+const coreFixtures = resolve(dirname(fileURLToPath(import.meta.url)), '../../core/fixtures')
+const recorded = (path: string): ProcessRecording =>
+  JSON.parse(readFileSync(resolve(coreFixtures, path), 'utf8')) as ProcessRecording
+
+const GITHUB_DOC = { [`${ROOT}/docs/agents/issue-tracker.md`]: '# Issue tracker: GitHub\n' }
+const remotes = (url: string): ProcessRecording => ({
+  command: 'git',
+  args: ['-C', ROOT, 'remote', '-v'],
+  stdout: `origin\t${url} (fetch)\norigin\t${url} (push)\n`,
+  stderr: '',
+  exitCode: 0,
+})
+const origin = (url: string): ProcessRecording => ({
+  ...recorded('process/git-remote-get-url-origin.json'),
+  stdout: `${url}\n`,
+})
+const REPO_URL = 'https://github.com/dbarjs/hero-synergy.git'
+
+/** What a window on this repo's own GitHub tracker runs, with the recorded gh answers. */
+const onGitHub = (...gh: ProcessRecording[]): ProcessRecording[] => [
+  inRepo(ROOT, ROOT),
+  remotes(REPO_URL),
+  origin(REPO_URL),
+  ...gh,
+]
+const goodCollect = (): ProcessRecording[] => [
+  recorded('github/list-open-maps.json'),
+  recorded('github/maps-1-64.json'),
+]
+
+const mapsOf = (viewModel: ViewModel | undefined) => {
+  if (viewModel?.kind !== 'maps') throw new Error(`expected maps, got ${viewModel?.kind}`)
+  return viewModel
+}
+
+describe('the Cockpit controller on a GitHub tracker', () => {
+  it.effect("shows the repo's open maps as a local tracker gets them, named by the repo row", () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const shown = mapsOf(published[0])
+          expect(shown.repo).toBe('dbarjs/hero-synergy')
+          expect(shown.notice).toBeNull()
+          expect(Date.parse(shown.collectedAt)).not.toBeNaN()
+          const all = [...shown.maps, ...(shown.finished?.maps ?? [])]
+          expect(all.map((map) => map.number).sort((a, b) => a - b)).toEqual([1, 64])
+          expect(all.some((map) => map.tickets.length > 0)).toBe(true)
+        }),
+    ),
+  )
+
+  it.effect('opens a map on GitHub at its issue from the Focus pane', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, opened }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          expect(yield* cockpit.receive({ type: 'open', key: 'map:64:map' })).toBe(true)
+          expect(opened).toEqual([
+            { kind: 'url', url: 'https://github.com/dbarjs/hero-synergy/issues/64' },
+          ])
+        }),
+    ),
+  )
+
+  it.effect('a local tracker has no repo row', () =>
+    withCockpit({}, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(mapsOf(published[0]).repo).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect.each([
+    [
+      'gh is not logged in',
+      'github/list-not-logged-in.json',
+      'gh is not logged in to GitHub.',
+      'gh auth login',
+    ],
+    ['gh does not answer', 'github/list-timeout.json', 'GitHub did not answer in time.', 'Refresh'],
+    ['the network is down', 'github/list-network.json', 'GitHub could not be reached.', 'network'],
+    [
+      'the rate limit is spent',
+      'github/list-rate-limited.json',
+      'The GitHub rate limit is spent.',
+      'comes back',
+    ],
+  ])('shows one message and no maps when %s', ([, fixture, message, fix]) =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(recorded(fixture as string)) },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const shown = published[0]
+          if (shown?.kind !== 'message') throw new Error(`expected a message, got ${shown?.kind}`)
+          expect(shown.message).toBe(message)
+          expect(shown.detail).toContain(fix as string)
+        }),
+    ),
+  )
+
+  it.effect('says no remote names a GitHub repository', () =>
+    withCockpit(
+      {
+        files: GITHUB_DOC,
+        recordings: [
+          inRepo(ROOT, ROOT),
+          {
+            command: 'git',
+            args: ['-C', ROOT, 'remote', '-v'],
+            stdout: '',
+            stderr: '',
+            exitCode: 0,
+          },
+        ],
+      },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          expect(published[0]).toMatchObject({
+            kind: 'message',
+            message: 'No git remote names a GitHub repository.',
+          })
+        }),
+    ),
+  )
+
+  it.effect('keeps the old maps on screen with the reason and the fix when a refresh fails', () => {
+    const recordings = onGitHub(...goodCollect())
+    return withCockpit({ files: GITHUB_DOC, recordings }, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const good = mapsOf(published[0])
+
+        recordings.splice(3, recordings.length, recorded('github/list-not-logged-in.json'))
+        yield* cockpit.refresh
+        const after = mapsOf(published[1])
+        expect(after.maps).toEqual(good.maps)
+        expect(after.finished).toEqual(good.finished)
+        expect(after.collectedAt).toBe(good.collectedAt)
+        expect(after.notice).toEqual({
+          message: 'gh is not logged in to GitHub.',
+          fix: 'Run `gh auth login`.',
+        })
+
+        // The next good read clears it.
+        recordings.splice(3, recordings.length, ...goodCollect())
+        yield* cockpit.refresh
+        expect(mapsOf(published[2]).notice).toBeNull()
+      }),
+    )
+  })
 })
