@@ -19,6 +19,7 @@ export {
   commandOf,
   type DiscoveredSkill,
   discoverSkills,
+  discoverSkillsPromise,
   type DiscoverSkillsInput,
   type SkillInventory,
   type SkillSource,

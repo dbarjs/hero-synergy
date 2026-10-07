@@ -1,8 +1,16 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { describe, expect, it } from '@effect/vitest'
 import { Effect } from 'effect'
 
 import { FileSystem } from '../file-system.ts'
-import { commandOf, discoverSkills, userInvokedSkills } from './discover-skills.ts'
+import {
+  commandOf,
+  discoverSkills,
+  discoverSkillsPromise,
+  userInvokedSkills,
+} from './discover-skills.ts'
 import type { PluginInstall } from './plugins.ts'
 
 const skillFile = (name: string, description: string, userInvoked = false): string =>
@@ -209,4 +217,22 @@ describe('discoverSkills', () => {
       ])
     }),
   )
+})
+
+describe('discovering through a Promise', () => {
+  it('reads the real disk: a project skill is found, no home means no personal skills', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'discover-skills-'))
+    try {
+      await mkdir(join(root, '.claude', 'skills', 'wayfinder'), { recursive: true })
+      await writeFile(
+        join(root, '.claude', 'skills', 'wayfinder', 'SKILL.md'),
+        skillFile('wayfinder', 'Chart a map.'),
+      )
+      const inventory = await discoverSkillsPromise({ repoRoot: root, home: null, plugins: [] })
+      expect(inventory.skills.map((skill) => skill.command)).toEqual(['/wayfinder'])
+      expect(inventory.warnings).toEqual([])
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
 })
