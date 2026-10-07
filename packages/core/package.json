@@ -1,6 +1,7 @@
 {
   "name": "@hero-synergy/core",
   "version": "0.0.0",
+  "private": true,
   "description": "Wayfinder map model, tracker adapters and scout for hero-synergy.",
   "license": "MIT",
   "repository": {
@@ -18,11 +19,14 @@
       "default": "./dist/index.mjs"
     }
   },
-  "publishConfig": {
-    "access": "public"
-  },
   "scripts": {
     "build": "vp pack"
+  },
+  "dependencies": {
+    "effect": "^4.0.0"
+  },
+  "devDependencies": {
+    "@effect/vitest": "^4.0.0"
   },
   "engines": {
     "node": ">=22.18"

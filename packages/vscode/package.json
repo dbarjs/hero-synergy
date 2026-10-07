@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@hero-synergy/core": "workspace:*",
-    "@types/vscode": "~1.100.0",
+    "@types/vscode": "~1.105.0",
     "@vitejs/plugin-vue": "^6.0.9",
     "@vscode/vsce": "^4.0.0",
     "ovsx": "^1.2.0",
@@ -40,6 +40,6 @@
     "workspace"
   ],
   "engines": {
-    "vscode": "^1.100.0"
+    "vscode": "^1.105.0"
   }
 }

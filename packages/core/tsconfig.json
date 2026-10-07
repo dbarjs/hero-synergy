@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "declaration": true,
-    "isolatedDeclarations": true
+    // No `isolatedDeclarations`: Effect services and errors are classes extending a call
+    // (`Context.Service<...>()(...)`, `Data.TaggedError(...)`), which it forbids (TS9021).
+    "declaration": true
   },
   "include": ["src", "vite.config.ts"]
 }
