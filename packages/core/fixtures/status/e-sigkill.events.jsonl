@@ -1,0 +1,3 @@
+{"ticket":"46","hook":"SessionStart","session":"233000c8-46eb-408e-a696-de0e2f2a8234","detail":"startup","at":1790972302490,"payload":{"session_id":"233000c8-46eb-408e-a696-de0e2f2a8234","hook_event_name":"SessionStart","source":"startup"}}
+{"ticket":"46","hook":"UserPromptSubmit","session":"233000c8-46eb-408e-a696-de0e2f2a8234","detail":null,"at":1790972308818,"payload":{"session_id":"233000c8-46eb-408e-a696-de0e2f2a8234","hook_event_name":"UserPromptSubmit"}}
+{"ticket":"46","hook":"Stop","session":"233000c8-46eb-408e-a696-de0e2f2a8234","detail":null,"at":1790972310231,"payload":{"session_id":"233000c8-46eb-408e-a696-de0e2f2a8234","hook_event_name":"Stop"}}

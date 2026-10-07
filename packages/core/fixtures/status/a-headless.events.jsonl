@@ -1,0 +1,4 @@
+{"ticket":"46","hook":"SessionStart","session":"7533eedb-60c6-475a-af31-6be493c96b5b","detail":"startup","at":1790971746047,"payload":{"session_id":"7533eedb-60c6-475a-af31-6be493c96b5b","hook_event_name":"SessionStart","source":"startup"}}
+{"ticket":"46","hook":"UserPromptSubmit","session":"7533eedb-60c6-475a-af31-6be493c96b5b","detail":null,"at":1790971747723,"payload":{"session_id":"7533eedb-60c6-475a-af31-6be493c96b5b","hook_event_name":"UserPromptSubmit"}}
+{"ticket":"46","hook":"Stop","session":"7533eedb-60c6-475a-af31-6be493c96b5b","detail":null,"at":1790971749133,"payload":{"session_id":"7533eedb-60c6-475a-af31-6be493c96b5b","hook_event_name":"Stop"}}
+{"ticket":"46","hook":"SessionEnd","session":"7533eedb-60c6-475a-af31-6be493c96b5b","detail":"other","at":1790971750180,"payload":{"session_id":"7533eedb-60c6-475a-af31-6be493c96b5b","hook_event_name":"SessionEnd","reason":"other"}}

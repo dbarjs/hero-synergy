@@ -1,0 +1,7 @@
+{
+  "command": "claude",
+  "args": ["plugin", "list", "--json"],
+  "stdout": "[\n  {\n    \"id\": \"mattpocock-skills@claude-plugins-official\",\n    \"version\": \"1.2.3\",\n    \"scope\": \"user\",\n    \"enabled\": true,\n    \"installPath\": \"/home/vscode/.claude/plugins/cache/claude-plugins-official/mattpocock-skills/1.2.3\",\n    \"installedAt\": \"2026-08-12T05:08:02.814Z\",\n    \"lastUpdated\": \"2026-08-12T05:08:02.814Z\",\n    \"projectEnabled\": false\n  }\n]\n",
+  "stderr": "",
+  "exitCode": 0
+}

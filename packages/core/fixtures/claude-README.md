@@ -1,0 +1,10 @@
+# Claude Code fixtures
+
+Inputs of the decoders in `src/claude/`, recorded or taken from the shipped releases on 2026-10-07.
+
+- `process/claude-agents-json-2.1.212.json` and `process/claude-agents-json-2.1.292.json` are `claude agents --json` from the floor and the tested ceiling, as `ProcessRecording`s. Both read the same made-up registry under a throwaway `HOME` (seven live `sleep` processes: `busy`, `idle` and `waiting` once for each of `permission prompt`, `input needed`, `dialog open`, `sandbox request` and `worker request`), so the two files differ only in what each version prints. 2.1.212 came from the `@anthropic-ai/claude-code-linux-arm64` package. `claude-version-2.1.212.json` is that binary's `--version`.
+- `process/claude-plugin-list-json.json` is `claude plugin list --json` on this machine.
+- `plugins/mattpocock-skills-1.2.3.plugin.json` is the `plugin.json` of the installed release (25 skills).
+- `skills/mattpocock-skills-1.2.3/<skill>.md` is the frontmatter block of every `SKILL.md` that release lists. `skills/mattpocock-skills-1.3.1/` is the frontmatter of `pr` (a nested `metadata:` map), `code-review` (escaped quotes in a quoted description), `to-spec` and `wayfinder` from the `v1.3.1` tag.
+- `status/<run>.prototype.events.jsonl` is the prototype's events file as recorded on `prototype/status-hooks` (`prototype/status-hooks/runs/`), before the plugin wrote a `payload`. `status/<run>.events.jsonl` is the same run in the line shape the plugin writes now, built from the prototype's probe file, with the payload cut to the fields the Cockpit reads (`session_id`, `hook_event_name`, `source`, `reason`, `error`, `notification_type`) and `ticket` set to `46`.
+- `health/<code>` is the smallest input that makes a decoder raise that health code and nothing else, for the codes the decoders raise: `registry-unreadable`, `registry-entry-unreadable`, `registry-status-unknown`, `claude-version-unreadable`, `hook-payload-unreadable`, `hook-reason-missing`, `plugin-manifest-unreadable` and `skill-unreadable`.
