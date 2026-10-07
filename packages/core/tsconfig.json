@@ -5,5 +5,5 @@
     // (`Context.Service<...>()(...)`, `Data.TaggedError(...)`), which it forbids (TS9021).
     "declaration": true
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src", "fixtures/**/*.ts", "vite.config.ts"]
 }
