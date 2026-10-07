@@ -1,0 +1,27 @@
+# The scout reads trackers with code; nothing in the extension calls a model
+
+The scout turns a tracker's open maps and their tickets into a snapshot with code alone: one GraphQL query (or the `.scratch` files on a local tracker) collects, code reconciles, and whatever code cannot read is reported as a coded drift warning, never interpreted. The seed's hybrid pipeline (collect with code, interpret with Haiku through `claude -p`, reconcile with code) is dropped, and with it every model call inside the extension and the Agent SDK fallback that existed only to make that call. Decided with Eduardo on 2026-10-02 in [Does the scout's interpret step earn its place?](https://github.com/dbarjs/hero-synergy/issues/16), after measuring a throwaway scout on [`prototype/scout`](https://github.com/dbarjs/hero-synergy/tree/prototype/scout/packages/core/scout-prototype).
+
+What was measured, on this repo's map (21 issues in the current five-section form) and on a fixture holding every legacy form in the drift catalogue:
+
+- **Code** read the real map in 3 ms with every field exact (15 decisions, 6 Out of scope lines, every ticket typed, mapped and classified) and the right frontier. On the fixture it found the right frontier of both maps and raised one warning per drift point.
+- **Haiku through `claude -p`** agreed on every frontier but took 20 s to 4 min per cold map (3.9 s to 38 s per item, $0.11 to $0.50 at list price), paraphrased fields asked for verbatim, invented a `Part of #1` line on all 20 tickets when given the whole bundle in one call, missed 5 of 6 Out of scope links with thinking off, and gave warnings that were commentary rather than drift. Thinking was 49K of 56K output tokens and only `MAX_THINKING_TOKENS=0` turns it off. Its out-of-scope lists changed between runs of the same input.
+- The model's one unique win was a hand-written free-form map, whose destination, decision and exclusions it read correctly. v0.1.0 shows such a map as drift with a link to the issue instead.
+
+The decision is recorded here because it fixes the extension's whole dependency surface: no model, no API key, no SDK, no thinking budget and no `--safe-mode`; the snapshot holds tracker facts and coded warnings and nothing inferred; and the drift catalogue becomes the contract between the Cockpit and the wayfinder conventions. Bringing a model call back later means a new trust story (claude.ai login against an API key), a cost and a latency, none of which v0.1.0 has.
+
+## Considered options
+
+- **The seed's hybrid pipeline**, one Haiku call per map and per ticket. Rejected: 20 s to 4 min per cold map against 3 ms, which at Eduardo's real scale (45 maps in one repo) is a multi-minute cold start; verbatim fields paraphrased; nondeterministic; warnings that point at nothing the Cockpit should show.
+- **One model call for the whole bundle**, the seed's literal command. Rejected: it fabricated a `Part of #1` line on every ticket and cut questions to a quarter of their length.
+- **A model only for what code cannot read**: the lean schema, asking for gists and free-form content and nothing verbatim. Rejected: it still cost 20 s to 144 s per map, and the only thing code cannot read is a map that does not follow the skill. That is drift to show, not data to rescue, and keeping the fallback keeps the whole model surface for one rare case.
+- **The Agent SDK instead of `claude -p`.** Rejected with the interpret step: it existed only as a fallback for the model call, and Anthropic asks products built on the SDK to use API keys rather than claude.ai login, which would add a key to a tool whose users already have Claude Code.
+
+## Consequences
+
+- The glossary's **Scout** is the code that turns a tracker's open maps and their tickets into a snapshot, reporting anything it cannot read as drift. Everything it holds for a map and a ticket is decided in [What does the snapshot hold for a map and a ticket?](https://github.com/dbarjs/hero-synergy/issues/26); what it costs and when it runs in [What is the scout's budget: refresh cadence, caching and rate limits?](https://github.com/dbarjs/hero-synergy/issues/27).
+- The extension runs `claude` only to launch sessions and to read its registry and version. It never runs `claude -p`, and `@anthropic-ai/claude-agent-sdk` is not installed. The note in [ADR 0002](0002-effect-schema-models-all-boundary-data.md) about the SDK's zod peer dependency no longer applies.
+- The seed's `[P]` hybrid pipeline and `[P]` Agent SDK fallback are overridden. `--safe-mode`, bundle-size limits and model cost drop out of the scout budget.
+- Drift is a contract: every form code cannot read is a coded warning, shown as decided in [How does the Cockpit show drift?](https://github.com/dbarjs/hero-synergy/issues/29) and never corrected. A hand-written map that follows no convention shows as drift with a link, which v0.1.0 accepts.
+- A model call anywhere in the scout is out of scope for v0.1.0. Bringing one back is a change to this decision and a fresh effort, not a feature.
+- Facts about `claude -p` worth keeping for session launching live in the prototype's README: the seed's command works under a claude.ai subscription login; `--tools ""` cuts the default system prompt from 18.1K to 4.4K tokens; `--bare` breaks subscription login; `blockedBy.nodes` in GraphQL includes closed blockers while `issueDependenciesSummary.blockedBy` counts open ones only.
