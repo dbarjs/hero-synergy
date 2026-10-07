@@ -17,3 +17,5 @@ A palette for the Cockpit's tree and detail, decided and recorded as tokens.
 - Spacing, once the palette is fixed.
 
 ## Out of scope
+
+- Custom user themes, which belong to a later release.

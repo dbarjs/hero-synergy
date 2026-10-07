@@ -14,6 +14,13 @@ const WebviewMessageSchema = Schema.Union([
   Schema.Struct({ type: Schema.Literal('select'), key: Schema.NullOr(Schema.String) }),
   Schema.Struct({ type: Schema.Literal('open'), key: Schema.String }),
   Schema.Struct({ type: Schema.Literal('refresh') }),
+  Schema.Struct({
+    type: Schema.Literal('open-detail'),
+    key: Schema.String,
+    section: Schema.NullOr(Schema.Literals(['destination', 'decisions', 'fog', 'out-of-scope'])),
+  }),
+  Schema.Struct({ type: Schema.Literal('reveal'), key: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('open-link'), url: Schema.String }),
 ])
 
 const decode = Schema.decodeUnknownOption(WebviewMessageSchema)

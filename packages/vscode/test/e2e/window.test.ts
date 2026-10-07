@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 
 import { downloadAndUnzipVSCode } from '@vscode/test-electron'
-import { _electron as electron, type ElectronApplication, type Page } from 'playwright'
+import {
+  _electron as electron,
+  type ElectronApplication,
+  type Locator,
+  type Page,
+} from 'playwright'
 import { afterAll, beforeAll, expect, it, onTestFailed } from 'vite-plus/test'
 
 import { createWorkspace } from '../fixtures/workspace.mjs'
@@ -106,7 +111,11 @@ it('opens a window with the extension loaded', async () => {
 })
 
 /** The Tree's page: the webview inside its iframe inside the workbench. */
-const tree = () => page.frameLocator('iframe.webview').first().frameLocator('iframe#active-frame')
+// VS Code marks a view's webview with `purpose=webviewView` in the iframe's source; a panel's has none.
+const VIEW_WEBVIEW = 'iframe.webview[src*="purpose=webviewView"]'
+const PANEL_WEBVIEW = 'iframe.webview:not([src*="purpose=webviewView"])'
+
+const tree = () => page.frameLocator(VIEW_WEBVIEW).frameLocator('iframe#active-frame')
 
 /** Every row as it reads left to right: its label with the `#number`, then each trailing mark. */
 const treeRows = (): Promise<string[]> =>
@@ -198,6 +207,90 @@ it('shows the fixture workspace maps and tickets in the Tree', async () => {
     ])
 })
 
+/** The Detail's page: the webview of the editor tab, the one that is not a view. */
+const detail = () => page.frameLocator(PANEL_WEBVIEW).frameLocator('iframe#active-frame')
+
+/** The editor tab the Detail is in, by the `#number title` it carries. */
+const detailTab = (title: string) =>
+  page.locator('.part.editor .tabs-container .tab', { hasText: title })
+
+/** What a locator's text is, polled: Vitest's `expect` has no Playwright matchers. */
+const textOf = (locator: Locator, timeout = 30_000) =>
+  expect.poll(async () => (await locator.textContent()) ?? '', { timeout })
+const textsOf = (locator: Locator, timeout = 30_000) =>
+  expect.poll(() => locator.allTextContents(), { timeout })
+const attributeOf = (locator: Locator, name: string, timeout = 30_000) =>
+  expect.poll(() => locator.getAttribute(name), { timeout })
+
+/** A neighbourhood column's entries as they read: `#number title state`. */
+const neighbours = (column: 'waits-on' | 'clears-the-way'): Promise<string[]> =>
+  detail()
+    .locator(`.neighbourhood .${column} .neighbour`)
+    .evaluateAll((items) =>
+      items.map((item) => (item.textContent ?? '').replace(/\s+/g, ' ').trim()),
+    )
+
+it('opens the Detail on Enter and follows the selection', async () => {
+  onTestFailed(() => captureFailure('detail'))
+  await row('#1 Palette').press('Enter')
+
+  await detailTab('#1 Palette').waitFor({ timeout: 30_000 })
+  await detail().locator('h1').filter({ hasText: '#1 Palette' }).waitFor({ timeout: 30_000 })
+  // The body went through the Markdown renderer: `## Question` is a heading.
+  await textOf(detail().locator('.body h2')).toBe('Question')
+  await textOf(detail().locator('.body')).toContain('Which five colors')
+  await textsOf(detail().locator('.neighbourhood .column h2')).toEqual([
+    'Waits on',
+    'Clears the way for',
+  ])
+  expect(await neighbours('waits-on')).toEqual([])
+  expect(await neighbours('clears-the-way')).toEqual(['#2 Dark mode open'])
+  // The Tree shows the same selection.
+  await attributeOf(row('#1 Palette'), 'aria-selected').toBe('true')
+
+  // Another row updates the one Detail instead of opening a second.
+  await row('#3 Contrast audit').click()
+  await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor()
+  await detailTab('#3 Contrast audit').waitFor()
+  await expect.poll(() => page.locator('.part.editor .tabs-container .tab').count()).toBe(1)
+})
+
+it('selects a neighbour clicked in the Detail and unfolds its map', async () => {
+  onTestFailed(() => captureFailure('detail-neighbour'))
+  await row('#1 Palette').click()
+  await detail().locator('h1').filter({ hasText: '#1 Palette' }).waitFor()
+
+  // Fold the map away: the Tree no longer shows the tickets.
+  await row('#3 Cockpit colors').click()
+  await expect.poll(treeRows, { timeout: 15_000 }).not.toContain('#2 Dark mode | waits on #1 | AFK')
+
+  await detail().locator('.clears-the-way .neighbour', { hasText: '#2 Dark mode' }).click()
+  await detail().locator('h1').filter({ hasText: '#2 Dark mode' }).waitFor()
+  await attributeOf(row('#2 Dark mode'), 'aria-selected', 15_000).toBe('true')
+  await row('#2 Dark mode').waitFor({ state: 'visible' })
+  expect(await neighbours('waits-on')).toEqual(['#1 Palette open'])
+})
+
+it('opens a map at the section its Fog or Decisions row names', async () => {
+  onTestFailed(() => captureFailure('detail-sections'))
+  await row('Fog').press('Enter')
+  await detail().locator('h1').filter({ hasText: '#3 Cockpit colors' }).waitFor({ timeout: 30_000 })
+  await attributeOf(detail().locator('.section.fog'), 'class').toMatch(/targeted/)
+  await textOf(detail().locator('.section.fog')).toContain('Spacing, once the palette is fixed.')
+  await textsOf(detail().locator('.section h2')).toEqual([
+    'Destination',
+    'Decisions so far',
+    'Not yet specified',
+    'Out of scope',
+  ])
+  await textOf(detail().locator('.section.out-of-scope')).toContain('Custom user themes')
+
+  await row('Decisions').first().press('Enter')
+  await attributeOf(detail().locator('.section.decisions'), 'class').toMatch(/targeted/)
+  await attributeOf(detail().locator('.section.fog'), 'class').not.toMatch(/targeted/)
+  await textOf(detail().locator('.section.decisions')).toContain('Codicons')
+})
+
 it('collects again when Refresh is pressed and the Tree updates', async () => {
   onTestFailed(() => captureFailure('refresh'))
   // Someone resolves the palette ticket from the terminal.
@@ -216,4 +309,16 @@ it('collects again when Refresh is pressed and the Tree updates', async () => {
     '#2 Dark mode | next | AFK',
     '#3 Contrast audit | task',
   ])
+})
+
+it('reopens the Detail on the last selection after the window reloads', async () => {
+  onTestFailed(() => captureFailure('detail-reload'))
+  await row('#3 Contrast audit').click()
+  await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor()
+
+  await runCommand('Developer: Reload Window')
+  // The serializer hands the panel back; its tab and its page carry the stored selection.
+  await detailTab('#3 Contrast audit').waitFor({ timeout: 60_000 })
+  await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor({ timeout: 60_000 })
+  await expect.poll(() => page.locator('.part.editor .tabs-container .tab').count()).toBe(1)
 })

@@ -46,6 +46,8 @@ export class Storage extends Context.Service<Storage, StorageShape>()('hero-syne
 export interface OpenerShape {
   /** Opens an issue URL in the browser or a ticket's file in an editor. */
   readonly open: (target: OpenTarget) => Effect.Effect<void>
+  /** Opens a web link from a rendered body in the browser. */
+  readonly openLink: (url: string) => Effect.Effect<void>
 }
 
 /** What ↗ Open launches, kept behind a service so tests see the target instead of a browser. */
@@ -56,6 +58,10 @@ export class Opener extends Context.Service<Opener, OpenerShape>()('hero-synergy
       open: (target) =>
         Effect.sync(() => {
           opened.push(target)
+        }),
+      openLink: (url) =>
+        Effect.sync(() => {
+          opened.push({ kind: 'url', url })
         }),
     })
 }

@@ -5,6 +5,8 @@ export interface WebviewHtmlOptions {
   readonly styleUri: string
   /** A fresh random value per page; the one script that may run carries it. */
   readonly nonce: string
+  /** Which surface the one bundle mounts: the Tree's width or the Detail's. */
+  readonly surface: 'tree' | 'detail'
 }
 
 /**
@@ -17,6 +19,7 @@ export const webviewHtml = ({
   scriptUri,
   styleUri,
   nonce,
+  surface,
 }: WebviewHtmlOptions): string =>
   `<!doctype html>
 <html lang="en">
@@ -31,7 +34,7 @@ export const webviewHtml = ({
     <title>Hero Synergy</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app" data-surface="${surface}"></div>
     <script type="module" nonce="${nonce}" src="${scriptUri}"></script>
   </body>
 </html>

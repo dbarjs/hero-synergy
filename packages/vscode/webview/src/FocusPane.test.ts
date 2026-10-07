@@ -81,10 +81,12 @@ describe('the Focus pane', () => {
     expect(open.emitted('select')).toEqual([[null], [null]])
   })
 
-  it('asks the host to open the selection from ↗ Open and from the title', async () => {
+  it('opens the Detail from ↗ Detail and the issue from the title', async () => {
     const wrapper = render('map:3:ticket:1')
-    await wrapper.find('.pane .open').trigger('click')
+    await wrapper.find('.pane .detail').trigger('click')
+    expect(wrapper.emitted('openDetail')).toEqual([['map:3:ticket:1', null]])
+    expect(wrapper.emitted('open')).toBeUndefined()
     await wrapper.find('.pane .title').trigger('click')
-    expect(wrapper.emitted('open')).toEqual([['map:3:ticket:1'], ['map:3:ticket:1']])
+    expect(wrapper.emitted('open')).toEqual([['map:3:ticket:1']])
   })
 })

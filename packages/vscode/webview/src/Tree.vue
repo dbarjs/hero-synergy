@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import type { ViewModel } from '../../src/protocol.ts'
+import type { MapSection, ViewModel } from '../../src/protocol.ts'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
 
@@ -15,6 +15,8 @@ const emit = defineEmits<{
   select: [key: string | null]
   open: [key: string]
   refresh: []
+  /** Select the row and open the Detail on it, scrolled to a section of a map. */
+  openDetail: [key: string, section: MapSection | null]
 }>()
 
 // The repo row's age is read against the clock, so tick to keep "tracker read 2 min ago" honest.
@@ -83,6 +85,7 @@ const toggle = (key: string, expanded: boolean): void => {
       @select="select"
       @close="emit('select', null)"
       @open="(key) => emit('open', key)"
+      @open-detail="(key, section) => emit('openDetail', key, section)"
     />
     <template v-if="viewModel.finished">
       <Row
@@ -107,6 +110,7 @@ const toggle = (key: string, expanded: boolean): void => {
           @select="select"
           @close="emit('select', null)"
           @open="(key) => emit('open', key)"
+          @open-detail="(key, section) => emit('openDetail', key, section)"
         />
       </template>
     </template>

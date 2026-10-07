@@ -1,9 +1,10 @@
 import { FileSystem, ProcessRunner } from '@hero-synergy/core'
 import { Effect, Layer } from 'effect'
-import type { ExtensionContext } from 'vscode'
+import type { ExtensionContext, WebviewPanel } from 'vscode'
 
 import { makeCockpit } from './cockpit.ts'
-import type { ViewModel } from './protocol.ts'
+import type { DetailView, ViewModel } from './protocol.ts'
+import { registerDetailPanel } from './vscode/detail-panel.ts'
 import { createLog, registerRefreshCommand, registerTreeView } from './vscode/tree-view.ts'
 import { openerLive, storageLive, workspaceFoldersLive } from './vscode/workspace.ts'
 
@@ -19,9 +20,15 @@ export interface ExtensionApi {
     readonly spawnedProcesses: number
     /** The last view model sent to the webview. */
     readonly viewModel: ViewModel | null
+    /** Whether the Detail panel is open. */
+    readonly detailOpen: boolean
+    /** The last view sent to the Detail panel (sent even while no panel is open). */
+    readonly detailView: DetailView | null
   }
   /** Delivers a message as if the webview had posted it; false when it was rejected. */
   readonly receive: (message: unknown) => Promise<boolean>
+  /** Adopts a panel as VS Code's serializer does after a reload. */
+  readonly restoreDetail: (panel: WebviewPanel) => Promise<void>
 }
 
 /**
@@ -32,6 +39,7 @@ export interface ExtensionApi {
 export async function activate(context: ExtensionContext): Promise<ExtensionApi> {
   let spawnedProcesses = 0
   let viewModel: ViewModel | null = null
+  let detailView: DetailView | null = null
 
   const countedRunner = Layer.effect(
     ProcessRunner,
@@ -54,6 +62,11 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
         // `tree` is registered below, before anything can ask the cockpit to publish.
         tree.post(next)
       },
+      publishDetail: (next) => {
+        detailView = next
+        detail.post(next)
+      },
+      showDetail: (focus) => detail.show(focus),
       log,
     }).pipe(
       Effect.provide(
@@ -73,11 +86,28 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     onShown: () => run(cockpit.show),
     onMessage: (message) => run(cockpit.receive(message)),
   })
+  // `detail` is read by the cockpit's callbacks above, which only run after this line.
+  const detail = registerDetailPanel(context, {
+    // A restored panel may be the only surface shown, so collect for it; the page also asks on mount.
+    onShown: () => run(cockpit.show),
+    onMessage: (message) => run(cockpit.receive(message)),
+    onCommand: () => run(cockpit.openDetail),
+  })
   registerRefreshCommand(context, () => run(cockpit.refresh))
 
   return {
-    state: () => ({ viewResolved: tree.resolved(), spawnedProcesses, viewModel }),
+    state: () => ({
+      viewResolved: tree.resolved(),
+      spawnedProcesses,
+      viewModel,
+      detailOpen: detail.isOpen(),
+      detailView,
+    }),
     receive: (message) => Effect.runPromise(cockpit.receive(message)),
+    restoreDetail: (panel) => {
+      detail.adopt(panel)
+      return Promise.resolve()
+    },
   }
 }
 

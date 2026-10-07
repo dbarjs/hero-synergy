@@ -262,3 +262,56 @@ describe('what the Tree asks for', () => {
     expect(wrapper.emitted('expand')).toEqual([['finished']])
   })
 })
+
+describe('what opens the Detail', () => {
+  const wrapper = (): VueWrapper => render(fixture)
+  const rowOf = (w: VueWrapper, label: string) =>
+    w.findAll('[role="treeitem"]').find((row) => row.find('.label').text().startsWith(label))
+
+  it('opens the Detail on a ticket row with Enter or a double-click, and selects with a click', async () => {
+    const w = wrapper()
+    const palette = rowOf(w, '#1 Palette')
+    await palette?.trigger('click')
+    expect(w.emitted('select')).toEqual([['map:3:ticket:1']])
+    expect(w.emitted('openDetail')).toBeUndefined()
+
+    await palette?.trigger('keydown', { key: 'Enter' })
+    await palette?.trigger('dblclick')
+    expect(w.emitted('openDetail')).toEqual([
+      ['map:3:ticket:1', null],
+      ['map:3:ticket:1', null],
+    ])
+  })
+
+  it('opens the map on its Map row', async () => {
+    const w = wrapper()
+    await rowOf(w, 'Map')?.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('openDetail')).toEqual([['map:3:map', null]])
+  })
+
+  it('opens the map scrolled to the Fog from the Fog row, and to Decisions from the Decisions row', async () => {
+    const w = wrapper()
+    await rowOf(w, 'Fog')?.trigger('keydown', { key: 'Enter' })
+    await rowOf(w, 'Decisions')?.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('openDetail')).toEqual([
+      ['map:3:map', 'fog'],
+      ['map:3:map', 'decisions'],
+    ])
+    // A click still folds them.
+    await rowOf(w, 'Fog')?.trigger('click')
+    expect(w.emitted('collapse')?.at(-1)).toEqual(['map:3:fog'])
+  })
+
+  it('keeps Enter on a map row as expand and collapse', async () => {
+    const w = wrapper()
+    await rowOf(w, '#3 Cockpit colors')?.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('collapse')).toEqual([['map:3']])
+    expect(w.emitted('openDetail')).toBeUndefined()
+  })
+
+  it('opens the Detail on a decision with Enter', async () => {
+    const w = wrapper()
+    await rowOf(w, '#5 Icon set')?.trigger('keydown', { key: 'Enter' })
+    expect(w.emitted('openDetail')).toEqual([['map:3:ticket:5', null]])
+  })
+})
