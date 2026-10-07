@@ -8,7 +8,10 @@
 //   node scripts/next.mjs             print the launch command, then launch the first takeable ticket
 //   node scripts/next.mjs <number>    launch that ticket
 //
-// Plain Node, no dependencies, not part of any workspace package. Needs `gh` (logged in) and `claude`.
+// Plain Node, no package.json and no dependencies of its own, not part of any workspace package. It
+// imports core's built `dist/` (@hero-synergy/core) by relative path, so `pnpm install` and
+// `pnpm exec vp run build` come first, as the worktree routine in CLAUDE.md already requires.
+// Needs `gh` (logged in) and `claude`.
 //
 // The launch goes through an interactive zsh and the `cc` alias, not straight from node: Claude
 // Code writes the session name into the terminal title only when it runs as the shell's foreground
@@ -18,14 +21,24 @@ import { spawnSync } from 'node:child_process'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  collectGitHubPromise,
+  isClaimed,
+  openBlockers,
+  placeOf,
+  readRegistry,
+  readSnapshot,
+} from '../packages/core/dist/index.mjs'
+
 const OWNER = 'dbarjs'
 const REPO = 'hero-synergy'
 const SPEC = 37
 const MAP = 64
 
 // The parents whose tickets `next` works, in order: a spec ticket while the spec has a takeable one,
-// a ticket of this script's own map otherwise. Reading a spec's sub-issues is the one thing `next`
-// does that the Cockpit never will.
+// a ticket of this script's own map otherwise. The map is read through core; a spec is not a map and
+// core never reads one, so its sub-issues keep this script's own query, the one thing `next` does
+// that the Cockpit never will.
 const PARENTS = [SPEC, MAP]
 
 // The skill line the session starts with: the ticket's parent, then the ticket. URLs, not `#n`, so
@@ -71,61 +84,79 @@ function graphql(query, variables) {
   return body.data
 }
 
-// Every parent in one request: an aliased `issue` block per parent, its sub-issues in sub-issue
-// order with each blocker's state and the assignees. Core takes this reading over in the next ticket.
-function readParents() {
-  const blocks = PARENTS.map(
-    (number, i) => `
-      p${i}: issue(number: ${number}) {
-        title
-        subIssues(first: 100) {
-          nodes {
-            ...ticket
-          }
-        }
-      }
-    `,
-  )
+// The spec's sub-issues in one request: in sub-issue order, with each blocker's state and the
+// assignees. Core never reads a spec, so this reading stays here.
+async function readSpec(number) {
   const data = graphql(
     `
-      fragment ticket on Issue {
-        number
-        title
-        state
-        assignees(first: 10) {
-          nodes {
-            login
-          }
-        }
-        blockedBy(first: 50) {
-          nodes {
-            number
-            title
-            state
-          }
-        }
-      }
-      query ($owner: String!, $repo: String!) {
+      query ($owner: String!, $repo: String!, $number: Int!) {
         repository(owner: $owner, name: $repo) {
-          ${blocks.join('')}
+          issue(number: $number) {
+            title
+            subIssues(first: 100) {
+              nodes {
+                number
+                title
+                state
+                assignees(first: 10) {
+                  nodes {
+                    login
+                  }
+                }
+                blockedBy(first: 50) {
+                  nodes {
+                    number
+                    state
+                  }
+                }
+              }
+            }
+          }
         }
       }
     `,
-    { owner: OWNER, repo: REPO },
+    { owner: OWNER, repo: REPO, number },
   )
-  return PARENTS.map((number, i) => {
-    const parent = data.repository[`p${i}`]
-    if (!parent) throw new Error(`#${number} not found on ${OWNER}/${REPO}`)
-    const tickets = parent.subIssues.nodes.map((node) => ({
+  const parent = data.repository.issue
+  if (!parent) throw new Error(`#${number} not found on ${OWNER}/${REPO}`)
+  const tickets = parent.subIssues.nodes.map((node) => {
+    const claimedBy = node.assignees.nodes.map((a) => a.login)
+    const waitsOn = node.blockedBy.nodes.filter((b) => b.state === 'OPEN').map((b) => b.number)
+    return {
       number: node.number,
       title: node.title,
       parent: number,
       open: node.state === 'OPEN',
-      assignees: node.assignees.nodes.map((a) => a.login),
-      waitsOn: node.blockedBy.nodes.filter((b) => b.state === 'OPEN').map((b) => b.number),
-    }))
-    return { number, title: parent.title, tickets }
+      claimed: claimedBy.length > 0,
+      claimedBy,
+      waitsOn,
+      takeable: claimedBy.length === 0 && waitsOn.length === 0,
+    }
   })
+  return { number, title: parent.title, tickets }
+}
+
+// The map through core: its collect, its snapshot and its frontier rules, so `next` and the Tree
+// agree on what is takeable, a blocker outside the map included.
+async function readMap(number) {
+  const { collected } = await collectGitHubPromise(REPO_ROOT)
+  const map = readSnapshot(collected).maps.find((m) => m.number === number)
+  if (!map) throw new Error(`#${number} is not an open wayfinder map on ${OWNER}/${REPO}`)
+  const tickets = map.tickets.map((ticket) => ({
+    number: ticket.number,
+    title: ticket.title,
+    parent: number,
+    open: ticket.state === 'open',
+    claimed: isClaimed(ticket),
+    claimedBy: ticket.claim?.by ?? [],
+    waitsOn: openBlockers(ticket).map((blocker) => blocker.number),
+    takeable: placeOf(ticket) === 'frontier',
+  }))
+  return { number, title: map.title, tickets }
+}
+
+function readParents() {
+  return Promise.all(PARENTS.map((number) => (number === MAP ? readMap(number) : readSpec(number))))
 }
 
 function readTicket(number) {
@@ -152,21 +183,19 @@ function readTicket(number) {
 }
 
 // The Cockpit's own rule: a session named `#<number> …` in Claude Code's registry owns that ticket.
+// Core's decoder reads the registry; what it cannot read comes back as coded warnings.
 function liveSessionTickets() {
   const result = run('claude', ['agents', '--json'])
-  let entries
-  try {
-    entries = JSON.parse(result.stdout)
-  } catch {
+  const { value: entries, warnings } = readRegistry(result.stdout)
+  for (const warning of warnings) {
+    const detail = warning.detail ? `: ${warning.detail}` : ''
     console.error(
-      `warning: could not read the session registry (claude agents --json exited ${result.status}); assuming none live`,
+      `warning: ${warning.code}${detail} (claude agents --json exited ${result.status})`,
     )
-    return new Set()
   }
   const live = new Set()
   for (const entry of entries) {
-    if (entry.state === 'done') continue
-    const match = /^#(\d+)(\s|$)/.exec(entry.name ?? '')
+    const match = /^#(\d+)(\s|$)/.exec(entry.name)
     if (match) live.add(Number(match[1]))
   }
   return live
@@ -184,9 +213,12 @@ function annotate(parents, live) {
         const notes = []
         if (ticket.waitsOn.length)
           notes.push(`waits on ${ticket.waitsOn.map((n) => `#${n}`).join(' ')}`)
-        if (ticket.assignees.length) notes.push(`claimed by ${ticket.assignees.join(', ')}`)
+        if (ticket.claimed)
+          notes.push(
+            ticket.claimedBy.length ? `claimed by ${ticket.claimedBy.join(', ')}` : 'claimed',
+          )
         if (live.has(ticket.number)) notes.push('live session')
-        const takeable = notes.length === 0
+        const takeable = ticket.takeable && !live.has(ticket.number)
         if (takeable && !nextSeen) {
           notes.push('next')
           nextSeen = true
@@ -212,8 +244,8 @@ function launch(ticket) {
   process.exit(result.status ?? 1)
 }
 
-function list() {
-  const parents = annotate(readParents(), liveSessionTickets())
+async function list() {
+  const parents = annotate(await readParents(), liveSessionTickets())
   parents.forEach((parent, i) => {
     if (i > 0) console.log()
     console.log(`#${parent.number} ${parent.title}`)
@@ -238,8 +270,8 @@ function launchNumber(number) {
   launch({ number: issue.number, title: issue.title, parent: issue.parent?.number ?? SPEC })
 }
 
-function launchNext() {
-  const parents = annotate(readParents(), liveSessionTickets())
+async function launchNext() {
+  const parents = annotate(await readParents(), liveSessionTickets())
   const next = parents.flatMap((p) => p.tickets).find((t) => t.takeable)
   if (!next) {
     const names = parents.map((p) => `#${p.number} ${p.title}`).join(' or ')
@@ -249,7 +281,7 @@ function launchNext() {
   launch(next)
 }
 
-function main(argv) {
+async function main(argv) {
   const [arg] = argv
   if (arg === undefined) return launchNext()
   if (arg === '--list') return list()
@@ -262,7 +294,7 @@ function main(argv) {
 }
 
 try {
-  main(process.argv.slice(2))
+  await main(process.argv.slice(2))
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error))
   process.exit(1)
