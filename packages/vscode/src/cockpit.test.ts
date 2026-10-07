@@ -83,7 +83,11 @@ const withCockpit = <A>(
     progress: { shown: number; open: number }
     runs: () => number
     fs: FileSystem['Service']
-  }) => Effect.Effect<A, never, Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener | CollectProgress>,
+  }) => Effect.Effect<
+    A,
+    never,
+    Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener | CollectProgress
+  >,
 ) => {
   const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)], setup.delay)
   const opened: OpenTarget[] = []
