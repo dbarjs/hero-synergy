@@ -1,0 +1,49 @@
+{
+  "tracker": {
+    "kind": "github",
+    "owner": "acme",
+    "repo": "billing"
+  },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00Z",
+  "labels": [
+    "wayfinder:map",
+    "wayfinder:research",
+    "wayfinder:prototype",
+    "wayfinder:grilling",
+    "wayfinder:task"
+  ],
+  "maps": [
+    {
+      "number": 1,
+      "title": "Billing rewrite, decided",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/1"
+      },
+      "body": "## Destination\n\nBilling v2 decided.\n\n## Notes\n\n- Domain: invoicing.\n\n## Decisions so far\n\n- [Which database?](https://github.com/acme/billing/issues/2) — Postgres\n",
+      "children": [2]
+    }
+  ],
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Ticket 2",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/2"
+      },
+      "body": "## Question\n\nWhat about 2?\n",
+      "state": "closed",
+      "labels": ["wayfinder:grilling"],
+      "assignees": [],
+      "parent": 1,
+      "blockedBy": [],
+      "lastComment": {
+        "body": "Answer 2.",
+        "author": "ana",
+        "at": "2026-07-03T11:00:00Z"
+      }
+    }
+  ]
+}

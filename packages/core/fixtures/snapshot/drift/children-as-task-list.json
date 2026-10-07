@@ -1,0 +1,79 @@
+{
+  "tracker": {
+    "kind": "github",
+    "owner": "acme",
+    "repo": "billing"
+  },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00Z",
+  "labels": [
+    "wayfinder:map",
+    "wayfinder:research",
+    "wayfinder:prototype",
+    "wayfinder:grilling",
+    "wayfinder:task"
+  ],
+  "maps": [
+    {
+      "number": 1,
+      "title": "Billing rewrite, decided",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/1"
+      },
+      "body": "## Destination\n\nBilling v2 decided: every question answered.\n\n## Notes\n\n- Domain: invoicing. Grilling tickets use /grilling.\n\n## Decisions so far\n\n\n\n## Not yet specified\n\n\n\n## Out of scope\n\n\n\n### Tickets\n\n- [ ] #3\n- [x] #2\n- [ ] https://github.com/acme/billing/issues/4\n",
+      "children": []
+    }
+  ],
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Ticket 2",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/2"
+      },
+      "body": "## Question\n\nWhat about 2?\n",
+      "state": "closed",
+      "labels": ["wayfinder:grilling"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": {
+        "body": "Answer 2.",
+        "author": "ana",
+        "at": "2026-07-03T11:00:00Z"
+      }
+    },
+    {
+      "number": 3,
+      "title": "Ticket 3",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/3"
+      },
+      "body": "## Question\n\nWhat about 3?\n",
+      "state": "open",
+      "labels": ["wayfinder:grilling"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": null
+    },
+    {
+      "number": 4,
+      "title": "Ticket 4",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/billing/issues/4"
+      },
+      "body": "## Question\n\nWhat about 4?\n",
+      "state": "open",
+      "labels": ["wayfinder:grilling"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": null
+    }
+  ]
+}

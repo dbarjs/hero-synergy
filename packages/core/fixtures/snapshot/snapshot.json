@@ -1,0 +1,121 @@
+{
+  "tracker": { "kind": "github", "owner": "acme", "repo": "billing" },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00.000Z",
+  "maps": [
+    {
+      "number": 1,
+      "title": "Billing rewrite, decided",
+      "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/1" },
+      "body": "## Destination\n\nBilling v2 decided.\n\n## Notes\n\n- Domain: invoicing.\n\n## Decisions so far\n\n- [Which database holds the ledger?](https://github.com/acme/billing/issues/3) — Postgres, one schema per tenant\n\n## Not yet specified\n\n- Retry policy for failed charges, once [Refund: reopen or credit note?](https://github.com/acme/billing/issues/2) is settled.\n\n## Out of scope\n\n- A PDF preview, ruled out in [Does a PDF preview earn its place?](https://github.com/acme/billing/issues/5).\n",
+      "tickets": [
+        {
+          "number": 2,
+          "title": "Refund: reopen the invoice or issue a credit note?",
+          "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/2" },
+          "state": "open",
+          "type": "grilling",
+          "claim": { "by": ["ana"] },
+          "blockedBy": [
+            {
+              "number": 3,
+              "title": "Which database holds the ledger?",
+              "state": "closed",
+              "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/3" }
+            }
+          ],
+          "body": "## Question\n\nShould a refund reopen the original invoice, or always create a credit note?\n",
+          "resolution": null,
+          "outcome": null,
+          "gist": null,
+          "warnings": []
+        },
+        {
+          "number": 3,
+          "title": "Which database holds the ledger?",
+          "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/3" },
+          "state": "closed",
+          "type": "research",
+          "claim": null,
+          "blockedBy": [],
+          "body": "Which database should hold the ledger?\n",
+          "resolution": {
+            "body": "Postgres. Findings on research/ledger-db.",
+            "author": "ana",
+            "at": "2026-07-03T11:00:00Z"
+          },
+          "outcome": "decided",
+          "gist": "Postgres, one schema per tenant",
+          "warnings": [{ "code": "no-question-heading" }]
+        },
+        {
+          "number": 5,
+          "title": "Does a PDF preview earn its place?",
+          "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/5" },
+          "state": "closed",
+          "type": null,
+          "claim": null,
+          "blockedBy": [],
+          "body": "## Question\n\nDoes an inline PDF preview help support staff?\n",
+          "resolution": { "body": "Dropped.", "author": null, "at": null },
+          "outcome": "out-of-scope",
+          "gist": null,
+          "warnings": [{ "code": "type-several", "detail": "prototype, task" }]
+        }
+      ],
+      "destination": "Billing v2 decided.",
+      "notes": "- Domain: invoicing.",
+      "decisions": [
+        {
+          "number": 3,
+          "title": "Which database holds the ledger?",
+          "link": "https://github.com/acme/billing/issues/3",
+          "gist": "Postgres, one schema per tenant"
+        }
+      ],
+      "notYetSpecified": [
+        {
+          "text": "Retry policy for failed charges, once [Refund: reopen or credit note?](https://github.com/acme/billing/issues/2) is settled.",
+          "tickets": [2]
+        }
+      ],
+      "outOfScope": [
+        {
+          "text": "A PDF preview, ruled out in [Does a PDF preview earn its place?](https://github.com/acme/billing/issues/5).",
+          "tickets": [5]
+        }
+      ],
+      "warnings": []
+    },
+    {
+      "number": 6,
+      "title": "Checkout redesign",
+      "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/6" },
+      "body": "# Checkout redesign\n\nA one-page checkout before Q4.\n",
+      "tickets": [],
+      "destination": null,
+      "notes": null,
+      "decisions": [],
+      "notYetSpecified": [],
+      "outOfScope": [],
+      "warnings": [{ "code": "map-body-free-form" }, { "code": "map-no-destination" }]
+    }
+  ],
+  "unmapped": [
+    {
+      "number": 9,
+      "title": "Who approves a manual credit above 1,000?",
+      "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/9" },
+      "state": "open",
+      "type": "grilling",
+      "claim": null,
+      "blockedBy": [],
+      "body": "## Question\n\nWhich role may approve a manual credit above 1,000?\n",
+      "resolution": null,
+      "outcome": null,
+      "gist": null,
+      "warnings": [{ "code": "no-map" }]
+    }
+  ],
+  "warnings": [{ "code": "unknown-wayfinder-labels", "detail": "wayfinder:blocked" }]
+}

@@ -6,6 +6,41 @@ export {
   type FileSystemShape,
 } from './file-system.ts'
 export {
+  type Blocker,
+  type Claim,
+  type Decision,
+  decodeSnapshot,
+  encodeSnapshot,
+  type Outcome,
+  type Ref,
+  type Resolution,
+  type SectionEntry,
+  type Snapshot,
+  type SnapshotJson,
+  type Ticket,
+  type TicketState,
+  type TicketType,
+  type Tracker,
+  type WayfinderMap,
+} from './snapshot/model.ts'
+export {
+  type Collected,
+  type CollectedMap,
+  type CollectedTicket,
+  readSnapshot,
+} from './snapshot/read.ts'
+export {
+  type DriftWarning,
+  type HealthCode,
+  healthCodes,
+  type HealthWarning,
+  isHealthCode,
+  isWarningCode,
+  type Warning,
+  type WarningCode,
+  warningCodes,
+} from './snapshot/warnings.ts'
+export {
   defaultTimeout,
   type ProcessError,
   ProcessNotRecorded,

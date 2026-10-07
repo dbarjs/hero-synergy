@@ -1,0 +1,158 @@
+{
+  "tracker": {
+    "kind": "github",
+    "owner": "acme",
+    "repo": "legacy"
+  },
+  "repoRoot": "/home/ana/legacy",
+  "collectedAt": "2026-07-03T12:00:00Z",
+  "labels": [
+    "wayfinder:map",
+    "wayfinder:research",
+    "wayfinder:prototype",
+    "wayfinder:grilling",
+    "wayfinder:task",
+    "wayfinder:claimed"
+  ],
+  "maps": [
+    {
+      "number": 1,
+      "title": "Billing rewrite, decided",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/1"
+      },
+      "body": "## Notes\n\n- Domain: invoicing for a multi-tenant SaaS. Grilling tickets use /grilling.\n- Driver: Ana.\n\n## Decisions so far\n\n- [Which database holds the ledger?](https://github.com/acme/legacy/issues/3): Postgres, one schema per tenant\n- #5 was dropped, see the comment there\n\n## Fog\n\n- How invoice numbers stay unique across tenants once #2 is settled.\n- Retry policy for failed charges.\n\n### Tickets\n\n- [ ] #2\n- [x] #3\n- [ ] #4\n- [x] #5\n",
+      "children": []
+    },
+    {
+      "number": 6,
+      "title": "Checkout redesign",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/6"
+      },
+      "body": "# Checkout redesign\n\nWe want a one-page checkout live before Q4 so the trial-to-paid rate stops bleeding on step 3. Open questions are tracked as sub-issues of this issue.\n\nDone so far: we picked Stripe Elements over a hosted page (#8), because the hosted page can't show the per-seat price breakdown.\n\nNot doing this round: Apple Pay and Google Pay. Still fuzzy: how tax shows for EU customers before they enter an address.",
+      "children": [7, 8]
+    }
+  ],
+  "tickets": [
+    {
+      "number": 2,
+      "title": "Refund: reopen the invoice or issue a credit note?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/2"
+      },
+      "body": "Part of #1\nBlocked by: #3\n\n## Question\n\nShould a refund reopen the original invoice, or always create a credit note that references it? Accountants in two pilot tenants disagree.",
+      "state": "open",
+      "labels": ["wayfinder:grilling"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": null
+    },
+    {
+      "number": 3,
+      "title": "Which database holds the ledger?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/3"
+      },
+      "body": "Part of #1\n\nWhich database should hold the ledger? Compare Postgres and DynamoDB for per-tenant isolation, point-in-time restore and cost at 500 tenants.",
+      "state": "closed",
+      "labels": ["wayfinder:research"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": {
+        "body": "Postgres. One schema per tenant keeps isolation and restore simple; DynamoDB would need a partition-key convention and loses ad-hoc reporting. Findings on research/ledger-db.",
+        "author": "ana",
+        "at": "2026-07-03T11:00:00Z"
+      }
+    },
+    {
+      "number": 4,
+      "title": "How do invoice numbers stay unique per tenant?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/4"
+      },
+      "body": "Part of #1\nBlocked by: #2\n\n## Question\n\nDoes each tenant get its own sequence, or is there one global sequence with a tenant prefix? Legal requires gapless numbering in two countries.",
+      "state": "open",
+      "labels": ["wayfinder:grilling", "wayfinder:claimed"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": null
+    },
+    {
+      "number": 5,
+      "title": "Does a PDF preview in the admin UI earn its place?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/5"
+      },
+      "body": "Part of #1\n\n## Question\n\nDoes an inline PDF preview of the invoice help support staff, or is the emailed PDF enough?",
+      "state": "closed",
+      "labels": ["wayfinder:prototype"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": {
+        "body": "Dropped: support staff open the emailed PDF anyway. Prototype on prototype/pdf-preview. Not part of this effort.",
+        "author": "ana",
+        "at": "2026-07-03T11:00:00Z"
+      }
+    },
+    {
+      "number": 7,
+      "title": "What does the one-page layout look like on mobile?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/7"
+      },
+      "body": "Type: prototype\nBlocked by: #8\n\nWhat does the one-page checkout look like on a phone? Three rough variants to react to: stacked, accordion, and a two-step with the payment form last.",
+      "state": "open",
+      "labels": [],
+      "assignees": [],
+      "parent": 6,
+      "blockedBy": [],
+      "lastComment": null
+    },
+    {
+      "number": 8,
+      "title": "Stripe Elements or Stripe Checkout?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/8"
+      },
+      "body": "## Question\n\nWhich Stripe integration lets us show a per-seat price breakdown next to the card form: Elements, or the hosted Checkout page?",
+      "state": "closed",
+      "labels": ["wayfinder:research"],
+      "assignees": [],
+      "parent": 6,
+      "blockedBy": [],
+      "lastComment": {
+        "body": "Elements. Checkout renders Stripe's own line items and cannot show our seat breakdown. Findings on research/stripe-integration.",
+        "author": "ana",
+        "at": "2026-07-03T11:00:00Z"
+      }
+    },
+    {
+      "number": 9,
+      "title": "Who approves a manual credit above 1,000?",
+      "ref": {
+        "tracker": "github",
+        "url": "https://github.com/acme/legacy/issues/9"
+      },
+      "body": "Part of #1\n\n## Question\n\nWhich role may approve a manual credit above 1,000, and does it need two people?",
+      "state": "open",
+      "labels": ["wayfinder:grilling", "wayfinder:research"],
+      "assignees": [],
+      "parent": null,
+      "blockedBy": [],
+      "lastComment": null
+    }
+  ]
+}
