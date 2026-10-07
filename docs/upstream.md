@@ -11,7 +11,7 @@ What the Cockpit relies on from each tool it does not ship, and which versions e
 - **Last checked** is the date of the newest read of the section's primary sources and the version read to. An upstream review replaces it per section, so a partial run moves only the sections it finished.
 - **Not relied on** lists what the Cockpit deliberately does not use from an upstream. An upstream review treats these lists as its watch-list: a change that touches one is an opportunity by definition ([#33]).
 
-Where [`docs/seed.md`](seed.md) lists a contract (its Scout, Sessions, Live status and Actions sections, the Stack table and Appendix A.7), this register supersedes it; the seed stays frozen. This file is refreshed by an **upstream review** ([#33]): the user-invoked project skill `/upstream-review`, run by hand when Eduardo comes back, reads each upstream since its last-checked version, sorts every change into upstream break, opportunity or irrelevant, moves the dates below and files one issue per upstream break and opportunity. Every run is listed in the [Review log](#review-log). Between visits the canary ([#34]) runs the Cockpit's own checks daily against the newest upstreams and files one upstream break per upstream; it never writes this file, and its step summary of the versions passed is where a review starts. The health warnings the Cockpit shows on a version or a shape were decided in [#35].
+Where [`docs/seed.md`](seed.md) lists a contract (its Scout, Sessions, Live status and Actions sections, the Stack table and Appendix A.7), this register supersedes it; the seed stays frozen. This file is refreshed by an **upstream review** ([#33]): the user-invoked project skill `/upstream-review`, run by hand when Eduardo comes back, reads each upstream since its last-checked version, sorts every change into upstream break, opportunity or irrelevant, moves the dates below and files one issue per upstream break and opportunity. Every run is listed in the [Review log](#review-log). Between visits the canary ([#34], built in [#56]; `.github/workflows/canary.yml`) runs the Cockpit's own checks daily against the newest upstreams and files one upstream break per upstream; it never writes this file, and its step summary of the versions passed is where a review starts. Each upstream's section ends with a **Watched by the canary** list: what the canary checks and what it cannot. The health warnings the Cockpit shows on a version or a shape were decided in [#35].
 
 ## Where this was last read
 
@@ -100,6 +100,19 @@ The plugin ships inside the extension and is loaded with `--plugin-dir`. Since [
 
 **Unverified** ([#30]): the behaviour of versions below 2.1.289 was read from their bundled code and checked with a made-up registry entry, never with a real session; `-n` with `--resume` below 2.1.289; when `source` and `reason` arrived; when hooks became trust-gated (2.1.3 is an upper bound); when `--plugin-dir` was added; when registration moved behind trust; linux-arm64 binaries only.
 
+### Watched by the canary
+
+Job `claude` of the daily canary ([#34], built in [#56]): the native installer, latest, no login. A missing or undecodable item below is an upstream break; new flags, fields and plugins never are.
+
+- `claude --version` reads as `x.y.z` (the version shown in the break's title).
+- `claude --help` lists `--name`, `--resume`, `--worktree` and `--plugin-dir` (Launch flags rows).
+- `claude agents --json` decodes with the registry schema, run from an empty folder (the registry row).
+- `claude plugin install mattpocock-skills@claude-plugins-official` exits 0 without a prompt, then `claude plugin list --json` decodes with the install schema and lists it (Plugins and skills rows).
+
+Not watched, because no runner can: the positional slash-command prompt, `-n` with `--resume`, hook payloads and the status values of a live session (they need a login), and the `~/.claude/sessions` files.
+
+**Open items the first runs settle**, recorded here by the build of [#56]: _pending the first scheduled run_ for `claude` printing its outputs with no credentials, `plugin install` working non-interactively on a runner, and the keepalive call resetting the 60-day idle clock.
+
 ## mattpocock-skills
 
 **Floor: any release that ships `/wayfinder`**, which is 1.1.0 (2026-07-08). The README states no numeric floor ([#31]): nothing the Cockpit reads is version-gated, the number is not checkable (see the version table), and a missing `wayfinder` skill is already a health row ([#24] point 7). Requirements text: "mattpocock-skills with the `wayfinder` skill (any release from 1.1.0; built and tested against 1.2.3 and 1.3.1), installed as a plugin or with skills.sh."
@@ -168,6 +181,17 @@ The plugin ships inside the extension and is loaded with `--plugin-dir`. Since [
 
 **Unverified** ([#31]): the marketplace pin before 2026-09-10; `claude plugin update` and skills.sh were not run; how Claude Code's `/` menu renders `pr`'s `metadata`; no real map holding both decision-line forms was observed (inferred from the append-one-line rule).
 
+### Watched by the canary
+
+Job `skills`: the latest `vX.Y.Z` tag, `main` and the marketplace install, each a separate copy. A tag or `main` copy that fails is a break in the version named by the tag; the shas ride in the step summary.
+
+- Every `SKILL.md` frontmatter decodes with the Cockpit's reader.
+- `.claude-plugin/plugin.json` decodes and its `skills` list names `wayfinder`, `to-spec`, `to-tickets`, `implement` and `setup-matt-pocock-skills`.
+- `wayfinder/SKILL.md` carries the five map headings, `## Question`, `` `wayfinder:map` ``, `` `wayfinder:<type>` `` and the four type names.
+- `issue-tracker-github.md` carries its H1, the "Wayfinding operations" section, `--add-assignee @me`, `dependencies/blocked_by`, a sub-issue route and the `Blocked by:` and `Part of #` fallbacks.
+
+Not watched: the decision-line separator (the reader accepts both), the skill texts a session runs, `CONTEXT.md` against `GLOSSARY.md`, and the skills.sh route.
+
 ## VS Code
 
 **Floor: `"engines": { "vscode": "^1.105.0" }` with `"@types/vscode": "~1.105.0"`** ([#17], [#12]). Node sets it, not any API: every API the Cockpit uses exists by 1.65, 1.104 is the first host on Node 22.18 (core's engine) and 1.105 the first such version the forks actually shipped. The floor must stay at or below 1.126, the slowest fork. Today `packages/vscode/package.json` on `main` still reads `^1.100.0` and `~1.100.0` from the scaffold; the build moves it ([#23], noted for the spec).
@@ -230,6 +254,12 @@ The plugin ships inside the extension and is loaded with `--plugin-dir`. Since [
 
 **Unverified** ([#12], [#17]): behaviour inside Cursor, Devin Desktop and VSCodium (terminals in the editor area, terminal icons, webview views); the forks' Node versions, read from Linux builds only; the landing versions of `shellPath`, `shellArgs`, the badge, the serializer and `retainContextWhenHidden`, confirmed present at 1.105.0 but not dated.
 
+### Watched by the canary
+
+Job `vscode`, on Linux (under `xvfb-run -a`) and macOS: the extension-host tier on `stable` only (the floor stays in CI) and the end-to-end tier. A failing suite is a break in the stable version the download API named that day.
+
+Not watched: the forks (Cursor, Devin Desktop, VSCodium), Windows, and the floor.
+
 ## `gh` and the GitHub API
 
 **Floor: none for the query.** `gh api graphql` posts the query and the server decides, so the `gh` version does not gate it; `--slurp` needs `gh` ≥ 2.48.0 (2024-04-17) and GraphQL `--paginate` needs the query to accept `$endCursor` and select `pageInfo` first. `gh` must be authenticated and the repo on github.com ([#3], [#17]). GitHub Enterprise Server is not promised; sub-issues need GHES 3.17+ and relationships 3.19+.
@@ -257,6 +287,12 @@ The plugin ships inside the extension and is loaded with `--plugin-dir`. Since [
 
 **Unverified** ([#9]): whether `subIssues` comes back in map order after a reprioritization (creation order was observed, and the frontier's "first in map order" depends on it); whether a comment or a blocker closing moves `updatedAt`; cross-repository parents and blockers; GHES; the timing of a real 50-ticket map (estimated from `cli/cli`); the `GET /rate_limit` bookkeeping mismatch.
 
+### Watched by the canary
+
+Job `gh`: `vp test --project live` with the workflow token, the map-first query against this repo's own maps. A failure is a break in the `gh` version the runner has.
+
+Not watched: GitHub Enterprise Server, rate-limit headroom, and anything that needs a logged-in user other than the workflow token.
+
 ## Node
 
 **Floor: ≥ 22.18 on `PATH`** in a session's environment ([#17]), the same number as `@hero-synergy/core`'s `engines.node` (`>=22.18`), with `@types/node` pinned to `^22.18` so bundled code can't lean on newer APIs ([#2]). Two Nodes are in play: the one on `PATH`, which runs the status plugin's hook because Claude Code ships no Node of its own, and the extension host's, which is VS Code's and is listed under VS Code (22.19.0 at the floor, 24.21.0 at 1.140).
@@ -274,6 +310,12 @@ The plugin ships inside the extension and is loaded with `--plugin-dir`. Since [
 | Node 26 ships without corepack, so pnpm comes from `npm i -g pnpm@12.8.1` or the global `vp` (a devcontainer note, not a Cockpit contract)                     | n/a                                               | [#2]                                 | [#2]                        |
 
 **Unverified:** the Windows items above come from reading, not from a Windows machine ([#11]); the real-Windows test is out of scope for v0.1.0 ([#17]).
+
+### Watched by the canary
+
+Job `node`: `vp run -r build` then `vp test` on the newest Node `setup-vp` installs. A failure is a break in that version.
+
+Not watched: the floor (22.18), the extension host's Node, and Windows.
 
 ## Decisions referenced
 
@@ -354,5 +396,6 @@ The baseline. The five sections were read in [#30], [#31], [#12], [#9], [#25] an
 [#33]: https://github.com/dbarjs/hero-synergy/issues/33
 [#34]: https://github.com/dbarjs/hero-synergy/issues/34
 [#35]: https://github.com/dbarjs/hero-synergy/issues/35
+[#56]: https://github.com/dbarjs/hero-synergy/issues/56
 [ADR 0003]: adr/0003-the-cockpit-launches-and-watches.md
 [ADR 0004]: adr/0004-extension-host-tests-run-on-mocha-beside-vitest.md
