@@ -1,0 +1,53 @@
+name: Publish the VSIX to the registries
+description: >
+  Publishes the VSIX in packages/vscode to each registry whose switch is on: the Marketplace with
+  an Entra ID login, Open VSX with trusted publishing. Both skip a version already published. A
+  failing registry fails this action, after the other registry has had its turn. The caller's job
+  needs `id-token: write`, the `marketplace` environment, setup-vp and the VSIX downloaded into
+  packages/vscode.
+
+inputs:
+  marketplace:
+    description: "'true' to publish to the Visual Studio Marketplace (the PUBLISH_MARKETPLACE variable)"
+    required: false
+  open-vsx:
+    description: "'true' to publish to Open VSX (the PUBLISH_OPEN_VSX variable)"
+    required: false
+  azure-client-id:
+    description: The Entra ID application the Marketplace login uses
+    required: false
+  azure-tenant-id:
+    description: The Entra ID tenant the Marketplace login uses
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - id: azure
+      if: inputs.marketplace == 'true'
+      continue-on-error: true
+      uses: azure/login@v3
+      with:
+        client-id: ${{ inputs.azure-client-id }}
+        tenant-id: ${{ inputs.azure-tenant-id }}
+        allow-no-subscriptions: true
+    - id: marketplace
+      if: inputs.marketplace == 'true' && steps.azure.outcome == 'success'
+      continue-on-error: true
+      shell: bash
+      run: vp run --filter hero-synergy publish:marketplace
+    - id: open-vsx
+      if: inputs.open-vsx == 'true'
+      continue-on-error: true
+      shell: bash
+      run: vp run --filter hero-synergy publish:open-vsx
+    # `continue-on-error` kept each registry from stopping the other; this is where a failure shows.
+    - if: steps.azure.outcome == 'failure' || steps.marketplace.outcome == 'failure' || steps.open-vsx.outcome == 'failure'
+      shell: bash
+      env:
+        AZURE: ${{ steps.azure.outcome }}
+        MARKETPLACE: ${{ steps.marketplace.outcome }}
+        OPEN_VSX: ${{ steps.open-vsx.outcome }}
+      run: |
+        echo "::error::A registry step failed: Marketplace login $AZURE, Marketplace $MARKETPLACE, Open VSX $OPEN_VSX"
+        exit 1

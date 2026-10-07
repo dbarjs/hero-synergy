@@ -1,0 +1,105 @@
+name: Release
+
+# Runs on every push to main and picks its mode from the repository:
+#   - a changeset file exists: open or update the "Release hero-synergy" PR;
+#   - none does and no `v<version>` tag exists for the extension's version: that version is
+#     released, to every registry switched on and then, always, to GitHub.
+# Merging the Release PR consumes the changesets, which is what turns the next push into a release.
+on:
+  push:
+    branches: [main]
+
+# Reset permissions; every job asks for exactly what it needs.
+permissions: {}
+
+# Never cancel a run midway through a release.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  mode:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.mode.outputs.mode }}
+      version: ${{ steps.mode.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # all tags, to know whether the version is released
+          persist-credentials: false
+      - id: mode
+        run: |
+          version="$(jq -r .version packages/vscode/package.json)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ -n "$(find .changeset -maxdepth 1 -name '*.md' ! -name README.md -print -quit)" ]; then
+            echo "mode=version" >> "$GITHUB_OUTPUT"
+          elif git rev-parse --verify --quiet "refs/tags/v$version" > /dev/null; then
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=publish" >> "$GITHUB_OUTPUT"
+          fi
+
+  version:
+    needs: mode
+    if: needs.mode.outputs.mode == 'version'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the version bump
+      pull-requests: write # open or update the Release PR
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - uses: changesets/action/version@v2
+        with:
+          pr-title: Release hero-synergy
+          commit-message: 'chore: release'
+
+  publish:
+    needs: mode
+    if: needs.mode.outputs.mode == 'publish'
+    runs-on: ubuntu-latest
+    # The Marketplace's Entra ID credential trusts this environment; it has no approval gate.
+    environment: marketplace
+    permissions:
+      contents: write # create the release and its tag
+      id-token: write # Entra ID for the Marketplace, trusted publishing for Open VSX
+    env:
+      VERSION: ${{ needs.mode.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # all tags, for the compare link
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - run: vp run -r build
+      - run: vp run --filter hero-synergy package
+      - uses: ./.github/actions/publish-registries
+        with:
+          marketplace: ${{ vars.PUBLISH_MARKETPLACE }}
+          open-vsx: ${{ vars.PUBLISH_OPEN_VSX }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      # Always, even when a registry step failed: the release is what a backfill starts from.
+      - name: Create the GitHub release
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_MARKETPLACE: ${{ vars.PUBLISH_MARKETPLACE }}
+          PUBLISH_OPEN_VSX: ${{ vars.PUBLISH_OPEN_VSX }}
+        run: |
+          node scripts/release-notes.ts > notes.md
+          gh release create "v$VERSION" packages/vscode/*.vsix \
+            --title "$(node scripts/release-notes.ts --title)" \
+            --notes-file notes.md \
+            --target "$GITHUB_SHA"

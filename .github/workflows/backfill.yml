@@ -1,0 +1,44 @@
+name: Backfill
+
+# Publishes an existing release's VSIX to every registry switched on: for a registry that was off,
+# or that failed, when the release ran. It reuses the release's publish action and environment.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release to backfill, for example v0.1.0
+        required: true
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    environment: marketplace
+    permissions:
+      contents: read # download the release's VSIX
+      id-token: write # Entra ID for the Marketplace, trusted publishing for Open VSX
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - name: Download the release's VSIX
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: gh release download "$TAG" --pattern '*.vsix' --dir packages/vscode
+      - uses: ./.github/actions/publish-registries
+        with:
+          marketplace: ${{ vars.PUBLISH_MARKETPLACE }}
+          open-vsx: ${{ vars.PUBLISH_OPEN_VSX }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
