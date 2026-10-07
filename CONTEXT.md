@@ -36,6 +36,22 @@ _Avoid_: backlog, ready list
 A ticket marked as taken, made by the session before any work: an assignee on GitHub, a `Status: claimed` line on a local tracker.
 _Avoid_: lock, reservation
 
+**Neighbourhood**:
+A ticket's immediate neighbours: what it waits on (its blockers, wherever they live) and what it clears the way for (the tickets of its map that wait on it, found by inverting the blockers). Derived on every render, never stored.
+_Avoid_: dependency graph, dependants
+
+**Finished map**:
+An open map with at least one ticket and every ticket closed: nothing left to decide, ready for `/to-spec`. Folded away in the Tree.
+_Avoid_: done, complete, closed (a closed map is hidden)
+
+**Stuck map**:
+A map with open work but nothing takeable: every open ticket is claimed or blocked.
+_Avoid_: blocked map, idle
+
+**Needs you**:
+A session waiting for you, needing approval or failed. It counts for the badge, puts its map first, and is the one session fact the host hands the derived functions.
+_Avoid_: attention, alert
+
 **Fog**:
 In-scope work too vague to ticket yet, written in the map's "Not yet specified" section.
 _Avoid_: backlog, unknowns
