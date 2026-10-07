@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-// Throwaway: the frontier of one spec and the launch of its first takeable ticket, by hand,
-// until Work ticket (#54) lands in the Cockpit. Reads and launches, never writes (ADR 0003).
+// `next`, the terminal pre-alpha of the Cockpit: it lists and launches the tickets of spec #37 and
+// of its own map #64 from the terminal, by hand, until v0.1.0 ships. It grows with that map, ticket
+// by ticket, and after the release it is the prior art the official CLI map starts from; nothing in
+// it ships. Reads and launches, never writes (ADR 0003).
 //
-//   node scripts/next.mjs --list      print the open sub-issues of the spec, `next` on the first takeable
+//   node scripts/next.mjs --list      print the open tickets of the spec and of the map, `next` on the first takeable
 //   node scripts/next.mjs             print the launch command, then launch the first takeable ticket
 //   node scripts/next.mjs <number>    launch that ticket
 //
@@ -19,10 +21,17 @@ import { fileURLToPath } from 'node:url'
 const OWNER = 'dbarjs'
 const REPO = 'hero-synergy'
 const SPEC = 37
+const MAP = 64
 
-// The skill line the session starts with. URLs, not `#n`, so the session never resolves a number
-// against the wrong list. Swap the line to use the implement form instead of the wayfinder form.
-const SKILL_LINE = ({ spec, ticket }) => `/mattpocock-skills:wayfinder ${spec} ${ticket}`
+// The parents whose tickets `next` works, in order: a spec ticket while the spec has a takeable one,
+// a ticket of this script's own map otherwise. Reading a spec's sub-issues is the one thing `next`
+// does that the Cockpit never will.
+const PARENTS = [SPEC, MAP]
+
+// The skill line the session starts with: the ticket's parent, then the ticket. URLs, not `#n`, so
+// the session never resolves a number against the wrong list. Swap the line to use the implement
+// form instead of the wayfinder form.
+const SKILL_LINE = ({ parent, ticket }) => `/mattpocock-skills:wayfinder ${parent} ${ticket}`
 // const SKILL_LINE = ({ ticket }) => `/mattpocock-skills:implement ${ticket}`
 
 // The word the launch is typed with, resolved by the interactive shell (alias or function).
@@ -60,48 +69,61 @@ function graphql(query, variables) {
   return body.data
 }
 
-function readSpec() {
-  const data = graphql(
-    `
-      query ($owner: String!, $repo: String!, $spec: Int!) {
-        repository(owner: $owner, name: $repo) {
-          issue(number: $spec) {
-            title
-            subIssues(first: 100) {
-              nodes {
-                number
-                title
-                state
-                assignees(first: 10) {
-                  nodes {
-                    login
-                  }
-                }
-                blockedBy(first: 50) {
-                  nodes {
-                    number
-                    title
-                    state
-                  }
-                }
-              }
-            }
+// Every parent in one request: an aliased `issue` block per parent, its sub-issues in sub-issue
+// order with each blocker's state and the assignees. Core takes this reading over in the next ticket.
+function readParents() {
+  const blocks = PARENTS.map(
+    (number, i) => `
+      p${i}: issue(number: ${number}) {
+        title
+        subIssues(first: 100) {
+          nodes {
+            ...ticket
           }
         }
       }
     `,
-    { owner: OWNER, repo: REPO, spec: SPEC },
   )
-  const spec = data.repository.issue
-  if (!spec) throw new Error(`#${SPEC} not found on ${OWNER}/${REPO}`)
-  const tickets = spec.subIssues.nodes.map((node) => ({
-    number: node.number,
-    title: node.title,
-    open: node.state === 'OPEN',
-    assignees: node.assignees.nodes.map((a) => a.login),
-    waitsOn: node.blockedBy.nodes.filter((b) => b.state === 'OPEN').map((b) => b.number),
-  }))
-  return { title: spec.title, tickets }
+  const data = graphql(
+    `
+      fragment ticket on Issue {
+        number
+        title
+        state
+        assignees(first: 10) {
+          nodes {
+            login
+          }
+        }
+        blockedBy(first: 50) {
+          nodes {
+            number
+            title
+            state
+          }
+        }
+      }
+      query ($owner: String!, $repo: String!) {
+        repository(owner: $owner, name: $repo) {
+          ${blocks.join('')}
+        }
+      }
+    `,
+    { owner: OWNER, repo: REPO },
+  )
+  return PARENTS.map((number, i) => {
+    const parent = data.repository[`p${i}`]
+    if (!parent) throw new Error(`#${number} not found on ${OWNER}/${REPO}`)
+    const tickets = parent.subIssues.nodes.map((node) => ({
+      number: node.number,
+      title: node.title,
+      parent: number,
+      open: node.state === 'OPEN',
+      assignees: node.assignees.nodes.map((a) => a.login),
+      waitsOn: node.blockedBy.nodes.filter((b) => b.state === 'OPEN').map((b) => b.number),
+    }))
+    return { number, title: parent.title, tickets }
+  })
 }
 
 function readTicket(number) {
@@ -113,6 +135,9 @@ function readTicket(number) {
             number
             title
             state
+            parent {
+              number
+            }
           }
         }
       }
@@ -145,30 +170,35 @@ function liveSessionTickets() {
   return live
 }
 
-function annotate(spec, live) {
+// The open tickets of every parent with their notes; `next` marks the first takeable one across all
+// parents in parent order.
+function annotate(parents, live) {
   let nextSeen = false
-  return spec.tickets
-    .filter((t) => t.open)
-    .map((ticket) => {
-      const notes = []
-      if (ticket.waitsOn.length)
-        notes.push(`waits on ${ticket.waitsOn.map((n) => `#${n}`).join(' ')}`)
-      if (ticket.assignees.length) notes.push(`claimed by ${ticket.assignees.join(', ')}`)
-      if (live.has(ticket.number)) notes.push('live session')
-      const takeable = notes.length === 0
-      if (takeable && !nextSeen) {
-        notes.push('next')
-        nextSeen = true
-      }
-      return { ...ticket, takeable, notes }
-    })
+  return parents.map((parent) => ({
+    ...parent,
+    tickets: parent.tickets
+      .filter((t) => t.open)
+      .map((ticket) => {
+        const notes = []
+        if (ticket.waitsOn.length)
+          notes.push(`waits on ${ticket.waitsOn.map((n) => `#${n}`).join(' ')}`)
+        if (ticket.assignees.length) notes.push(`claimed by ${ticket.assignees.join(', ')}`)
+        if (live.has(ticket.number)) notes.push('live session')
+        const takeable = notes.length === 0
+        if (takeable && !nextSeen) {
+          notes.push('next')
+          nextSeen = true
+        }
+        return { ...ticket, takeable, notes }
+      }),
+  }))
 }
 
 const shellQuote = (s) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replaceAll("'", `'\\''`)}'`)
 
 function launch(ticket) {
   const name = `#${ticket.number} ${ticket.title}`
-  const skill = SKILL_LINE({ spec: issueUrl(SPEC), ticket: issueUrl(ticket.number) })
+  const skill = SKILL_LINE({ parent: issueUrl(ticket.parent), ticket: issueUrl(ticket.number) })
   const args = ['-n', name, '-w', String(ticket.number), skill]
   console.log([LAUNCHER, ...args].map(shellQuote).join(' '))
   console.log()
@@ -181,13 +211,15 @@ function launch(ticket) {
 }
 
 function list() {
-  const spec = readSpec()
-  const live = liveSessionTickets()
-  console.log(`#${SPEC} ${spec.title}`)
-  for (const t of annotate(spec, live)) {
-    const notes = t.notes.length ? `  (${t.notes.join(', ')})` : ''
-    console.log(`  #${t.number} ${t.title}${notes}`)
-  }
+  const parents = annotate(readParents(), liveSessionTickets())
+  parents.forEach((parent, i) => {
+    if (i > 0) console.log()
+    console.log(`#${parent.number} ${parent.title}`)
+    for (const t of parent.tickets) {
+      const notes = t.notes.length ? `  (${t.notes.join(', ')})` : ''
+      console.log(`  #${t.number} ${t.title}${notes}`)
+    }
+  })
 }
 
 function launchNumber(number) {
@@ -199,14 +231,17 @@ function launchNumber(number) {
   }
   const issue = readTicket(number)
   if (issue.state !== 'OPEN') console.error(`warning: #${number} is ${issue.state.toLowerCase()}`)
-  launch(issue)
+  if (!issue.parent)
+    console.error(`warning: #${number} has no parent issue; the session gets the spec, #${SPEC}`)
+  launch({ number: issue.number, title: issue.title, parent: issue.parent?.number ?? SPEC })
 }
 
 function launchNext() {
-  const spec = readSpec()
-  const next = annotate(spec, liveSessionTickets()).find((t) => t.takeable)
+  const parents = annotate(readParents(), liveSessionTickets())
+  const next = parents.flatMap((p) => p.tickets).find((t) => t.takeable)
   if (!next) {
-    console.error(`nothing takeable on #${SPEC} ${spec.title}; see --list`)
+    const names = parents.map((p) => `#${p.number} ${p.title}`).join(' or ')
+    console.error(`nothing takeable on ${names}; see --list`)
     process.exit(1)
   }
   launch(next)
