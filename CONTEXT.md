@@ -103,9 +103,17 @@ _Avoid_: maximum version, latest supported
 The scheduled CI workflow that runs the Cockpit's parsers and test suites against the newest version of each upstream, while nobody is working on the repo. It watches the codebase, not any user's tracker or machine.
 _Avoid_: nightly, smoke test, upstream drift
 
+**Upstream review**:
+A dated pass over every upstream since its last-checked version, run by hand when Eduardo comes back and never on a schedule. It sorts each change into upstream break, opportunity or irrelevant, moves the register's dates and files one issue per upstream break and opportunity.
+_Avoid_: audit, sync, dependency update
+
 **Upstream break**:
-A contract the canary finds broken on a newer upstream: a schema that no longer decodes, a flag gone from the help, a suite that fails. Reported as one issue per upstream, never as a warning in the Cockpit.
-_Avoid_: drift (about the tracker), health (about the machine), regression
+An upstream change that means something in this repo must change to stay correct: a schema that no longer decodes, a flag gone from the help, a suite that fails, a contract's shape, the floor, a file the register says is owed. Found by the canary while nobody is here, one issue per upstream, or by an upstream review when Eduardo is back, one issue per break; never a warning in the Cockpit, never fixed by the finder.
+_Avoid_: drift (about the tracker), health (about the machine), regression, "break" on its own
+
+**Opportunity**:
+An upstream change the Cockpit could use: a new capability, or one that lets a cut feature return. Found only by an upstream review, since the canary ignores what is new, and filed as an issue for triage to weigh.
+_Avoid_: feature request, enhancement
 
 ### Relationships
 
@@ -123,10 +131,12 @@ _Avoid_: drift (about the tracker), health (about the machine), regression
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
 - The canary runs the Cockpit's own checks against the newest upstreams and files an upstream break on the tracker; the Cockpit at runtime reports health. The same contract can surface as either, in different places.
+- An upstream review moves an upstream's last-checked date and tested ceiling; it never moves the floor, and the canary never writes the register.
+- An upstream review starts from what the canary last passed and files issues; it never charts a map, changes code or updates the machine.
 
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
-- "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary; the same thing found on a user's machine is health.
+- "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.

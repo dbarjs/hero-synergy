@@ -8,8 +8,10 @@ What the Cockpit relies on from each tool it does not ship, and which versions e
 - **Since** is the version the contract first appeared in, taken from the upstream's own changelog, docs or source. "Undated" means no primary source dates it and it was present in every version read. A later version that changed the shape is named in the same cell.
 - **Used by** links the decision that relies on the row, with the point number where the decision is long. Once the code exists, the build points the row at the module instead.
 - **Unverified** marks a fact copied from a research file's own "not verified" list, or read from code rather than run.
+- **Last checked** is the date of the newest read of the section's primary sources and the version read to. An upstream review replaces it per section, so a partial run moves only the sections it finished.
+- **Not relied on** lists what the Cockpit deliberately does not use from an upstream. An upstream review treats these lists as its watch-list: a change that touches one is an opportunity by definition ([#33]).
 
-Where [`docs/seed.md`](seed.md) lists a contract (its Scout, Sessions, Live status and Actions sections, the Stack table and Appendix A.7), this register supersedes it; the seed stays frozen. How this file is refreshed when Eduardo comes back is decided in [#33], whether CI watches the upstreams in between in [#34], and whether the Cockpit warns on a version or a shape in [#35].
+Where [`docs/seed.md`](seed.md) lists a contract (its Scout, Sessions, Live status and Actions sections, the Stack table and Appendix A.7), this register supersedes it; the seed stays frozen. This file is refreshed by an **upstream review** ([#33]): the user-invoked project skill `/upstream-review`, run by hand when Eduardo comes back, reads each upstream since its last-checked version, sorts every change into upstream break, opportunity or irrelevant, moves the dates below and files one issue per upstream break and opportunity. Every run is listed in the [Review log](#review-log). Between visits the canary ([#34]) runs the Cockpit's own checks daily against the newest upstreams and files one upstream break per upstream; it never writes this file, and its step summary of the versions passed is where a review starts. The health warnings the Cockpit shows on a version or a shape were decided in [#35].
 
 ## Where this was last read
 
@@ -318,6 +320,14 @@ Research files, each on its own branch:
 - the status plugin prototype on [`prototype/status-hooks`](https://github.com/dbarjs/hero-synergy/tree/prototype/status-hooks) ([#6])
 
 Primary sources the rows cite: the Claude Code [changelog](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md) and docs pages for [agent view](https://code.claude.com/docs/en/agent-view), [sessions](https://code.claude.com/docs/en/sessions), [worktrees](https://code.claude.com/docs/en/worktrees), [hooks](https://code.claude.com/docs/en/hooks), [permissions](https://code.claude.com/docs/en/permissions) and [skills](https://code.claude.com/docs/en/skills); [`mattpocock/skills`](https://github.com/mattpocock/skills) and its [releases](https://github.com/mattpocock/skills/releases); the marketplace manifest in [`anthropics/claude-plugins-official`](https://github.com/anthropics/claude-plugins-official); `vscode.d.ts` at each [`microsoft/vscode`](https://github.com/microsoft/vscode) tag and the release notes for 1.50, 1.58, 1.64 and 1.93; [`microsoft/vscode-vsce`](https://github.com/microsoft/vscode-vsce/blob/v4.0.0/src/validation.ts) 4.0.0; the GitHub [GraphQL reference for issues](https://docs.github.com/en/graphql/reference/issues), [rate limits](https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api) and the changelog entries for [sub-issues](https://github.blog/changelog/2025-04-09-evolving-github-issues-and-projects/) and [dependencies](https://github.blog/changelog/2025-08-21-dependencies-on-issues/); `gh` release notes for [v2.48.0](https://github.com/cli/cli/releases/tag/v2.48.0) and [v2.94.0](https://github.com/cli/cli/releases/tag/v2.94.0).
+
+## Review log
+
+One entry per upstream review ([#33]), newest first. The entry is the run's whole record: the dates and rows above carry the facts, the issues carry the work, and irrelevant changes are counted, not listed. A run's entry is a dated heading and one table row per upstream reviewed, with the columns **Read** (the range of the primary sources read), **Ran** (what was executed, on which installed version) and **Found** (how many upstream breaks, opportunities and irrelevant changes, with the issues linked).
+
+### 2026-10-07: register written, no review yet
+
+The baseline. The five sections were read in [#30], [#31], [#12], [#9], [#25] and [#28] and written down in [#32]; the "Where this was last read" table is what the first review starts from, with the canary's last step summary ([#34]) once it runs.
 
 [#2]: https://github.com/dbarjs/hero-synergy/issues/2
 [#3]: https://github.com/dbarjs/hero-synergy/issues/3
