@@ -13,6 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Everything that runs without a VS Code: build, format, lint, types, the Vitest tiers.
   check:
     runs-on: ubuntu-latest
     steps:
@@ -25,5 +26,48 @@ jobs:
           cache: true
       - run: vp run -r build
       - run: vp check
-      - run: vp test
+      - run: vp test --coverage
       - run: vp run --filter hero-synergy typecheck
+
+  # The two tiers that need a real VS Code: the Mocha host tier on the floor and on stable, then
+  # the Playwright-driven e2e project. Linux runs under xvfb; macOS has a window server.
+  vscode:
+    name: vscode (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+          - name: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      # The downloads are keyed by OS, architecture, the floor (in .vscode-test.mjs) and today's
+      # stable, so a new VS Code release refreshes the cache and nothing else does.
+      - id: stable
+        run: echo "version=$(curl -fsSL https://update.code.visualstudio.com/api/releases/stable | jq -r '.[0]')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: packages/vscode/.vscode-test
+          key: vscode-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('packages/vscode/.vscode-test.mjs') }}-${{ steps.stable.outputs.version }}
+      - run: vp run -r build
+      - name: Extension-host tier (floor and stable)
+        run: ${{ runner.os == 'Linux' && 'xvfb-run -a' || '' }} vp run --filter hero-synergy test:integration
+      - name: End-to-end tier
+        run: ${{ runner.os == 'Linux' && 'xvfb-run -a' || '' }} vp test --project e2e
+      # What the window showed when an e2e test failed: a screenshot and the workbench text.
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-failures-${{ matrix.name }}
+          path: packages/vscode/out-test/e2e-failures
+          if-no-files-found: ignore
