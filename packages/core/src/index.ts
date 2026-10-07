@@ -6,6 +6,26 @@ export {
   type FileSystemShape,
 } from './file-system.ts'
 export {
+  decidedOfTotal,
+  frontierOf,
+  isClaimed,
+  isFinished,
+  type Mode,
+  modeOf,
+  type Neighbourhood,
+  neighbourhoodOf,
+  needsYouIn,
+  nextOf,
+  openBlockers,
+  orderMaps,
+  orderTickets,
+  placeOf,
+  type SessionFacts,
+  type TicketPlace,
+  type Urgency,
+  urgencyOf,
+} from './snapshot/derive.ts'
+export {
   type Blocker,
   type Claim,
   type Decision,
