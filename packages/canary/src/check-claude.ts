@@ -22,6 +22,8 @@ export const launchFlags: ReadonlyArray<{ flag: string; row: string }> = [
 ]
 
 const installTarget = 'mattpocock-skills@claude-plugins-official'
+const marketplaceName = 'claude-plugins-official'
+const marketplaceSource = 'anthropics/claude-plugins-official'
 
 const rows = {
   version: 'Claude Code › the floor reads `claude --version` as x.y.z',
@@ -102,6 +104,10 @@ export async function checkClaude(): Promise<Report> {
   }
 
   const help = await call(['--help'])
+  // The flag listing is long and says nothing when every flag is there: keep the capture short.
+  output =
+    output.slice(0, output.lastIndexOf('$ claude --help')) +
+    `$ claude --help\n[${help.stdout.split('\n').length} lines, exit ${help.code}]\n`
   if (help.code !== 0) {
     failures.push({
       contract: '--help',
@@ -123,6 +129,20 @@ export async function checkClaude(): Promise<Report> {
     })
   } else {
     failures.push(...registryFailures(agents.stdout))
+  }
+
+  // A fresh runner knows no marketplace: refresh it, or add it when it is not there yet.
+  const marketplace = marketplaceName
+  const refreshed = await call(['plugin', 'marketplace', 'update', marketplace], scratch)
+  if (refreshed.code !== 0) {
+    const added = await call(['plugin', 'marketplace', 'add', marketplaceSource], scratch)
+    if (added.code !== 0) {
+      failures.push({
+        contract: 'plugin marketplace add',
+        row: rows.install,
+        error: `exit ${added.code}: ${(added.stderr || added.stdout).slice(0, 300)}`,
+      })
+    }
   }
 
   const install = await call(['plugin', 'install', installTarget], scratch)

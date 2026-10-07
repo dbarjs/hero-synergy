@@ -67,7 +67,9 @@ jobs:
       - run: curl -fsSL https://claude.ai/install.sh | bash
         continue-on-error: true
       - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-      - run: claude plugin install mattpocock-skills@claude-plugins-official
+      - run: |
+          claude plugin marketplace update claude-plugins-official || claude plugin marketplace add anthropics/claude-plugins-official
+          claude plugin install mattpocock-skills@claude-plugins-official
         continue-on-error: true
       - id: tag
         run: echo "name=$(node packages/canary/src/cli.ts tag -- https://github.com/mattpocock/skills.git)" >> "$GITHUB_OUTPUT"

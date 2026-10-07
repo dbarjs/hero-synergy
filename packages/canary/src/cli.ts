@@ -173,7 +173,9 @@ async function main(argv: string[]): Promise<void> {
     if (process.env.GITHUB_STEP_SUMMARY !== undefined) {
       await appendFile(process.env.GITHUB_STEP_SUMMARY, summary)
     }
-    await writeFile(required(values['state-out'], '--state-out'), JSON.stringify(state, null, 2))
+    const stateOut = required(values['state-out'], '--state-out')
+    await mkdir(path.dirname(stateOut), { recursive: true })
+    await writeFile(stateOut, JSON.stringify(state, null, 2))
     return
   }
 
