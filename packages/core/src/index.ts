@@ -1,4 +1,29 @@
+export {
+  chartMap,
+  launchFresh,
+  type Launch,
+  type LaunchContext,
+  refText,
+  renderCommand,
+  resumeById,
+  resumeByName,
+  runSkill,
+  shellQuote,
+  type SkillCommands,
+  type TicketTarget,
+  toSpec,
+  workTicket,
+} from './claude/actions.ts'
 export type { Decoded } from './claude/decode.ts'
+export {
+  commandOf,
+  type DiscoveredSkill,
+  discoverSkills,
+  type DiscoverSkillsInput,
+  type SkillInventory,
+  type SkillSource,
+  userInvokedSkills,
+} from './claude/discover-skills.ts'
 export {
   type PluginInstall,
   type PluginManifest,
