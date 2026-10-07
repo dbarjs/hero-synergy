@@ -21,6 +21,9 @@ const WebviewMessageSchema = Schema.Union([
   }),
   Schema.Struct({ type: Schema.Literal('reveal'), key: Schema.String }),
   Schema.Struct({ type: Schema.Literal('open-link'), url: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('launch'), key: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('focus-terminal'), key: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('copy'), key: Schema.String }),
 ])
 
 const decode = Schema.decodeUnknownOption(WebviewMessageSchema)

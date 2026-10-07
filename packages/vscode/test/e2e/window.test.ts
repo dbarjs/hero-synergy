@@ -1,7 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
+import { renderCommand } from '@hero-synergy/core'
 import { downloadAndUnzipVSCode } from '@vscode/test-electron'
 import {
   _electron as electron,
@@ -11,7 +12,7 @@ import {
 } from 'playwright'
 import { afterAll, beforeAll, expect, it, onTestFailed } from 'vite-plus/test'
 
-import { createWorkspace } from '../fixtures/workspace.mjs'
+import { createLaunchableWorkspace, writeUserSettings } from '../fixtures/workspace.mjs'
 
 /**
  * The end-to-end tier: a real VS Code launched through Playwright's Electron support against the
@@ -32,12 +33,20 @@ let scratch: string
 // A copy of the fixture workspace that is a git repo of its own: the fixture sits inside this repo,
 // and the scout would resolve the window to this repo's root and its GitHub tracker.
 let workspaceDir: string
+// What the stub `claude` named in the user settings records when a session starts.
+let argvFile: string
 
 beforeAll(async () => {
   const executablePath = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
   // Electron's IPC socket lives under the user data dir; Unix caps socket paths at 107 characters.
   scratch = mkdtempSync(path.join(tmpdir(), 'hero-synergy-e2e-'))
-  workspaceDir = createWorkspace(path.join(scratch, 'repo'))
+  const launchable = createLaunchableWorkspace(path.join(scratch, 'repo'))
+  workspaceDir = launchable.workspace
+  argvFile = launchable.argvFile
+  // The setting is machine-scoped: the window reads it from the user settings, not the repo.
+  writeUserSettings(path.join(scratch, 'user-data'), {
+    'heroSynergy.claude.path': launchable.claude,
+  })
   app = await electron.launch({
     executablePath,
     args: [
@@ -309,6 +318,36 @@ it('collects again when Refresh is pressed and the Tree updates', async () => {
     '#2 Dark mode | next | AFK',
     '#3 Contrast audit | task',
   ])
+})
+
+it('launches the next ticket from ▶ with the command the Focus pane showed', async () => {
+  onTestFailed(() => captureFailure('launch'))
+  // Open the pane under the next ticket (an AFK one: it launches like any other).
+  await row('#2 Dark mode').click()
+  const command = tree().locator('.pane .command')
+  await command.waitFor({ timeout: 15_000 })
+  const shown = (await command.innerText()).trim()
+  expect(shown).toMatch(/^claude -n '#2 Dark mode' --plugin-dir /)
+  expect(shown).not.toContain(' -w ')
+  expect(await tree().locator('.pane .shared').innerText()).toContain('shares the checkout')
+
+  await row('#2 Dark mode').locator('.play').click()
+
+  // The stub records its argv when VS Code starts it as the terminal's own process.
+  await expect.poll(() => existsSync(argvFile), { timeout: 30_000, interval: 500 }).toBe(true)
+  const argv = readFileSync(argvFile, 'utf8').trimEnd().split('\n')
+  expect(renderCommand(['claude', ...argv])).toBe(shown)
+
+  // The terminal is named like the session, and the row now offers focus terminal, not ▶.
+  await expect
+    .poll(() => page.locator('.part.panel').filter({ hasText: '#2 Dark mode' }).count(), {
+      timeout: 15_000,
+    })
+    .toBeGreaterThan(0)
+  await expect.poll(() => row('#2 Dark mode').locator('.play').count(), { timeout: 15_000 }).toBe(0)
+  await expect
+    .poll(() => row('#2 Dark mode').locator('.focus-terminal').count(), { timeout: 15_000 })
+    .toBe(1)
 })
 
 it('reopens the Detail on the last selection after the window reloads', async () => {

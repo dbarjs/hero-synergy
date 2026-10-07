@@ -2,6 +2,7 @@
 import { nextTick, onMounted, watch } from 'vue'
 
 import type { DetailView, MapSection, NeighbourView } from '../../src/protocol.ts'
+import ActionBlock from './ActionBlock.vue'
 import Markdown from './Markdown.vue'
 
 /**
@@ -18,6 +19,9 @@ const emit = defineEmits<{
   open: [key: string]
   /** A link in a rendered body. */
   link: [url: string]
+  launch: [key: string]
+  focusTerminal: [key: string]
+  copy: [key: string]
 }>()
 
 const SECTIONS: ReadonlyArray<{ section: MapSection; heading: string }> = [
@@ -83,7 +87,27 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
         <dt>Claim</dt>
         <dd>{{ view.detail.claim === null ? 'unclaimed' : view.detail.claim.join(', ') }}</dd>
       </div>
+      <div v-if="view.detail.session.kind !== 'none'" class="fact session">
+        <dt>Session</dt>
+        <dd>
+          <template v-if="view.detail.session.kind === 'starting'">
+            starting
+            <button type="button" class="link" @click="emit('focusTerminal', view.detail.key)">
+              focus terminal
+            </button>
+          </template>
+          <template v-else>ended: {{ view.detail.session.detail }}</template>
+        </dd>
+      </div>
     </dl>
+
+    <ActionBlock
+      v-if="view.detail.action"
+      :action="view.detail.action"
+      :ticket-key="view.detail.key"
+      @launch="(key) => emit('launch', key)"
+      @copy="(key) => emit('copy', key)"
+    />
 
     <section class="neighbourhood" aria-label="Neighbourhood">
       <div
@@ -260,6 +284,13 @@ h2 {
 .fact {
   display: flex;
   gap: 8px;
+}
+.link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
 }
 dt {
   color: var(--vscode-descriptionForeground);

@@ -9,6 +9,7 @@ import {
   readLocalTracker,
   ProcessRunner,
   type ProcessRunnerShape,
+  renderCommand,
 } from '@hero-synergy/core'
 import { Effect, Fiber, Layer } from 'effect'
 import { TestClock } from 'effect/testing'
@@ -16,7 +17,17 @@ import { TestClock } from 'effect/testing'
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
 import { type Cockpit, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
 import type { DetailView, MapNode, ViewModel } from './protocol.ts'
-import { CollectProgress, Opener, Storage, WorkspaceFolders } from './services.ts'
+import {
+  Clipboard,
+  CollectProgress,
+  HostEnvironment,
+  type HostEnvironmentShape,
+  Opener,
+  Storage,
+  type TerminalRecorder,
+  Terminals,
+  WorkspaceFolders,
+} from './services.ts'
 import { CACHE_KEY, writeCache } from './snapshot-cache.ts'
 import type { OpenTarget } from './view-model.ts'
 
@@ -67,6 +78,8 @@ interface Setup {
   readonly stored?: Record<string, unknown>
   /** Each process takes this long on the test clock, so triggers can overlap a collect. */
   readonly delay?: number
+  /** What the window says about `claude`, the plugin and the settings; nothing resolves by default. */
+  readonly environment?: Partial<HostEnvironmentShape>
 }
 
 /** Runs `body` against a Cockpit on the fixture workspace; every layer is in memory. */
@@ -83,12 +96,16 @@ const withCockpit = <A>(
     progress: { shown: number; open: number }
     runs: () => number
     fs: FileSystem['Service']
+    terminals: TerminalRecorder
+    copied: string[]
   }) => Effect.Effect<
     A,
     never,
     Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener | CollectProgress
   >,
 ) => {
+  const terminals = Terminals.inMemory()
+  const copied: string[] = []
   const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)], setup.delay)
   const opened: OpenTarget[] = []
   const progress = { shown: 0, open: 0 }
@@ -99,6 +116,9 @@ const withCockpit = <A>(
     Storage.inMemory(setup.stored),
     FileSystem.inMemory(setup.files ?? workspaceFiles(ROOT)),
     runner.layer,
+    terminals.layer,
+    Clipboard.inMemory(copied),
+    HostEnvironment.inMemory(setup.environment),
   )
   return Effect.gen(function* () {
     const published: ViewModel[] = []
@@ -122,6 +142,8 @@ const withCockpit = <A>(
       progress,
       runs: runner.runs,
       fs,
+      terminals: terminals.recorder,
+      copied,
     })
   }).pipe(Effect.provide(layer))
 }
@@ -977,5 +999,357 @@ describe('the Cockpit keeps the last snapshot', () => {
         )
       }
     }),
+  )
+})
+
+const CLAUDE = '/opt/claude'
+const pluginList = (stdout: string): ProcessRecording => ({
+  command: CLAUDE,
+  args: ['plugin', 'list', '--json'],
+  stdout,
+  stderr: '',
+  exitCode: 0,
+})
+const WAYFINDER_SKILL =
+  '---\nname: wayfinder\ndescription: Plan a map.\ndisable-model-invocation: true\n---\n# Wayfinder\n'
+
+/** A window where `claude` and the wayfinder skill are both there. */
+const launchable = (overrides: Partial<HostEnvironmentShape> = {}): Setup => ({
+  files: {
+    ...workspaceFiles(ROOT),
+    [CLAUDE]: '#!/bin/sh\n',
+    [`${ROOT}/.claude/skills/wayfinder/SKILL.md`]: WAYFINDER_SKILL,
+  },
+  recordings: [inRepo(ROOT, ROOT), pluginList('[]')],
+  environment: { claudeSetting: Effect.succeed(CLAUDE), ...overrides },
+})
+
+const PALETTE = 'map:3:ticket:1'
+
+const ticketRowOf = (viewModel: ViewModel | undefined, key: string) =>
+  maps(viewModel)
+    .flatMap((map) => map.tickets)
+    .find((row) => row.key === key)
+
+describe('the Cockpit controller launching a ticket', () => {
+  it.effect('shows the command ▶ will run on each frontier row, and only there', () =>
+    withCockpit(launchable(), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const rows = maps(published[0]).flatMap((map) => map.tickets)
+        expect(
+          rows.filter((row) => row.action !== null).map((row) => [row.number, row.place]),
+        ).toEqual([
+          [1, 'frontier'],
+          [3, 'frontier'],
+        ])
+        const palette = ticketRowOf(published[0], PALETTE)
+        expect(palette?.action).toEqual({
+          label: 'Work ticket',
+          command: expect.stringMatching(
+            /^claude -n '#1 Palette' --plugin-dir \/ext\/claude-plugin /,
+          ),
+          envLine: 'env: HERO_SYNERGY_TICKET=1 HERO_SYNERGY_EVENTS=/storage/events/repo.jsonl',
+          disabled: null,
+          note: 'No worktree on a local tracker: this session shares the checkout.',
+        })
+      }),
+    ),
+  )
+
+  it.effect('spawns claude as the terminal itself with the argv the pane showed', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const shown = ticketRowOf(published[0], PALETTE)?.action?.command
+        expect(yield* cockpit.receive({ type: 'launch', key: PALETTE })).toBe(true)
+
+        expect(terminals.opened).toHaveLength(1)
+        const [spec] = terminals.opened
+        expect(spec).toMatchObject({
+          name: '#1 Palette',
+          shellPath: CLAUDE,
+          cwd: ROOT,
+          env: { HERO_SYNERGY_TICKET: '1', HERO_SYNERGY_EVENTS: '/storage/events/repo.jsonl' },
+          icon: 'beaker',
+          location: 'panel',
+        })
+        expect(spec?.shellArgs.slice(0, 4)).toEqual([
+          '-n',
+          '#1 Palette',
+          '--plugin-dir',
+          '/ext/claude-plugin',
+        ])
+        expect(spec?.shellArgs).not.toContain('-w')
+        expect(renderCommand(['claude', ...(spec?.shellArgs ?? [])])).toBe(shown)
+      }),
+    ),
+  )
+
+  it.effect('opens the terminal in the editor area when the setting says so', () =>
+    withCockpit(
+      launchable({ terminalLocation: Effect.succeed('editor') }),
+      ({ cockpit, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(terminals.opened[0]?.location).toBe('editor')
+        }),
+    ),
+  )
+
+  it.effect('creates the events file before the plugin first appends to it', () =>
+    withCockpit(launchable(), ({ cockpit, fs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(yield* fs.readFile('/storage/events/repo.jsonl').pipe(Effect.orDie)).toBe('')
+      }),
+    ),
+  )
+
+  it.effect('moves the ticket to starting, drops ▶ and keeps one launch to a ticket', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* Effect.all(
+          [
+            cockpit.receive({ type: 'launch', key: PALETTE }),
+            cockpit.receive({ type: 'launch', key: PALETTE }),
+          ],
+          { concurrency: 'unbounded' },
+        )
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(terminals.opened).toHaveLength(1)
+        const row = ticketRowOf(published.at(-1), PALETTE)
+        expect(row?.session).toEqual({ kind: 'starting' })
+        expect(row?.action).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('focuses the terminal of a starting ticket and of no other', () =>
+    withCockpit(launchable(), ({ cockpit, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'focus-terminal', key: PALETTE })
+        expect(terminals.focused).toEqual([])
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* cockpit.receive({ type: 'focus-terminal', key: PALETTE })
+        yield* cockpit.receive({ type: 'focus-terminal', key: 'map:3:ticket:3' })
+        expect(terminals.focused).toEqual([1])
+      }),
+    ),
+  )
+
+  it.effect.each([
+    ['the user closes it', { reason: 'user', code: null }, 'terminal closed'],
+    ['the window closes', { reason: 'shutdown', code: null }, 'window closed'],
+    ['the process exits non-zero', { reason: 'process', code: 3 }, 'exited with code 3'],
+  ] as const)('ends the ticket with the detail when %s', ([, exit, detail]) =>
+    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        terminals.close(1, exit)
+        yield* Effect.yieldNow
+        const row = ticketRowOf(published.at(-1), PALETTE)
+        expect(row?.session).toEqual({ kind: 'ended', detail })
+        // Ended is not live: the ticket can be taken again.
+        expect(row?.action?.disabled).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('ignores the close of a terminal that belongs to no ticket', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const before = published.length
+        terminals.close(99, { reason: 'user', code: null })
+        yield* Effect.yieldNow
+        expect(published).toHaveLength(before)
+      }),
+    ),
+  )
+
+  it.effect('launches again after the session ended, in a fresh terminal', () =>
+    withCockpit(launchable(), ({ cockpit, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        terminals.close(1, { reason: 'user', code: null })
+        yield* Effect.yieldNow
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(terminals.opened).toHaveLength(2)
+      }),
+    ),
+  )
+
+  it.effect('launches nothing for a ticket that is not on the frontier, or for no ticket', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals, logged }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        // #4 Row density is claimed, #2 Dark mode waits on #1.
+        yield* cockpit.receive({ type: 'launch', key: 'map:3:ticket:4' })
+        yield* cockpit.receive({ type: 'launch', key: 'map:3:ticket:2' })
+        yield* cockpit.receive({ type: 'launch', key: 'map:3:map' })
+        yield* cockpit.receive({ type: 'launch', key: 'map:9:ticket:9' })
+        expect(terminals.opened).toEqual([])
+        expect(logged.filter((line) => line.startsWith('Nothing to launch'))).toHaveLength(4)
+        expect(ticketRowOf(published.at(-1), 'map:3:ticket:4')?.action).toBeNull()
+        expect(ticketRowOf(published.at(-1), 'map:3:ticket:2')?.action).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('copies the command the pane shows', () =>
+    withCockpit(launchable(), ({ cockpit, published, copied }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'copy', key: PALETTE })
+        expect(copied).toEqual([ticketRowOf(published[0], PALETTE)?.action?.command])
+      }),
+    ),
+  )
+
+  it.effect('puts the Work ticket Action in the pane of the selected frontier ticket', () =>
+    withCockpit(launchable(), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'select', key: PALETTE })
+        const shown = published.at(-1)
+        const selection = shown?.kind === 'maps' ? shown.selection : null
+        expect(selection?.kind === 'ticket' && selection.action?.command).toBe(
+          ticketRowOf(shown, PALETTE)?.action?.command,
+        )
+        expect(selection?.kind === 'ticket' && selection.session).toEqual({ kind: 'none' })
+      }),
+    ),
+  )
+
+  it.effect('discovers skills on every refresh, reading the plugin list once each time', () =>
+    withCockpit(launchable(), ({ cockpit, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        // git for the repo root, then claude plugin list --json.
+        expect(runs()).toBe(2)
+        yield* cockpit.refresh
+        expect(runs()).toBe(4)
+      }),
+    ),
+  )
+
+  it.effect('finds wayfinder in a plugin and launches it by its namespaced command', () =>
+    withCockpit(
+      {
+        ...launchable(),
+        files: {
+          ...workspaceFiles(ROOT),
+          [CLAUDE]: '#!/bin/sh\n',
+          '/plugins/mattpocock-skills/.claude-plugin/plugin.json': JSON.stringify({
+            name: 'mattpocock-skills',
+            version: '1.2.3',
+            skills: ['./skills/wayfinder'],
+          }),
+          '/plugins/mattpocock-skills/skills/wayfinder/SKILL.md': WAYFINDER_SKILL,
+        },
+        recordings: [
+          inRepo(ROOT, ROOT),
+          pluginList(
+            JSON.stringify([
+              {
+                id: 'mattpocock-skills@claude-plugins-official',
+                version: '1.2.3',
+                enabled: true,
+                installPath: '/plugins/mattpocock-skills',
+              },
+            ]),
+          ),
+        ],
+      },
+      ({ cockpit, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(terminals.opened[0]?.shellArgs.at(-1)).toMatch(
+            /^\/mattpocock-skills:wayfinder \.scratch\//,
+          )
+        }),
+    ),
+  )
+})
+
+describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
+  it.effect('greys ▶ with the reason and spawns nothing when claude cannot be resolved', () =>
+    withCockpit(
+      { ...launchable(), environment: { pathVariable: '/usr/bin' } },
+      ({ cockpit, published, terminals, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          // Only git ran: there is no claude to ask for the plugin list.
+          expect(runs()).toBe(1)
+          const action = ticketRowOf(published[0], PALETTE)?.action
+          expect(action?.disabled).toContain('claude was not found on PATH')
+          expect(action?.command).toContain('claude -n')
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(terminals.opened).toEqual([])
+          expect(ticketRowOf(published.at(-1), PALETTE)?.session).toEqual({ kind: 'none' })
+        }),
+    ),
+  )
+
+  it.effect('finds claude on PATH when the setting is empty', () =>
+    withCockpit(
+      {
+        ...launchable(),
+        files: { ...launchable().files, '/usr/bin/claude': '' },
+        recordings: [inRepo(ROOT, ROOT), { ...pluginList('[]'), command: '/usr/bin/claude' }],
+        environment: { pathVariable: '/usr/bin' },
+      },
+      ({ cockpit, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(terminals.opened[0]?.shellPath).toBe('/usr/bin/claude')
+        }),
+    ),
+  )
+
+  it.effect('logs where claude resolved at activation, spawning nothing', () =>
+    withCockpit(launchable(), ({ cockpit, logged, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        expect(logged).toEqual([`claude resolved to ${CLAUDE} (heroSynergy.claude.path)`])
+        expect(runs()).toBe(0)
+      }),
+    ),
+  )
+
+  it.effect('logs why claude did not resolve at activation', () =>
+    withCockpit({}, ({ cockpit, logged }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        expect(logged).toEqual([
+          'claude not resolved: claude was not found on PATH. Set heroSynergy.claude.path to its location.',
+        ])
+      }),
+    ),
+  )
+
+  it.effect('greys ▶ with the install hint when no wayfinder skill is found', () =>
+    withCockpit(
+      { ...launchable(), files: { ...workspaceFiles(ROOT), [CLAUDE]: '#!/bin/sh\n' } },
+      ({ cockpit, published, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const action = ticketRowOf(published[0], PALETTE)?.action
+          expect(action?.disabled).toContain('wayfinder skill was not found')
+          expect(action?.command).toBeNull()
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          yield* cockpit.receive({ type: 'copy', key: PALETTE })
+          expect(terminals.opened).toEqual([])
+        }),
+    ),
   )
 })

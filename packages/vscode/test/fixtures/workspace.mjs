@@ -25,6 +25,70 @@ export function createWorkspace(parent) {
 }
 
 /**
+ * A stub `claude` for the windows that launch a session. Asked for the plugin list it answers `[]`;
+ * started as a session it records what it was given, then stays open like a live session:
+ *
+ * - `argv.txt`: one argument per line, after the program name;
+ * - `env.txt`: `HERO_SYNERGY_TICKET`, then `HERO_SYNERGY_EVENTS`, one per line;
+ * - `cwd.txt`: the directory it started in.
+ *
+ * @param {string} parent an existing or creatable directory the stub and its records go into
+ * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string }}
+ */
+export function createClaudeStub(parent) {
+  const bin = path.join(parent, 'bin')
+  mkdirSync(bin, { recursive: true })
+  const claude = path.join(bin, 'claude')
+  const argvFile = path.join(bin, 'argv.txt')
+  const envFile = path.join(bin, 'env.txt')
+  const cwdFile = path.join(bin, 'cwd.txt')
+  writeFileSync(
+    claude,
+    [
+      '#!/bin/sh',
+      `if [ "$1" = plugin ]; then echo '[]'; exit 0; fi`,
+      `printf '%s\\n' "$@" > '${argvFile}'`,
+      `printf '%s\\n' "$HERO_SYNERGY_TICKET" "$HERO_SYNERGY_EVENTS" > '${envFile}'`,
+      `pwd > '${cwdFile}'`,
+      'exec sleep 3600',
+      '',
+    ].join('\n'),
+    { mode: 0o755 },
+  )
+  return { claude, argvFile, envFile, cwdFile }
+}
+
+/**
+ * The fixture workspace with the wayfinder skill in its project skills and a stub `claude` beside
+ * it. The skill is added here rather than to the fixture folder, which the unit tests read as a
+ * repo with no skills. The window must name the stub in the user setting `heroSynergy.claude.path`
+ * (see {@link writeUserSettings}); the setting is machine-scoped, so a repo cannot set it.
+ *
+ * @param {string} parent an existing or creatable directory the workspace and the stub go into
+ */
+export function createLaunchableWorkspace(parent) {
+  const workspace = createWorkspace(parent)
+  const skill = path.join(workspace, '.claude', 'skills', 'wayfinder')
+  mkdirSync(skill, { recursive: true })
+  writeFileSync(
+    path.join(skill, 'SKILL.md'),
+    '---\nname: wayfinder\ndescription: Plan a map.\ndisable-model-invocation: true\n---\n# Wayfinder\n',
+  )
+  return { workspace, ...createClaudeStub(parent) }
+}
+
+/**
+ * Writes the user settings of a VS Code user data directory before the window opens.
+ *
+ * @param {string} userDataDir the `--user-data-dir` the window will use
+ * @param {Record<string, unknown>} settings
+ */
+export function writeUserSettings(userDataDir, settings) {
+  mkdirSync(path.join(userDataDir, 'User'), { recursive: true })
+  writeFileSync(path.join(userDataDir, 'User', 'settings.json'), JSON.stringify(settings, null, 2))
+}
+
+/**
  * A git repo whose tracker doc says GitHub and whose `origin` is this repo, for the windows that
  * exercise the GitHub collect. `gh` is a stub on the front of `PATH` that answers like the
  * recording in `packages/core/fixtures/github/<recording>.json`: its stdout, stderr and exit code.

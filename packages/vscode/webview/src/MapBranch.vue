@@ -20,7 +20,14 @@ const emit = defineEmits<{
   close: []
   open: [key: string]
   openDetail: [key: string, section: MapSection | null]
+  launch: [key: string]
+  focusTerminal: [key: string]
+  copy: [key: string]
 }>()
+
+/** ▶'s tooltip: the exact command it runs, or why it cannot run. */
+const playTitle = (ticket: TicketRow): string =>
+  ticket.action?.disabled ?? ticket.action?.command ?? 'Work ticket'
 
 const isSelected = (key: string | null): boolean => key !== null && props.selection?.key === key
 
@@ -75,6 +82,9 @@ const takeableText = (map: MapNode): string =>
       @close="emit('close')"
       @open="(key) => emit('open', key)"
       @detail="(key) => emit('openDetail', key, null)"
+      @launch="(key) => emit('launch', key)"
+      @focus-terminal="(key) => emit('focusTerminal', key)"
+      @copy="(key) => emit('copy', key)"
     />
 
     <template v-for="ticket in map.tickets" :key="ticket.number">
@@ -91,6 +101,31 @@ const takeableText = (map: MapNode): string =>
         @activate="emit('select', ticket.key)"
         @open-detail="emit('openDetail', ticket.key, null)"
       >
+        <button
+          v-if="ticket.action"
+          type="button"
+          class="play codicon codicon-play"
+          :aria-disabled="ticket.action.disabled !== null"
+          :title="playTitle(ticket)"
+          :aria-label="`Work ticket #${ticket.number}`"
+          @click.stop="ticket.action.disabled === null && emit('launch', ticket.key)"
+          @keydown.enter.stop
+          @keydown.space.stop
+        />
+        <button
+          v-if="ticket.session.kind === 'starting'"
+          type="button"
+          class="focus-terminal codicon codicon-terminal"
+          title="Focus terminal"
+          aria-label="Focus terminal"
+          @click.stop="emit('focusTerminal', ticket.key)"
+          @keydown.enter.stop
+          @keydown.space.stop
+        />
+        <span v-if="ticket.session.kind === 'starting'" class="session">starting</span>
+        <span v-if="ticket.session.kind === 'ended'" class="session" :title="ticket.session.detail">
+          ended
+        </span>
         <span v-if="ticket.place === 'blocked'" class="waits">
           waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
         </span>
@@ -105,6 +140,9 @@ const takeableText = (map: MapNode): string =>
         @close="emit('close')"
         @open="(key) => emit('open', key)"
         @detail="(key) => emit('openDetail', key, null)"
+        @launch="(key) => emit('launch', key)"
+        @focus-terminal="(key) => emit('focusTerminal', key)"
+        @copy="(key) => emit('copy', key)"
       />
     </template>
 
@@ -168,6 +206,9 @@ const takeableText = (map: MapNode): string =>
             @close="emit('close')"
             @open="(key) => emit('open', key)"
             @detail="(key) => emit('openDetail', key, null)"
+            @launch="(key) => emit('launch', key)"
+            @focus-terminal="(key) => emit('focusTerminal', key)"
+            @copy="(key) => emit('copy', key)"
           />
         </template>
       </template>
@@ -191,6 +232,25 @@ const takeableText = (map: MapNode): string =>
 .claimed {
   color: var(--vscode-descriptionForeground);
   background: none;
+}
+.play,
+.focus-terminal {
+  border: 0;
+  padding: 0 2px;
+  background: none;
+  color: var(--vscode-icon-foreground);
+  cursor: pointer;
+}
+.play:hover:not([aria-disabled='true']),
+.focus-terminal:hover {
+  color: var(--vscode-textLink-foreground);
+}
+.play[aria-disabled='true'] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.session {
+  color: var(--vscode-descriptionForeground);
 }
 .next {
   padding: 0 4px;

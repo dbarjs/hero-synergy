@@ -6,6 +6,28 @@ import type { Mode, TicketType } from '@hero-synergy/core'
  * host validates what arrives from the webview in `messages.ts`.
  */
 
+/** A ticket's session: none, starting while its terminal exists, ended once the terminal closed. */
+export type SessionView =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'starting' }
+  | { readonly kind: 'ended'; readonly detail: string }
+
+/**
+ * What ▶ launches for a ticket, with the exact command it shows. A greyed Action
+ * keeps the command it would run when it has one, and says why in `disabled`.
+ */
+export interface ActionView {
+  readonly label: 'Work ticket'
+  /** The shell-quoted command, built once from the argv; null when no command could be built. */
+  readonly command: string | null
+  /** The muted `env:` line, or null when there is no env. */
+  readonly envLine: string | null
+  /** Why the Action is greyed; null when it can run. */
+  readonly disabled: string | null
+  /** A line the pane adds under the command, such as the shared checkout on a local tracker. */
+  readonly note: string | null
+}
+
 /** A ticket another ticket waits on, as `waits on #n #m` shows it. */
 export interface BlockerView {
   readonly number: number
@@ -26,6 +48,9 @@ export interface TicketRow {
   readonly next: boolean
   /** The blockers still open; empty unless the ticket is blocked. */
   readonly waitsOn: ReadonlyArray<BlockerView>
+  readonly session: SessionView
+  /** The Action ▶ runs; null for every row but a frontier row. */
+  readonly action: ActionView | null
 }
 
 /** A closed ticket in the Decisions fold, with the gist the map recorded. */
@@ -103,6 +128,9 @@ export type Focus =
       readonly claim: ReadonlyArray<string> | null
       /** The issue's URL on GitHub; null on a local tracker, which opens a file. */
       readonly url: string | null
+      readonly session: SessionView
+      /** The Work ticket Action; null unless the ticket is on the frontier. */
+      readonly action: ActionView | null
     }
   | {
       readonly kind: 'map'
@@ -182,6 +210,9 @@ export type Detail =
       readonly waitsOn: ReadonlyArray<NeighbourView>
       /** The tickets of the map that wait on it. */
       readonly clearsWayFor: ReadonlyArray<NeighbourView>
+      readonly session: SessionView
+      /** The Work ticket Action; null unless the ticket is on the frontier with no terminal on it. */
+      readonly action: ActionView | null
     }
   | {
       readonly kind: 'map'
@@ -229,3 +260,9 @@ export type WebviewMessage =
   | { readonly type: 'reveal'; readonly key: string }
   /** A link in a rendered body; the host opens only web links. */
   | { readonly type: 'open-link'; readonly url: string }
+  /** ▶: run the ticket's Action; the host ignores it unless the ticket is launchable. */
+  | { readonly type: 'launch'; readonly key: string }
+  /** Focus the ticket's terminal. */
+  | { readonly type: 'focus-terminal'; readonly key: string }
+  /** The copy button: put the ticket's command on the clipboard. */
+  | { readonly type: 'copy'; readonly key: string }

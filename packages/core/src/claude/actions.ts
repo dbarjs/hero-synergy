@@ -86,7 +86,7 @@ const ticketEnv = (context: LaunchContext, ticket: Pick<Ticket, 'number'>) => ({
  */
 export function workTicket(
   context: LaunchContext,
-  commands: SkillCommands,
+  commands: Pick<SkillCommands, 'wayfinder'>,
   { map, ticket }: TicketTarget,
 ): Launch {
   return launch(

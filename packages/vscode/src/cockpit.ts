@@ -1,4 +1,6 @@
 import {
+  commandOf,
+  discoverSkills,
   FileSystem,
   type FileSystemError,
   findRepo,
@@ -7,13 +9,25 @@ import {
   ProcessRunner,
   type RateLimit,
   readGitHubTracker,
+  placeOf,
   readLocalTracker,
   type RepoTracker,
+  readPluginList,
   type ScoutError,
   type Snapshot,
 } from '@hero-synergy/core'
 import { Clock, Deferred, Effect, Fiber, Ref } from 'effect'
 
+import { type ClaudeResolution, resolveClaude } from './claude-path.ts'
+import {
+  canLaunchFrom,
+  describeExit,
+  type Launching,
+  NOT_LAUNCHING,
+  type SessionState,
+  terminalIcon,
+  workTicketLaunch,
+} from './launch.ts'
 import { decodeWebviewMessage } from './messages.ts'
 import { describeCollectFailure } from './notices.ts'
 import type { BudgetNote, DetailView, MapSection, Notice, ViewModel } from './protocol.ts'
@@ -29,7 +43,15 @@ import {
   type TrackerKind,
   type Trigger,
 } from './refresh-policy.ts'
-import { CollectProgress, Opener, Storage, WorkspaceFolders } from './services.ts'
+import {
+  Clipboard,
+  CollectProgress,
+  HostEnvironment,
+  Opener,
+  Storage,
+  Terminals,
+  WorkspaceFolders,
+} from './services.ts'
 import { CACHE_KEY, readCache, writeCache } from './snapshot-cache.ts'
 import {
   buildViewModel,
@@ -38,6 +60,7 @@ import {
   firstFocusKey,
   revealKeys,
   selectionOf,
+  ticketOf,
 } from './view-model.ts'
 
 /** The key the expanded nodes are stored under in workspace storage. */
@@ -82,6 +105,8 @@ export interface Cockpit {
   readonly openDetail: Effect.Effect<void>
   /** The Detail as it stands, for a panel that just mounted or was restored. */
   readonly currentDetail: Effect.Effect<DetailView>
+  /** Activation: resolve `claude` and log where it is. Spawns nothing. */
+  readonly activated: Effect.Effect<void>
 }
 
 type Base =
@@ -177,7 +202,15 @@ export const makeCockpit = (
 ): Effect.Effect<
   Cockpit,
   never,
-  WorkspaceFolders | Storage | FileSystem | ProcessRunner | Opener | CollectProgress
+  | WorkspaceFolders
+  | Storage
+  | FileSystem
+  | ProcessRunner
+  | Opener
+  | CollectProgress
+  | Terminals
+  | Clipboard
+  | HostEnvironment
 > =>
   Effect.gen(function* () {
     const context = yield* Effect.context<WorkspaceFolders | Storage | FileSystem | ProcessRunner>()
@@ -187,6 +220,18 @@ export const makeCockpit = (
     const workspace = yield* WorkspaceFolders
     // The last good snapshot of this window's repo is shown before anything spawns.
     const cached = readCache(yield* storage.get(CACHE_KEY), yield* workspace.paths)
+    const terminals = yield* Terminals
+    const clipboard = yield* Clipboard
+    const environment = yield* HostEnvironment
+    const fs = yield* FileSystem
+    const runner = yield* ProcessRunner
+    // Ticket row key to its session: absent is none.
+    const sessions = yield* Ref.make<ReadonlyMap<string, SessionState>>(new Map())
+    // What the last collect found: where `claude` is and the wayfinder command.
+    const discovery = yield* Ref.make<{
+      readonly claude: ClaudeResolution
+      readonly wayfinder: string | null
+    }>({ claude: NOT_LAUNCHING.claude, wayfinder: null })
     // The host holds the one selection; the webview only asks to change it.
     const selected = yield* Ref.make<string | null>(
       storedSelected(yield* storage.get(SELECTED_KEY)),
@@ -220,6 +265,18 @@ export const makeCockpit = (
         : { kind: status.kind, until: new Date(status.until).toISOString() }
     })
 
+    const launchingFor = (repoRoot: string): Effect.Effect<Launching> =>
+      Effect.gen(function* () {
+        const found = yield* Ref.get(discovery)
+        return {
+          sessions: yield* Ref.get(sessions),
+          claude: found.claude,
+          wayfinder: found.wayfinder,
+          pluginPath: environment.pluginPath,
+          eventsFile: environment.eventsFile(repoRoot),
+        }
+      })
+
     const current: Effect.Effect<ViewModel> = Effect.gen(function* () {
       const state = yield* Ref.get(base)
       if (state.kind !== 'snapshot') return state
@@ -231,6 +288,7 @@ export const makeCockpit = (
         undefined,
         state.notice,
         yield* budgetNote,
+        yield* launchingFor(state.snapshot.repoRoot),
       )
     })
 
@@ -238,11 +296,66 @@ export const makeCockpit = (
       const state = yield* Ref.get(base)
       const key = yield* Ref.get(selected)
       return {
-        detail: state.kind === 'snapshot' ? detailOf(state.snapshot, key) : null,
+        detail:
+          state.kind === 'snapshot'
+            ? detailOf(state.snapshot, key, yield* launchingFor(state.snapshot.repoRoot))
+            : null,
         section: yield* Ref.get(section),
         scroll: yield* Ref.get(scroll),
       }
     })
+
+    /** Where `claude` is right now: the setting and `PATH` are read each time, so a change applies to the next launch. */
+    const resolveNow: Effect.Effect<ClaudeResolution> = Effect.gen(function* () {
+      return yield* resolveClaude({
+        setting: yield* environment.claudeSetting,
+        pathVariable: environment.pathVariable,
+        platform: environment.platform,
+        isFile: (path) => fs.exists(path).pipe(Effect.catch(() => Effect.succeed(false))),
+      })
+    })
+
+    const describeResolution = (resolution: ClaudeResolution): string =>
+      resolution.kind === 'found'
+        ? `claude resolved to ${resolution.claude.path} (${
+            resolution.claude.source === 'setting' ? 'heroSynergy.claude.path' : 'PATH'
+          }${resolution.claude.shim ? ', an npm shim: best effort' : ''})`
+        : `claude not resolved: ${resolution.reason}`
+
+    const activated: Effect.Effect<void> = resolveNow.pipe(
+      Effect.map((resolution) => options.log(describeResolution(resolution))),
+    )
+
+    /**
+     * Skill discovery, on every refresh: `claude plugin list --json` for the plugins' install
+     * paths (only when `claude` resolves; nothing to spawn otherwise), then the skill folders.
+     */
+    const discover = (repoRoot: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const claude = yield* resolveNow
+        const listed =
+          claude.kind === 'found'
+            ? yield* runner
+                .run({
+                  command: claude.claude.path,
+                  args: ['plugin', 'list', '--json'],
+                  cwd: repoRoot,
+                })
+                .pipe(
+                  Effect.map((result) => (result.exitCode === 0 ? result.stdout : '[]')),
+                  Effect.catch((error) => {
+                    options.log(`claude plugin list failed: ${error.message}`)
+                    return Effect.succeed('[]')
+                  }),
+                )
+            : '[]'
+        const inventory = yield* discoverSkills({
+          repoRoot,
+          home: environment.home,
+          plugins: readPluginList(listed).value,
+        }).pipe(Effect.provideService(FileSystem, fs))
+        yield* Ref.set(discovery, { claude, wayfinder: commandOf(inventory.skills, 'wayfinder') })
+      })
 
     const publish = Effect.gen(function* () {
       options.publish(yield* current)
@@ -292,6 +405,8 @@ export const makeCockpit = (
     const collectOnce: Effect.Effect<void> = Effect.gen(function* () {
       const end = yield* progress.begin
       const loaded = yield* load.pipe(Effect.provideContext(context), Effect.ensuring(end))
+      // Skill discovery runs with every collect that read a snapshot, before it is shown.
+      if (loaded.kind === 'snapshot') yield* discover(loaded.snapshot.repoRoot)
       yield* settle(loaded, yield* Clock.currentTimeMillis)
       yield* publish
     })
@@ -439,7 +554,106 @@ export const makeCockpit = (
         yield* opener.open(found.target)
       })
 
+    /** Every spawn on the launch path is async: the terminal, the events file and the resolution. */
+    const launch = (key: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot') return
+        const found = ticketOf(state.snapshot, key)
+        if (found === null || placeOf(found.ticket) !== 'frontier') {
+          options.log(`Nothing to launch for ${key}`)
+          return
+        }
+        const claude = yield* resolveNow
+        if (claude.kind === 'missing') {
+          options.log(`Not launching ${key}: ${claude.reason}`)
+          return
+        }
+        const facts = yield* launchingFor(state.snapshot.repoRoot)
+        const planned = workTicketLaunch(state.snapshot, facts, found)
+        if (planned === null) {
+          options.log(`Not launching ${key}: the wayfinder skill was not found`)
+          return
+        }
+        // One atomic claim, so two clicks in quick succession start one terminal.
+        const claimed = yield* Ref.modify(sessions, (map) =>
+          canLaunchFrom(map.get(key))
+            ? ([true, new Map(map).set(key, { kind: 'starting', terminal: null })] as const)
+            : ([false, map] as const),
+        )
+        if (!claimed) return
+        yield* publish
+        // The events file exists before the plugin first appends to it.
+        yield* fs.exists(facts.eventsFile).pipe(
+          Effect.flatMap((exists) => (exists ? Effect.void : fs.writeFile(facts.eventsFile, ''))),
+          Effect.catch((error) => {
+            options.log(`Could not create the events file: ${error.message}`)
+            return Effect.void
+          }),
+        )
+        const terminal = yield* terminals.open({
+          name: `#${found.ticket.number} ${found.ticket.title}`,
+          shellPath: claude.claude.path,
+          shellArgs: planned.argv.slice(1),
+          cwd: planned.cwd,
+          env: planned.env,
+          icon: terminalIcon(found.ticket.type),
+          location: yield* environment.terminalLocation,
+        })
+        yield* Ref.update(sessions, (map) => {
+          const now = map.get(key)
+          // The terminal may already have closed while it was being created.
+          return now?.kind === 'starting' ? new Map(map).set(key, { ...now, terminal }) : map
+        })
+        yield* publish
+      })
+
+    const focusTerminal = (key: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const session = (yield* Ref.get(sessions)).get(key)
+        if (session?.kind === 'starting' && session.terminal !== null) {
+          yield* terminals.focus(session.terminal)
+        }
+      })
+
+    const copyCommand = (key: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot') return
+        const found = ticketOf(state.snapshot, key)
+        const planned =
+          found === null
+            ? null
+            : workTicketLaunch(state.snapshot, yield* launchingFor(state.snapshot.repoRoot), found)
+        if (planned === null) {
+          options.log(`Nothing to copy for ${key}`)
+          return
+        }
+        yield* clipboard.write(planned.command)
+      })
+
+    terminals.onClosed(({ id, exit }) => {
+      Effect.runFork(
+        Effect.gen(function* () {
+          const detail = describeExit(exit)
+          const ended = yield* Ref.modify(sessions, (map) => {
+            const next = new Map(map)
+            let changed = false
+            for (const [key, session] of map) {
+              if (session.kind === 'starting' && session.terminal === id) {
+                next.set(key, { kind: 'ended', detail })
+                changed = true
+              }
+            }
+            return [changed, changed ? next : map] as const
+          })
+          if (ended) yield* publish
+        }),
+      )
+    })
+
     return {
+      activated,
       show: trigger('automatic'),
       focus: trigger('automatic'),
       scratchChanged,
@@ -489,6 +703,15 @@ export const makeCockpit = (
               // A body is the tracker's text: only web links leave the Cockpit.
               if (/^https?:\/\//i.test(message.url)) yield* opener.openLink(message.url)
               else options.log(`Ignored a link that is not a web link: ${message.url}`)
+              break
+            case 'launch':
+              yield* launch(message.key)
+              break
+            case 'focus-terminal':
+              yield* focusTerminal(message.key)
+              break
+            case 'copy':
+              yield* copyCommand(message.key)
               break
           }
           return true
