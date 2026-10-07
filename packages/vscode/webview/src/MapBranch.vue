@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Focus, TicketRow, MapNode } from '../../src/protocol.ts'
+import type { Focus, MapNode, MapSection, TicketRow } from '../../src/protocol.ts'
 import FocusPane from './FocusPane.vue'
 import Row from './Row.vue'
 
@@ -19,6 +19,7 @@ const emit = defineEmits<{
   select: [key: string]
   close: []
   open: [key: string]
+  openDetail: [key: string, section: MapSection | null]
 }>()
 
 const isSelected = (key: string | null): boolean => key !== null && props.selection?.key === key
@@ -63,7 +64,9 @@ const takeableText = (map: MapNode): string =>
       :title="map.destination ?? undefined"
       muted
       :selected="isSelected(map.focusKey)"
+      opens-detail
       @activate="emit('select', map.focusKey)"
+      @open-detail="emit('openDetail', map.focusKey, null)"
     />
     <FocusPane
       v-if="selection && isSelected(map.focusKey)"
@@ -71,6 +74,7 @@ const takeableText = (map: MapNode): string =>
       :depth="depth(1)"
       @close="emit('close')"
       @open="(key) => emit('open', key)"
+      @detail="(key) => emit('openDetail', key, null)"
     />
 
     <template v-for="ticket in map.tickets" :key="ticket.number">
@@ -83,7 +87,9 @@ const takeableText = (map: MapNode): string =>
         :label="ticket.title"
         :muted="ticket.place === 'blocked'"
         :selected="isSelected(ticket.key)"
+        opens-detail
         @activate="emit('select', ticket.key)"
+        @open-detail="emit('openDetail', ticket.key, null)"
       >
         <span v-if="ticket.place === 'blocked'" class="waits">
           waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
@@ -98,6 +104,7 @@ const takeableText = (map: MapNode): string =>
         :depth="depth(1)"
         @close="emit('close')"
         @open="(key) => emit('open', key)"
+        @detail="(key) => emit('openDetail', key, null)"
       />
     </template>
 
@@ -108,7 +115,9 @@ const takeableText = (map: MapNode): string =>
         icon="cloud"
         label="Fog"
         muted
+        opens-detail
         @activate="emit('toggle', map.fog.key, !map.fog.expanded)"
+        @open-detail="emit('openDetail', map.focusKey, 'fog')"
       >
         <span class="count">{{ map.fog.entries.length }}</span>
       </Row>
@@ -131,7 +140,9 @@ const takeableText = (map: MapNode): string =>
         icon="check"
         label="Decisions"
         muted
+        opens-detail
         @activate="emit('toggle', map.decisions.key, !map.decisions.expanded)"
+        @open-detail="emit('openDetail', map.focusKey, 'decisions')"
       >
         <span class="count">{{ map.decisions.entries.length }}</span>
       </Row>
@@ -146,7 +157,9 @@ const takeableText = (map: MapNode): string =>
             :title="`${entry.title}: ${entry.gist}`"
             muted
             :selected="isSelected(entry.key)"
+            opens-detail
             @activate="entry.key !== null && emit('select', entry.key)"
+            @open-detail="entry.key !== null && emit('openDetail', entry.key, null)"
           />
           <FocusPane
             v-if="selection && isSelected(entry.key)"
@@ -154,6 +167,7 @@ const takeableText = (map: MapNode): string =>
             :depth="depth(2)"
             @close="emit('close')"
             @open="(key) => emit('open', key)"
+            @detail="(key) => emit('openDetail', key, null)"
           />
         </template>
       </template>

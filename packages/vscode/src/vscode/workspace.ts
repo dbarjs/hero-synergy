@@ -24,4 +24,6 @@ export const openerLive: Layer.Layer<Opener> = Layer.succeed(Opener, {
       if (target.kind === 'url') await vscode.env.openExternal(vscode.Uri.parse(target.url))
       else await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(target.path))
     }),
+  openLink: (url) =>
+    Effect.promise(async () => void (await vscode.env.openExternal(vscode.Uri.parse(url)))),
 })

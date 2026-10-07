@@ -14,9 +14,16 @@ import { Effect, Ref } from 'effect'
 
 import { decodeWebviewMessage } from './messages.ts'
 import { describeCollectFailure } from './notices.ts'
-import type { Notice, ViewModel } from './protocol.ts'
+import type { DetailView, MapSection, Notice, ViewModel } from './protocol.ts'
 import { Opener, Storage, WorkspaceFolders } from './services.ts'
-import { buildViewModel, defaultExpanded, selectionOf } from './view-model.ts'
+import {
+  buildViewModel,
+  defaultExpanded,
+  detailOf,
+  firstFocusKey,
+  revealKeys,
+  selectionOf,
+} from './view-model.ts'
 
 /** The key the expanded nodes are stored under in workspace storage. */
 export const EXPANDED_KEY = 'expanded'
@@ -26,6 +33,10 @@ export const SELECTED_KEY = 'selected'
 export interface CockpitOptions {
   /** Sends a view model to the Tree's webview. */
   readonly publish: (viewModel: ViewModel) => void
+  /** Sends the Detail's view to its panel, if one is open. */
+  readonly publishDetail: (view: DetailView) => void
+  /** Opens the Detail panel, or brings the open one forward; `focus` moves the keyboard into it. */
+  readonly showDetail: (focus: boolean) => void
   /** Writes a line to the Cockpit's output channel. */
   readonly log: (line: string) => void
 }
@@ -44,6 +55,10 @@ export interface Cockpit {
   readonly receive: (input: unknown) => Effect.Effect<boolean>
   /** The view model as it stands, for a webview that just mounted. */
   readonly current: Effect.Effect<ViewModel>
+  /** `Hero Synergy: Open Cockpit Detail`: the current selection, else the first map in order. */
+  readonly openDetail: Effect.Effect<void>
+  /** The Detail as it stands, for a panel that just mounted or was restored. */
+  readonly currentDetail: Effect.Effect<DetailView>
 }
 
 type Base =
@@ -139,6 +154,9 @@ export const makeCockpit = (
     const expanded = yield* Ref.make<ReadonlySet<string> | null>(
       storedExpanded(yield* storage.get(EXPANDED_KEY)),
     )
+    // Which section the Detail was asked to scroll to, and how many times it has been asked.
+    const section = yield* Ref.make<MapSection | null>(null)
+    const scroll = yield* Ref.make(0)
     // A collect that finishes after a newer one started must not overwrite it.
     const generation = yield* Ref.make(0)
 
@@ -149,7 +167,20 @@ export const makeCockpit = (
       return buildViewModel(state.snapshot, open, yield* Ref.get(selected), undefined, state.notice)
     })
 
-    const publish = current.pipe(Effect.map(options.publish))
+    const currentDetail: Effect.Effect<DetailView> = Effect.gen(function* () {
+      const state = yield* Ref.get(base)
+      const key = yield* Ref.get(selected)
+      return {
+        detail: state.kind === 'snapshot' ? detailOf(state.snapshot, key) : null,
+        section: yield* Ref.get(section),
+        scroll: yield* Ref.get(scroll),
+      }
+    })
+
+    const publish = Effect.gen(function* () {
+      options.publish(yield* current)
+      options.publishDetail(yield* currentDetail)
+    })
 
     const collect: Effect.Effect<void> = Effect.gen(function* () {
       const mine = yield* Ref.updateAndGet(generation, (n) => n + 1)
@@ -189,9 +220,59 @@ export const makeCockpit = (
     const select = (key: string | null): Effect.Effect<void> =>
       Effect.gen(function* () {
         yield* Ref.set(selected, key)
+        yield* Ref.set(section, null)
         yield* storage.set(SELECTED_KEY, key)
         yield* publish
       })
+
+    /** Selects the row, then opens the Detail on it, scrolled to the section if one is asked for. */
+    const openDetailOn = (
+      key: string,
+      wanted: MapSection | null,
+      focus: boolean,
+    ): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        yield* Ref.set(selected, key)
+        yield* Ref.set(section, wanted)
+        yield* Ref.update(scroll, (n) => n + 1)
+        yield* storage.set(SELECTED_KEY, key)
+        options.showDetail(focus)
+        yield* publish
+      })
+
+    /** A neighbour clicked in the Detail: select it and open whatever hides its row. */
+    const reveal = (key: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot' || selectionOf(state.snapshot, key) === null) {
+          options.log(`Nothing to reveal for ${key}`)
+          return
+        }
+        const open = revealKeys(state.snapshot, key)
+        const after = yield* Ref.modify(expanded, (stored) => {
+          const next = new Set(stored ?? defaultExpanded(state.snapshot))
+          for (const node of open) next.add(node)
+          return [next, next] as const
+        })
+        yield* storage.set(EXPANDED_KEY, [...after])
+        yield* select(key)
+      })
+
+    const openDetailCommand: Effect.Effect<void> = Effect.gen(function* () {
+      if ((yield* Ref.get(base)).kind === 'loading') yield* collect
+      const state = yield* Ref.get(base)
+      if (state.kind !== 'snapshot') return
+      const key = yield* Ref.get(selected)
+      const chosen =
+        key !== null && selectionOf(state.snapshot, key) !== null
+          ? key
+          : firstFocusKey(state.snapshot)
+      if (chosen === null) {
+        options.log('Nothing to open: the tracker has no maps')
+        return
+      }
+      yield* openDetailOn(chosen, null, true)
+    })
 
     const open = (key: string): Effect.Effect<void> =>
       Effect.gen(function* () {
@@ -209,6 +290,8 @@ export const makeCockpit = (
       show: collect,
       refresh: collect,
       current,
+      currentDetail,
+      openDetail: openDetailCommand,
       receive: (input) =>
         Effect.gen(function* () {
           const message = decodeWebviewMessage(input)
@@ -234,6 +317,23 @@ export const makeCockpit = (
               break
             case 'open':
               yield* open(message.key)
+              break
+            case 'open-detail': {
+              const state = yield* Ref.get(base)
+              if (state.kind !== 'snapshot' || selectionOf(state.snapshot, message.key) === null) {
+                options.log(`No Detail to open for ${message.key}`)
+                break
+              }
+              yield* openDetailOn(message.key, message.section, false)
+              break
+            }
+            case 'reveal':
+              yield* reveal(message.key)
+              break
+            case 'open-link':
+              // A body is the tracker's text: only web links leave the Cockpit.
+              if (/^https?:\/\//i.test(message.url)) yield* opener.openLink(message.url)
+              else options.log(`Ignored a link that is not a web link: ${message.url}`)
               break
           }
           return true

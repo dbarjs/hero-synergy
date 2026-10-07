@@ -13,7 +13,7 @@ import { Effect, Layer } from 'effect'
 
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
 import { type Cockpit, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
-import type { MapNode, ViewModel } from './protocol.ts'
+import type { DetailView, MapNode, ViewModel } from './protocol.ts'
 import { Opener, Storage, WorkspaceFolders } from './services.ts'
 import type { OpenTarget } from './view-model.ts'
 
@@ -66,6 +66,9 @@ const withCockpit = <A>(
   body: (context: {
     cockpit: Cockpit
     published: ViewModel[]
+    details: DetailView[]
+    /** Each time the Detail panel was asked to open, with whether it should take focus. */
+    shown: boolean[]
     logged: string[]
     opened: OpenTarget[]
     runs: () => number
@@ -84,12 +87,25 @@ const withCockpit = <A>(
   return Effect.gen(function* () {
     const published: ViewModel[] = []
     const logged: string[] = []
+    const details: DetailView[] = []
+    const shown: boolean[] = []
     const cockpit = yield* makeCockpit({
       publish: (viewModel) => published.push(viewModel),
+      publishDetail: (view) => details.push(view),
+      showDetail: (focus) => shown.push(focus),
       log: (line) => logged.push(line),
     })
     const fs = yield* FileSystem
-    return yield* body({ cockpit, published, logged, opened, runs: runner.runs, fs })
+    return yield* body({
+      cockpit,
+      published,
+      details,
+      shown,
+      logged,
+      opened,
+      runs: runner.runs,
+      fs,
+    })
   }).pipe(Effect.provide(layer))
 }
 
@@ -523,4 +539,179 @@ describe('the Cockpit controller on a GitHub tracker', () => {
       }),
     )
   })
+})
+
+describe('the Cockpit controller and the Detail', () => {
+  const lastDetail = (details: ReadonlyArray<DetailView>): DetailView => {
+    const last = details.at(-1)
+    if (last === undefined) throw new Error('no Detail was published')
+    return last
+  }
+
+  it.effect('opens the Detail on a row, selecting it, and follows the next selection', () =>
+    withCockpit({}, ({ cockpit, published, details, shown }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(shown).toEqual([])
+
+        yield* cockpit.receive({ type: 'open-detail', key: 'map:3:ticket:2', section: null })
+        // The Tree keeps the keyboard; the panel only comes forward.
+        expect(shown).toEqual([false])
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'ticket', number: 2 })
+        const last = published.at(-1)
+        expect(last?.kind === 'maps' && last.selection?.key).toBe('map:3:ticket:2')
+        expect(yield* (yield* Storage).get(SELECTED_KEY)).toBe('map:3:ticket:2')
+
+        yield* cockpit.receive({ type: 'select', key: 'map:3:ticket:1' })
+        expect(shown).toEqual([false])
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'ticket', number: 1 })
+
+        yield* cockpit.receive({ type: 'select', key: null })
+        expect(lastDetail(details).detail).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('asks for a section on every request and forgets it when the selection moves', () =>
+    withCockpit({}, ({ cockpit, details }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'open-detail', key: 'map:3:map', section: 'fog' })
+        const first = lastDetail(details)
+        expect(first.section).toBe('fog')
+
+        yield* cockpit.receive({ type: 'open-detail', key: 'map:3:map', section: 'fog' })
+        expect(lastDetail(details).scroll).toBeGreaterThan(first.scroll)
+
+        yield* cockpit.receive({ type: 'open-detail', key: 'map:3:map', section: 'decisions' })
+        expect(lastDetail(details).section).toBe('decisions')
+
+        yield* cockpit.receive({ type: 'select', key: 'map:3:ticket:1' })
+        expect(lastDetail(details).section).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('ignores a request to open a row that is not in the snapshot, and says so', () =>
+    withCockpit({}, ({ cockpit, shown, logged }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'open-detail', key: 'map:9:map', section: null })
+        expect(shown).toEqual([])
+        expect(logged.some((line) => line.includes('map:9:map'))).toBe(true)
+      }),
+    ),
+  )
+
+  it.effect('rejects an open-detail for a section nobody has', () =>
+    withCockpit({}, ({ cockpit }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(
+          yield* cockpit.receive({ type: 'open-detail', key: 'map:3:map', section: 'notes' }),
+        ).toBe(false)
+        expect(yield* cockpit.receive({ type: 'open-detail', key: 'map:3:map' })).toBe(false)
+      }),
+    ),
+  )
+
+  it.effect('reveals a neighbour: selects it and unfolds its map, and the Finished fold', () =>
+    withCockpit({ stored: { [EXPANDED_KEY]: [] } }, ({ cockpit, published, details }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(maps(published.at(-1)).map((map) => map.expanded)).toEqual([false, false])
+
+        yield* cockpit.receive({ type: 'reveal', key: 'map:3:ticket:2' })
+        expect(maps(published.at(-1)).map((map) => map.expanded)).toEqual([true, false])
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'ticket', number: 2 })
+        const open = published.at(-1)
+        expect(open?.kind === 'maps' && open.selection?.key).toBe('map:3:ticket:2')
+
+        // A closed ticket also needs the Decisions fold open to show its row.
+        yield* cockpit.receive({ type: 'reveal', key: 'map:3:ticket:5' })
+        expect(maps(published.at(-1))[0]?.decisions.expanded).toBe(true)
+
+        // A ticket of a finished map needs the Finished fold open too.
+        yield* cockpit.receive({ type: 'reveal', key: 'map:1:ticket:1' })
+        const last = published.at(-1)
+        expect(last?.kind === 'maps' && last.finished?.expanded).toBe(true)
+        expect(last?.kind === 'maps' && last.finished?.maps[0]?.expanded).toBe(true)
+        expect(new Set((yield* (yield* Storage).get(EXPANDED_KEY)) as string[])).toEqual(
+          new Set(['map:3', 'map:3:decisions', 'map:1', 'map:1:decisions', 'finished']),
+        )
+      }),
+    ),
+  )
+
+  it.effect('does not reveal a row that is not in the snapshot', () =>
+    withCockpit({}, ({ cockpit, published, logged }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const before = published.length
+        yield* cockpit.receive({ type: 'reveal', key: 'map:3:ticket:99' })
+        expect(published).toHaveLength(before)
+        expect(logged.some((line) => line.includes('map:3:ticket:99'))).toBe(true)
+      }),
+    ),
+  )
+
+  it.effect('opens the Detail from the command on the selection, taking focus', () =>
+    withCockpit({ stored: { [SELECTED_KEY]: 'map:2:ticket:3' } }, ({ cockpit, details, shown }) =>
+      Effect.gen(function* () {
+        yield* cockpit.openDetail
+        expect(shown).toEqual([true])
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'ticket', number: 3 })
+      }),
+    ),
+  )
+
+  it.effect('opens the Detail from the command on the first map when nothing is selected', () =>
+    withCockpit({}, ({ cockpit, details, shown, runs }) =>
+      Effect.gen(function* () {
+        // Nothing has collected yet: the command collects first.
+        expect(runs()).toBe(0)
+        yield* cockpit.openDetail
+        expect(runs()).toBe(1)
+        expect(shown).toEqual([true])
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'map', number: 3 })
+        expect(yield* (yield* Storage).get(SELECTED_KEY)).toBe('map:3:map')
+      }),
+    ),
+  )
+
+  it.effect('falls back to the first map when the stored selection is gone', () =>
+    withCockpit({ stored: { [SELECTED_KEY]: 'map:9:map' } }, ({ cockpit, details }) =>
+      Effect.gen(function* () {
+        yield* cockpit.openDetail
+        expect(lastDetail(details).detail).toMatchObject({ kind: 'map', number: 3 })
+      }),
+    ),
+  )
+
+  it.effect('answers a panel that just mounted with the Detail of the stored selection', () =>
+    withCockpit({ stored: { [SELECTED_KEY]: 'map:3:ticket:5' } }, ({ cockpit, details }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'ready' })
+        expect(lastDetail(details).detail).toMatchObject({
+          kind: 'ticket',
+          number: 5,
+          state: 'closed',
+        })
+        expect(yield* cockpit.currentDetail).toEqual(lastDetail(details))
+      }),
+    ),
+  )
+
+  it.effect('opens only web links from a rendered body', () =>
+    withCockpit({}, ({ cockpit, opened, logged }) =>
+      Effect.gen(function* () {
+        yield* cockpit.receive({ type: 'open-link', url: 'https://example.com/spec' })
+        yield* cockpit.receive({ type: 'open-link', url: 'javascript:alert(1)' })
+        yield* cockpit.receive({ type: 'open-link', url: 'file:///etc/passwd' })
+        expect(opened).toEqual([{ kind: 'url', url: 'https://example.com/spec' }])
+        expect(logged).toHaveLength(2)
+      }),
+    ),
+  )
 })

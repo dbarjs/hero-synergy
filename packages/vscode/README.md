@@ -22,7 +22,7 @@ Hero Synergy is a personal project and is not affiliated with or endorsed by Mat
 
 ## Commands
 
-- **Hero Synergy: Open Cockpit Detail** opens the Detail for the selected map or ticket.
+- **Hero Synergy: Open Cockpit Detail** opens the Detail for the selected map or ticket, or for the first map when nothing is selected. Enter or a double-click on a Tree row opens it too, and Enter on a map's Fog or Decisions row opens it scrolled to that section.
 - **Hero Synergy: Run skill…** lists every user-invoked skill and runs the one you pick in a new terminal.
 - **Hero Synergy: Refresh** reads the tracker and the sessions again.
 

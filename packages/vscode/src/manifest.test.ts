@@ -100,9 +100,10 @@ describe('the manifest the registries show', () => {
     ])
   })
 
-  it('activates on the tracker doc and on the view, and on nothing else', () => {
+  it('activates on the tracker doc, the view and the Detail panel to restore, and on nothing else', () => {
     expect(manifest.activationEvents.toSorted()).toEqual([
       'onView:heroSynergy.tree',
+      'onWebviewPanel:heroSynergy.detail',
       'workspaceContains:docs/agents/issue-tracker.md',
     ])
   })

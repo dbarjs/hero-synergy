@@ -8,7 +8,7 @@ import type { Focus } from '../../src/protocol.ts'
  */
 defineProps<{ focus: Focus; depth: number }>()
 
-const emit = defineEmits<{ close: []; open: [key: string] }>()
+const emit = defineEmits<{ close: []; open: [key: string]; detail: [key: string] }>()
 </script>
 
 <template>
@@ -24,7 +24,7 @@ const emit = defineEmits<{ close: []; open: [key: string] }>()
       >
         <span class="num">#{{ focus.number }}</span> {{ focus.title }}
       </a>
-      <button type="button" class="open" @click="emit('open', focus.key)">↗ Open</button>
+      <button type="button" class="detail" @click="emit('detail', focus.key)">↗ Detail</button>
       <button type="button" class="close" aria-label="Close" @click="emit('close')">✕</button>
     </header>
 
@@ -90,7 +90,7 @@ const emit = defineEmits<{ close: []; open: [key: string] }>()
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.9em;
 }
-.open,
+.detail,
 .close {
   flex: none;
   border: 0;

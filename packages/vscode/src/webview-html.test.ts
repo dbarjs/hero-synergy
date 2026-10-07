@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vite-plus/test'
 
 import { makeNonce, webviewHtml } from './webview-html.ts'
 
-const page = webviewHtml({
+const options = {
   cspSource: 'https://file+.vscode-resource.vscode-cdn.net',
   scriptUri: 'https://file+.vscode-resource.vscode-cdn.net/dist/webview/main.js',
   styleUri: 'https://file+.vscode-resource.vscode-cdn.net/dist/webview/main.css',
   nonce: 'abc123',
-})
+} as const
+
+const page = webviewHtml({ ...options, surface: 'tree' })
 
 describe('the webview page', () => {
   it('loads the bundle and its style and nothing else', () => {
@@ -17,7 +19,13 @@ describe('the webview page', () => {
     expect(page).toContain(
       'href="https://file+.vscode-resource.vscode-cdn.net/dist/webview/main.css"',
     )
-    expect(page).toContain('<div id="app"></div>')
+    expect(page).toContain('<div id="app" data-surface="tree"></div>')
+  })
+
+  it('names the surface the one bundle mounts, so the Detail gets the same page', () => {
+    const detail = webviewHtml({ ...options, surface: 'detail' })
+    expect(detail).toContain('<div id="app" data-surface="detail"></div>')
+    expect(detail.replace('data-surface="detail"', 'data-surface="tree"')).toBe(page)
   })
 
   it('allows only the nonce for scripts and the webview origin for styles and fonts', () => {

@@ -42,6 +42,7 @@ export function registerTreeView(
         scriptUri: view.webview.asWebviewUri(vscode.Uri.joinPath(bundle, 'main.js')).toString(),
         styleUri: view.webview.asWebviewUri(vscode.Uri.joinPath(bundle, 'main.css')).toString(),
         nonce: makeNonce(),
+        surface: 'tree',
       })
       const disposables = [
         view.webview.onDidReceiveMessage(handlers.onMessage),

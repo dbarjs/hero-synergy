@@ -28,5 +28,6 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     @select="(key) => post({ type: 'select', key })"
     @open="(key) => post({ type: 'open', key })"
     @refresh="post({ type: 'refresh' })"
+    @open-detail="(key, section) => post({ type: 'open-detail', key, section })"
   />
 </template>

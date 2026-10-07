@@ -48,7 +48,13 @@ describe('hero-synergy in the extension host', () => {
   it('activates on the tracker doc, without anyone asking, and spawns nothing', async () => {
     // Never calls `activate()`: only the `workspaceContains` activation event can get it going.
     await until('the extension to activate on the tracker doc', () => extension().isActive)
-    assert.deepEqual(api().state(), { viewResolved: false, spawnedProcesses: 0, viewModel: null })
+    assert.deepEqual(api().state(), {
+      viewResolved: false,
+      spawnedProcesses: 0,
+      viewModel: null,
+      detailOpen: false,
+      detailView: null,
+    })
     assert.equal(vscode.window.terminals.length, 0)
   })
 
@@ -96,5 +102,63 @@ describe('hero-synergy in the extension host', () => {
     const closed = api().state().viewModel
     assert.equal(closed?.kind === 'maps' && closed.selection, null)
     assert.equal(await api().receive({ type: 'select' }), false, 'select without a key')
+  })
+  /** The tabs the Detail panel has open: a webview editor of the Detail's view type. */
+  const detailTabs = (): vscode.Tab[] =>
+    vscode.window.tabGroups.all
+      .flatMap((group) => group.tabs)
+      .filter(
+        (tab) =>
+          tab.input instanceof vscode.TabInputWebview &&
+          tab.input.viewType.endsWith('heroSynergy.detail'),
+      )
+
+  it('opens the Detail from the command on the first map, and follows the selection', async () => {
+    assert.equal(api().state().detailOpen, false)
+    await vscode.commands.executeCommand('heroSynergy.openDetail')
+    await until('the Detail to open', () => api().state().detailOpen)
+    await until('the tab to carry the map', () => detailTabs()[0]?.label === '#3 Cockpit colors')
+
+    const view = api().state().detailView
+    assert.equal(view?.detail?.kind, 'map')
+    assert.equal(view?.detail?.key, 'map:3:map')
+    // Webview panels open as editors of their own, never as a preview that the next file replaces.
+    assert.equal(detailTabs().length, 1)
+    assert.equal(detailTabs()[0]?.isPreview, false)
+
+    // Selecting another row retitles the same panel: it is reused, not opened again.
+    assert.equal(await api().receive({ type: 'select', key: 'map:3:ticket:1' }), true)
+    await until('the tab to follow the selection', () => detailTabs()[0]?.label === '#1 Palette')
+    assert.equal(detailTabs().length, 1)
+
+    // Asking to open it again reveals the open one.
+    assert.equal(
+      await api().receive({ type: 'open-detail', key: 'map:3:map', section: 'fog' }),
+      true,
+    )
+    await until('the tab to show the map', () => detailTabs()[0]?.label === '#3 Cockpit colors')
+    assert.equal(detailTabs().length, 1)
+    assert.equal(api().state().detailView?.section, 'fog')
+  })
+
+  it('restores the Detail on the same selection through the serializer', async () => {
+    assert.equal(await api().receive({ type: 'select', key: 'map:3:ticket:2' }), true)
+    await until('the tab to follow the selection', () => detailTabs()[0]?.label === '#2 Dark mode')
+
+    // A reload closes the panel and VS Code hands a blank one of the same view type to the
+    // serializer; closing the tab and creating one here is the same hand-over.
+    await vscode.window.tabGroups.close(detailTabs())
+    await until('the Detail to close', () => !api().state().detailOpen)
+    const blank = vscode.window.createWebviewPanel(
+      'heroSynergy.detail',
+      'Hero Synergy',
+      vscode.ViewColumn.Beside,
+      { enableScripts: true, retainContextWhenHidden: true },
+    )
+    await api().restoreDetail(blank)
+    await until('the restored tab to carry the selection', () => blank.title === '#2 Dark mode')
+    assert.equal(api().state().detailOpen, true)
+    assert.equal(api().state().detailView?.detail?.key, 'map:3:ticket:2')
+    blank.dispose()
   })
 })

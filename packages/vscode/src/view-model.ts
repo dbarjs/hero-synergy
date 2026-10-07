@@ -3,6 +3,7 @@ import {
   frontierOf,
   isFinished,
   modeOf,
+  neighbourhoodOf,
   nextOf,
   openBlockers,
   orderMaps,
@@ -15,7 +16,15 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
-import type { Focus, MapNode, Notice, TicketRow, ViewModel } from './protocol.ts'
+import type {
+  Detail,
+  Focus,
+  MapNode,
+  NeighbourView,
+  Notice,
+  TicketRow,
+  ViewModel,
+} from './protocol.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }
@@ -80,6 +89,93 @@ export const selectionOf = (snapshot: Snapshot, key: string | null): Selected | 
     }
   }
   return null
+}
+
+const neighbour = (
+  map: WayfinderMap,
+  { number, title, state }: { number: number; title: string; state: 'open' | 'closed' },
+): NeighbourView => ({
+  number,
+  title,
+  state,
+  // Only a ticket of this map can be selected in the Tree.
+  key: map.tickets.some((ticket) => ticket.number === number) ? ticketKey(map, number) : null,
+})
+
+/** What the Detail shows for a selected row, with the full issue; null when the key names nothing. */
+export const detailOf = (snapshot: Snapshot, key: string | null): Detail | null => {
+  if (key === null) return null
+  const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
+  for (const map of snapshot.maps) {
+    if (key === focusKeyOf(map)) {
+      const { decided, total } = decidedOfTotal(map)
+      return {
+        kind: 'map',
+        key,
+        number: map.number,
+        title: map.title,
+        url: openUrl(map.ref),
+        takeable: frontierOf(map).length,
+        decided,
+        total,
+        destination: map.destination,
+        decisions: map.decisions.map(({ number, title, gist }) => ({
+          key:
+            number !== null && map.tickets.some((ticket) => ticket.number === number)
+              ? ticketKey(map, number)
+              : null,
+          number,
+          title,
+          gist,
+        })),
+        fog: map.notYetSpecified.map(({ text }) => ({ text })),
+        outOfScope: map.outOfScope.map(({ text }) => ({ text })),
+      }
+    }
+    const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
+    if (ticket !== undefined) {
+      const { waitsOn, clearsWayFor } = neighbourhoodOf(ticket, map)
+      return {
+        kind: 'ticket',
+        key,
+        number: ticket.number,
+        title: ticket.title,
+        state: ticket.state,
+        place: placeOf(ticket),
+        type: ticket.type,
+        mode: modeOf(ticket.type),
+        claim: ticket.claim === null ? null : ticket.claim.by,
+        url: openUrl(ticket.ref),
+        body: ticket.body,
+        resolution: ticket.resolution,
+        waitsOn: waitsOn.map((blocker) => neighbour(map, blocker)),
+        clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
+      }
+    }
+  }
+  return null
+}
+
+/**
+ * The nodes that must be open for a row to show: its map, the Finished fold when the map is
+ * finished, and the Decisions fold when the row is a decision. Empty when the key names nothing.
+ */
+export const revealKeys = (snapshot: Snapshot, key: string): ReadonlyArray<string> => {
+  for (const map of snapshot.maps) {
+    const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
+    if (key !== focusKeyOf(map) && ticket === undefined) continue
+    const keys = [mapKey(map)]
+    if (isFinished(map)) keys.push(FINISHED_KEY)
+    if (ticket !== undefined && ticket.state === 'closed') keys.push(`${mapKey(map)}:decisions`)
+    return keys
+  }
+  return []
+}
+
+/** The ⚑ Map row of the first map in display order, which the Detail command opens on with no selection. */
+export const firstFocusKey = (snapshot: Snapshot): string | null => {
+  const [first] = orderMaps(snapshot.maps, NO_SESSIONS)
+  return first === undefined ? null : focusKeyOf(first)
 }
 
 /**

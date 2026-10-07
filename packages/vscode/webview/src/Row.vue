@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { nextTick, useTemplateRef, watch } from 'vue'
+
 /**
  * One row of the Tree, at the Tree's width: a twisty or a gap, an icon, the
  * `#number` in a muted monospace run before the name, then whatever trails.
  * Every kind of row in the Tree is this component.
  */
-withDefaults(
+const props = withDefaults(
   defineProps<{
     /** How far the row is indented: 0 for a map, 1 for what is under it, 2 for what is under a fold. */
     depth: number
@@ -21,16 +23,30 @@ withDefaults(
     selected?: boolean
     /** The tooltip, for text the row has to cut. */
     title?: string
+    /** Enter and a double-click open the Detail on the row; a click or Space still activates it. */
+    opensDetail?: boolean
   }>(),
   // Vue casts an absent boolean prop to `false`, which would make every leaf row a closed fold.
   { expanded: undefined },
 )
 
-defineEmits<{ activate: [] }>()
+const emit = defineEmits<{ activate: []; openDetail: [] }>()
+
+// A row selected from elsewhere (a neighbour clicked in the Detail) may be out of sight.
+const row = useTemplateRef<HTMLElement>('row')
+watch(
+  () => props.selected,
+  async (selected) => {
+    if (!selected) return
+    await nextTick()
+    row.value?.scrollIntoView?.({ block: 'nearest' })
+  },
+)
 </script>
 
 <template>
   <div
+    ref="row"
     class="row"
     :class="[`depth-${depth}`, { muted, selected }]"
     role="treeitem"
@@ -39,9 +55,10 @@ defineEmits<{ activate: [] }>()
     :aria-expanded="expanded === undefined ? undefined : expanded"
     :aria-selected="selected"
     :title="title"
-    @click="$emit('activate')"
-    @keydown.enter.prevent="$emit('activate')"
-    @keydown.space.prevent="$emit('activate')"
+    @click="emit('activate')"
+    @dblclick="opensDetail && emit('openDetail')"
+    @keydown.enter.prevent="opensDetail ? emit('openDetail') : emit('activate')"
+    @keydown.space.prevent="emit('activate')"
   >
     <span
       v-if="expanded !== undefined"

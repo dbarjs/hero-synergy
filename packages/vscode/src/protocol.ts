@@ -127,7 +127,83 @@ export type ViewModel =
       readonly selection: Focus | null
     }
 
-export type HostMessage = { readonly type: 'view-model'; readonly viewModel: ViewModel }
+/** A ticket the Detail shows as a neighbour; `key` is null when it is not a ticket of the map. */
+export interface NeighbourView {
+  readonly number: number
+  readonly title: string
+  readonly state: 'open' | 'closed'
+  readonly key: string | null
+}
+
+/** A section of a map's Detail, which the Fog and Decisions rows open it scrolled to. */
+export type MapSection = 'destination' | 'decisions' | 'fog' | 'out-of-scope'
+
+/** A closed ticket's answer. */
+export interface ResolutionView {
+  readonly body: string
+  readonly author: string | null
+  readonly at: string | null
+}
+
+/** One line of a map's Decisions so far. */
+export interface DecisionLine {
+  readonly key: string | null
+  readonly number: number | null
+  readonly title: string
+  readonly gist: string
+}
+
+/** What the Detail shows for the selection: the full issue, not the Focus pane's summary. */
+export type Detail =
+  | {
+      readonly kind: 'ticket'
+      readonly key: string
+      readonly number: number
+      readonly title: string
+      readonly state: 'open' | 'closed'
+      readonly place: 'claimed' | 'frontier' | 'blocked' | 'closed'
+      readonly type: TicketType | null
+      readonly mode: Mode | null
+      /** Who claimed it; null when unclaimed. */
+      readonly claim: ReadonlyArray<string> | null
+      readonly url: string | null
+      /** The ticket's Markdown body, rendered in the webview. */
+      readonly body: string
+      readonly resolution: ResolutionView | null
+      /** The tickets it waits on, closed ones included. */
+      readonly waitsOn: ReadonlyArray<NeighbourView>
+      /** The tickets of the map that wait on it. */
+      readonly clearsWayFor: ReadonlyArray<NeighbourView>
+    }
+  | {
+      readonly kind: 'map'
+      readonly key: string
+      readonly number: number
+      readonly title: string
+      readonly url: string | null
+      readonly takeable: number
+      readonly decided: number
+      readonly total: number
+      readonly destination: string | null
+      readonly decisions: ReadonlyArray<DecisionLine>
+      readonly fog: ReadonlyArray<FogRow>
+      readonly outOfScope: ReadonlyArray<FogRow>
+    }
+
+/**
+ * What the Detail panel draws: the selection's detail (null when nothing is selected), and
+ * the section to scroll to. `scroll` counts each request, so asking again for the same
+ * section scrolls again.
+ */
+export interface DetailView {
+  readonly detail: Detail | null
+  readonly section: MapSection | null
+  readonly scroll: number
+}
+
+export type HostMessage =
+  | { readonly type: 'view-model'; readonly viewModel: ViewModel }
+  | { readonly type: 'detail'; readonly view: DetailView }
 
 export type WebviewMessage =
   /** The webview has mounted and wants the current view model. */
@@ -139,3 +215,9 @@ export type WebviewMessage =
   /** The pane's ↗ Open and its title link: open the selected ticket or map. */
   | { readonly type: 'open'; readonly key: string }
   | { readonly type: 'refresh' }
+  /** Select the row, open the Detail on it, and scroll a map's Detail to a section. */
+  | { readonly type: 'open-detail'; readonly key: string; readonly section: MapSection | null }
+  /** A neighbour clicked in the Detail: select it in the Tree and unfold its map. */
+  | { readonly type: 'reveal'; readonly key: string }
+  /** A link in a rendered body; the host opens only web links. */
+  | { readonly type: 'open-link'; readonly url: string }
