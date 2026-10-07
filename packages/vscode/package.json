@@ -14,6 +14,7 @@
   "files": [
     "dist",
     "claude-plugin",
+    "media",
     "CHANGELOG.md",
     "LICENSE"
   ],
@@ -21,26 +22,69 @@
   "scripts": {
     "build": "vp pack && vp build",
     "typecheck": "vue-tsc --noEmit -p webview",
-    "test:integration": "vp pack && vscode-test",
+    "test:integration": "vp run build && vscode-test",
     "package": "vsce package --no-dependencies --allow-unused-files-pattern",
     "publish:marketplace": "vsce publish --packagePath *.vsix --azure-credential --skip-duplicate",
     "publish:open-vsx": "ovsx publish --packagePath *.vsix --trusted-publishing --skip-duplicate"
   },
   "devDependencies": {
+    "@effect/vitest": "^4.0.1",
     "@hero-synergy/core": "workspace:*",
     "@types/mocha": "^10.0.10",
     "@types/vscode": "~1.105.0",
     "@vitejs/plugin-vue": "^6.0.9",
+    "@vscode/codicons": "0.0.46-24",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
+    "@vue/test-utils": "^2.5.1",
+    "effect": "^4.0.1",
+    "happy-dom": "^20.14.5",
     "ovsx": "^1.2.0",
     "playwright": "^1.63.0",
     "typescript": "^6.0.3",
     "vue": "^3.5.0",
     "vue-tsc": "^3.3.0"
   },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "heroSynergy",
+          "title": "Hero Synergy",
+          "icon": "media/hero-synergy.svg"
+        }
+      ]
+    },
+    "views": {
+      "heroSynergy": [
+        {
+          "type": "webview",
+          "id": "heroSynergy.tree",
+          "name": "Maps"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "heroSynergy.refresh",
+        "title": "Refresh",
+        "category": "Hero Synergy",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "heroSynergy.refresh",
+          "when": "view == heroSynergy.tree",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
   "activationEvents": [
+    "onView:heroSynergy.tree",
     "workspaceContains:docs/agents/issue-tracker.md"
   ],
   "extensionKind": [
