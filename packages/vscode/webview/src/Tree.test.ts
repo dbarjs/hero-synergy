@@ -169,6 +169,7 @@ describe('the Tree states with no maps', () => {
       collectedAt: '2026-10-07T00:00:00.000Z',
       maps: [],
       finished: null,
+      selection: null,
     })
     expect(wrapper.text()).toBe('No maps yet.')
   })
@@ -179,6 +180,7 @@ const node = (number: number, overrides: Partial<MapNode> = {}): MapNode => ({
   number,
   title: `Map number ${number}`,
   expanded: false,
+  focusKey: `map:${number}:map`,
   takeable: 0,
   decided: 0,
   total: 0,
@@ -205,6 +207,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
     collectedAt: '2026-10-07T00:00:00.000Z',
     maps: active,
     finished: { key: 'finished', expanded: finishedOpen, maps: finishedMaps },
+    selection: null,
   })
 
   it('renders the seven open maps and one Finished node, not the 38', () => {
@@ -230,6 +233,7 @@ describe('what the Tree asks for', () => {
       collectedAt: '2026-10-07T00:00:00.000Z',
       maps: [node(1), node(2, { expanded: true })],
       finished: null,
+      selection: null,
     })
     const [first, second] = wrapper.findAll('[role="treeitem"]')
     await first?.trigger('click')
@@ -244,6 +248,7 @@ describe('what the Tree asks for', () => {
       collectedAt: '2026-10-07T00:00:00.000Z',
       maps: [],
       finished: { key: 'finished', expanded: false, maps: [node(1, { decided: 1, total: 1 })] },
+      selection: null,
     })
     await wrapper.find('[role="treeitem"]').trigger('keydown', { key: 'Enter' })
     expect(wrapper.emitted('expand')).toEqual([['finished']])

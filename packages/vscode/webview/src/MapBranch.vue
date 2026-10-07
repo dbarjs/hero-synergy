@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import type { TicketRow, MapNode } from '../../src/protocol.ts'
+import type { Focus, TicketRow, MapNode } from '../../src/protocol.ts'
+import FocusPane from './FocusPane.vue'
 import Row from './Row.vue'
 
 /** One map and what unfolds under it, drawn from its node. */
@@ -9,9 +10,18 @@ const props = defineProps<{
   base?: number
   /** A finished map is muted and shows no takeable count. */
   finished?: boolean
+  /** The selected row's pane, drawn under that row when it is in this map. */
+  selection: Focus | null
 }>()
 
-const emit = defineEmits<{ toggle: [key: string, expanded: boolean] }>()
+const emit = defineEmits<{
+  toggle: [key: string, expanded: boolean]
+  select: [key: string]
+  close: []
+  open: [key: string]
+}>()
+
+const isSelected = (key: string | null): boolean => key !== null && props.selection?.key === key
 
 const depth = (level: number): number => level + (props.base ?? 0)
 
@@ -52,26 +62,44 @@ const takeableText = (map: MapNode): string =>
       :description="map.destination ?? undefined"
       :title="map.destination ?? undefined"
       muted
+      :selected="isSelected(map.focusKey)"
+      @activate="emit('select', map.focusKey)"
+    />
+    <FocusPane
+      v-if="selection && isSelected(map.focusKey)"
+      :focus="selection"
+      :depth="depth(1)"
+      @close="emit('close')"
+      @open="(key) => emit('open', key)"
     />
 
-    <Row
-      v-for="ticket in map.tickets"
-      :key="ticket.number"
-      class="ticket"
-      :class="ticket.place"
-      :depth="depth(1)"
-      :icon="typeIcon(ticket)"
-      :number="ticket.number"
-      :label="ticket.title"
-      :muted="ticket.place === 'blocked'"
-    >
-      <span v-if="ticket.place === 'blocked'" class="waits">
-        waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
-      </span>
-      <span v-if="ticket.place === 'claimed'" class="claimed">claimed</span>
-      <span v-if="ticket.next" class="next">next</span>
-      <span v-if="ticket.mode" class="mode">{{ ticket.mode }}</span>
-    </Row>
+    <template v-for="ticket in map.tickets" :key="ticket.number">
+      <Row
+        class="ticket"
+        :class="ticket.place"
+        :depth="depth(1)"
+        :icon="typeIcon(ticket)"
+        :number="ticket.number"
+        :label="ticket.title"
+        :muted="ticket.place === 'blocked'"
+        :selected="isSelected(ticket.key)"
+        @activate="emit('select', ticket.key)"
+      >
+        <span v-if="ticket.place === 'blocked'" class="waits">
+          waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
+        </span>
+        <span v-if="ticket.place === 'claimed'" class="claimed">claimed</span>
+        <span v-if="ticket.next" class="next">next</span>
+        <span v-if="ticket.mode" class="mode">{{ ticket.mode }}</span>
+      </Row>
+      <FocusPane
+        v-if="selection && isSelected(ticket.key)"
+        :focus="selection"
+        :depth="depth(1)"
+        @close="emit('close')"
+        @open="(key) => emit('open', key)"
+      />
+    </template>
 
     <template v-if="map.fog.entries.length > 0">
       <Row
@@ -108,17 +136,26 @@ const takeableText = (map: MapNode): string =>
         <span class="count">{{ map.decisions.entries.length }}</span>
       </Row>
       <template v-if="map.decisions.expanded">
-        <Row
-          v-for="(entry, index) in map.decisions.entries"
-          :key="index"
-          class="decision"
-          :depth="depth(2)"
-          :number="entry.number"
-          :label="entry.title"
-          :description="entry.gist"
-          :title="`${entry.title}: ${entry.gist}`"
-          muted
-        />
+        <template v-for="(entry, index) in map.decisions.entries" :key="index">
+          <Row
+            class="decision"
+            :depth="depth(2)"
+            :number="entry.number"
+            :label="entry.title"
+            :description="entry.gist"
+            :title="`${entry.title}: ${entry.gist}`"
+            muted
+            :selected="isSelected(entry.key)"
+            @activate="entry.key !== null && emit('select', entry.key)"
+          />
+          <FocusPane
+            v-if="selection && isSelected(entry.key)"
+            :focus="selection"
+            :depth="depth(2)"
+            @close="emit('close')"
+            @open="(key) => emit('open', key)"
+          />
+        </template>
       </template>
     </template>
   </template>

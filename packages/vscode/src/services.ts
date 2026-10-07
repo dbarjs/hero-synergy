@@ -1,5 +1,7 @@
 import { Context, Effect, Layer } from 'effect'
 
+import type { OpenTarget } from './view-model.ts'
+
 /**
  * The window's facts the Cockpit reads without importing `vscode`. Each service
  * has an in-memory layer here for tests; the live layers use `vscode` and sit in
@@ -38,5 +40,22 @@ export class Storage extends Context.Service<Storage, StorageShape>()('hero-syne
             values.set(key, value)
           }),
       }
+    })
+}
+
+export interface OpenerShape {
+  /** Opens an issue URL in the browser or a ticket's file in an editor. */
+  readonly open: (target: OpenTarget) => Effect.Effect<void>
+}
+
+/** What ↗ Open launches, kept behind a service so tests see the target instead of a browser. */
+export class Opener extends Context.Service<Opener, OpenerShape>()('hero-synergy/Opener') {
+  /** Records each target in `opened` instead of opening it. */
+  static readonly inMemory = (opened: OpenTarget[]): Layer.Layer<Opener> =>
+    Layer.succeed(Opener, {
+      open: (target) =>
+        Effect.sync(() => {
+          opened.push(target)
+        }),
     })
 }

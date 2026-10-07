@@ -1,7 +1,7 @@
 import { Effect, Layer } from 'effect'
 import * as vscode from 'vscode'
 
-import { Storage, WorkspaceFolders } from '../services.ts'
+import { Opener, Storage, WorkspaceFolders } from '../services.ts'
 
 /** The window's workspace folders, read each time so a folder added later is seen by the next collect. */
 export const workspaceFoldersLive: Layer.Layer<WorkspaceFolders> = Layer.succeed(WorkspaceFolders, {
@@ -16,3 +16,12 @@ export const storageLive = (memento: vscode.Memento): Layer.Layer<Storage> =>
     get: (key) => Effect.sync(() => memento.get<unknown>(key)),
     set: (key, value) => Effect.promise(() => Promise.resolve(memento.update(key, value))),
   })
+
+/** ↗ Open: an issue in the browser, a local ticket in an editor. */
+export const openerLive: Layer.Layer<Opener> = Layer.succeed(Opener, {
+  open: (target) =>
+    Effect.promise(async () => {
+      if (target.kind === 'url') await vscode.env.openExternal(vscode.Uri.parse(target.url))
+      else await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(target.path))
+    }),
+})

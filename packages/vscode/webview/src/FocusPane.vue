@@ -1,0 +1,123 @@
+<script setup lang="ts">
+import type { Focus } from '../../src/protocol.ts'
+
+/**
+ * The Focus pane, open inline under the selected row. It is a stack of labelled
+ * rows: state and claim for a ticket, counts and destination for a map. Session
+ * status and Actions join as further rows in later tickets.
+ */
+defineProps<{ focus: Focus; depth: number }>()
+
+const emit = defineEmits<{ close: []; open: [key: string] }>()
+</script>
+
+<template>
+  <section class="pane" :class="`depth-${depth}`" :aria-label="`#${focus.number} ${focus.title}`">
+    <header class="head">
+      <a
+        class="title"
+        :href="focus.kind === 'ticket' ? (focus.url ?? undefined) : undefined"
+        role="link"
+        tabindex="0"
+        @click.prevent="emit('open', focus.key)"
+        @keydown.enter.prevent="emit('open', focus.key)"
+      >
+        <span class="num">#{{ focus.number }}</span> {{ focus.title }}
+      </a>
+      <button type="button" class="open" @click="emit('open', focus.key)">↗ Open</button>
+      <button type="button" class="close" aria-label="Close" @click="emit('close')">✕</button>
+    </header>
+
+    <dl class="facts">
+      <template v-if="focus.kind === 'ticket'">
+        <div class="fact state">
+          <dt>State</dt>
+          <dd>{{ focus.state }}</dd>
+        </div>
+        <div class="fact claim">
+          <dt>Claim</dt>
+          <dd>{{ focus.claim === null ? 'unclaimed' : focus.claim.join(', ') }}</dd>
+        </div>
+      </template>
+      <template v-else>
+        <div class="fact counts">
+          <dt>Counts</dt>
+          <dd>
+            {{ focus.takeable === 0 ? 'nothing takeable' : `${focus.takeable} takeable` }} ·
+            {{ focus.decided }}/{{ focus.total }} decided
+          </dd>
+        </div>
+        <div class="fact destination">
+          <dt>Destination</dt>
+          <dd>{{ focus.destination ?? 'not written down' }}</dd>
+        </div>
+      </template>
+    </dl>
+  </section>
+</template>
+
+<style scoped>
+.pane {
+  margin: 2px 8px 4px 0;
+  padding: 6px 8px;
+  border-left: 2px solid var(--vscode-focusBorder);
+  background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+}
+.depth-0 {
+  margin-left: 20px;
+}
+.depth-1 {
+  margin-left: 34px;
+}
+.depth-2 {
+  margin-left: 50px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
+}
+.num {
+  font-family: var(--vscode-editor-font-family, monospace);
+  font-size: 0.9em;
+}
+.open,
+.close {
+  flex: none;
+  border: 0;
+  border-radius: 2px;
+  padding: 1px 6px;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  cursor: pointer;
+}
+.close {
+  background: none;
+  color: var(--vscode-icon-foreground);
+}
+.facts {
+  margin: 4px 0 0;
+}
+.fact {
+  display: flex;
+  gap: 8px;
+}
+dt {
+  flex: none;
+  width: 72px;
+  color: var(--vscode-descriptionForeground);
+}
+dd {
+  margin: 0;
+  min-width: 0;
+}
+</style>
