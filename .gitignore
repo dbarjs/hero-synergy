@@ -8,3 +8,4 @@ dist
 out-test
 .vscode-test
 coverage
+CLAUDE.local.md
