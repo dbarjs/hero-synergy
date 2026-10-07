@@ -111,6 +111,13 @@ export function discoverSkills(
   })
 }
 
+/**
+ * Skill discovery on the real disk, settled as a Promise, for a caller that
+ * does not run Effect programs itself.
+ */
+export const discoverSkillsPromise = (input: DiscoverSkillsInput): Promise<SkillInventory> =>
+  Effect.runPromise(discoverSkills(input).pipe(Effect.provide(FileSystem.live)))
+
 /** The command of the skill with this name, or null when it is not installed. */
 export function commandOf(skills: ReadonlyArray<DiscoveredSkill>, name: string): string | null {
   return skills.find((skill) => skill.name === name)?.command ?? null

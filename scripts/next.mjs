@@ -8,6 +8,9 @@
 //   node scripts/next.mjs             print the launch command, then launch the first takeable ticket
 //   node scripts/next.mjs <number>    launch that ticket
 //
+// Add --implement to a launch to start the session on /implement <ticket URL> instead of the
+// wayfinder form; everything else on the command stays core's Work ticket command.
+//
 // Plain Node, no package.json and no dependencies of its own, not part of any workspace package. It
 // imports core's built `dist/` (@hero-synergy/core) by relative path, so `pnpm install` and
 // `pnpm exec vp run build` come first, as the worktree routine in CLAUDE.md already requires.
@@ -18,16 +21,22 @@
 // job. Spawned from node, VS Code's tab keeps saying `node` and `/rename` changes nothing.
 
 import { spawnSync } from 'node:child_process'
-import { dirname, resolve } from 'node:path'
+import { homedir } from 'node:os'
+import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
   collectGitHubPromise,
+  commandOf,
+  discoverSkillsPromise,
   isClaimed,
   openBlockers,
   placeOf,
+  readPluginList,
   readRegistry,
   readSnapshot,
+  renderCommand,
+  workTicket,
 } from '../packages/core/dist/index.mjs'
 
 const OWNER = 'dbarjs'
@@ -41,19 +50,33 @@ const MAP = 64
 // that the Cockpit never will.
 const PARENTS = [SPEC, MAP]
 
-// The skill line the session starts with: the ticket's parent, then the ticket. URLs, not `#n`, so
-// the session never resolves a number against the wrong list. Swap the line to use the implement
-// form instead of the wayfinder form.
-const SKILL_LINE = ({ parent, ticket }) => `/mattpocock-skills:wayfinder ${parent} ${ticket}`
-// const SKILL_LINE = ({ ticket }) => `/mattpocock-skills:implement ${ticket}`
+// The launch is core's Work ticket command, the one the Cockpit runs: the skill line, the name, the
+// worktree, the plugin dir and the env all come from `workTicket`. `--implement` swaps only the
+// skill line, to the implement form with the ticket's URL. URLs, not `#n`, so the session never
+// resolves a number against the wrong list.
+const IMPLEMENT = 'implement'
+const WAYFINDER = 'wayfinder'
+const TO_SPEC = 'to-spec'
+
+// Where the skills plugin comes from, in the Cockpit's words (never gating: a warning only).
+const INSTALL_HINT =
+  'install with `claude plugins install mattpocock-skills` or `npx skills@latest add mattpocock/skills`, one of them, never both'
 
 // The word the launch is typed with, resolved by the interactive shell (alias or function).
 const LAUNCHER = 'cc'
 const SHELL = 'zsh'
-// Flags every launch gets, before the name, the worktree and the skill line.
-const LAUNCH_FLAGS = ['--dangerously-skip-permissions']
+// Flags the launcher gets before core's argv. NEXT_LAUNCH_FLAGS replaces them (empty for none), so a
+// launch can be made to receive core's argv alone.
+const LAUNCH_FLAGS =
+  process.env.NEXT_LAUNCH_FLAGS === undefined
+    ? ['--dangerously-skip-permissions']
+    : process.env.NEXT_LAUNCH_FLAGS.split(/\s+/).filter(Boolean)
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+// The status plugin the Cockpit passes with `--plugin-dir`, so its hooks fire in a session started
+// from the terminal, and the events file those hooks append to (`.scratch` is gitignored).
+const PLUGIN_PATH = join(REPO_ROOT, 'packages', 'vscode', 'claude-plugin')
+const EVENTS_FILE = join(REPO_ROOT, '.scratch', 'hero-synergy-events.jsonl')
 const issueUrl = (number) => `https://github.com/${OWNER}/${REPO}/issues/${number}`
 
 function run(command, args) {
@@ -228,18 +251,72 @@ function annotate(parents, live) {
   }))
 }
 
-const shellQuote = (s) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replaceAll("'", `'\\''`)}'`)
+function warnLine(warning) {
+  const detail = warning.detail ? `: ${warning.detail}` : ''
+  console.error(`warning: ${warning.code}${detail}`)
+}
 
-function launch(ticket) {
-  const name = `#${ticket.number} ${ticket.title}`
-  const skill = SKILL_LINE({ parent: issueUrl(ticket.parent), ticket: issueUrl(ticket.number) })
-  const args = [...LAUNCH_FLAGS, '-n', name, '-w', String(ticket.number), skill]
-  console.log([LAUNCHER, ...args].map(shellQuote).join(' '))
+// Core's skill discovery, before the launch: which skills are installed, and as which command. It
+// says what is wrong in the Cockpit's words and never gates. A skill that is missing falls back to
+// the plugin's namespaced command, which is what the launch would have used.
+async function discoverCommands(needs) {
+  const list = run('claude', ['plugin', 'list', '--json'])
+  const plugins = readPluginList(list.stdout)
+  const inventory = await discoverSkillsPromise({
+    repoRoot: REPO_ROOT,
+    home: homedir(),
+    plugins: plugins.value,
+  })
+  for (const warning of [...plugins.warnings, ...inventory.warnings]) warnLine(warning)
+  const commands = {}
+  for (const name of [WAYFINDER, TO_SPEC, IMPLEMENT]) {
+    const command = commandOf(inventory.skills, name)
+    if (command === null && needs.includes(name)) {
+      const worth =
+        name === WAYFINDER || name === IMPLEMENT ? 'Work ticket unavailable' : 'unavailable'
+      console.error(`warning: no \`${name}\`, ${worth}; ${INSTALL_HINT}`)
+    }
+    commands[name] = command ?? `/mattpocock-skills:${name}`
+  }
+  return commands
+}
+
+async function launch(ticket, { implement }) {
+  const commands = await discoverCommands([implement ? IMPLEMENT : WAYFINDER])
+  const context = {
+    repoRoot: REPO_ROOT,
+    tracker: 'github',
+    pluginPath: PLUGIN_PATH,
+    eventsFile: EVENTS_FILE,
+  }
+  const built = workTicket(
+    context,
+    { wayfinder: commands[WAYFINDER], toSpec: commands[TO_SPEC] },
+    {
+      map: { ref: { tracker: 'github', url: issueUrl(ticket.parent) } },
+      ticket: {
+        number: ticket.number,
+        title: ticket.title,
+        ref: { tracker: 'github', url: issueUrl(ticket.number) },
+      },
+    },
+  )
+  // The skill line is the builder's last word; the implement form swaps it and nothing else.
+  const argv = implement
+    ? [...built.argv.slice(0, -1), `${commands[IMPLEMENT]} ${issueUrl(ticket.number)}`]
+    : built.argv
+  const args = [...LAUNCH_FLAGS, ...argv.slice(1)]
+  if (built.envLine) console.log(built.envLine)
+  console.log(renderCommand([LAUNCHER, ...args]))
   console.log()
   // `zsh -ic '<launcher> "$@"' <argv0> <args…>`: interactive so the alias expands, args passed
   // positionally so the title and the skill line never go through a second layer of quoting.
   const shellArgs = ['-ic', `${LAUNCHER} "$@"`, LAUNCHER, ...args]
-  const result = spawnSync(SHELL, shellArgs, { cwd: REPO_ROOT, stdio: 'inherit' })
+  const result = spawnSync(SHELL, shellArgs, {
+    cwd: built.cwd,
+    env: { ...process.env, ...built.env },
+    stdio: 'inherit',
+  })
   if (result.error) throw new Error(`${SHELL}: ${result.error.message}`)
   process.exit(result.status ?? 1)
 }
@@ -256,7 +333,7 @@ async function list() {
   })
 }
 
-function launchNumber(number) {
+function launchNumber(number, options) {
   if (liveSessionTickets().has(number)) {
     console.error(
       `#${number} already has a live session; resume it with: claude --resume '#${number} …'`,
@@ -267,10 +344,13 @@ function launchNumber(number) {
   if (issue.state !== 'OPEN') console.error(`warning: #${number} is ${issue.state.toLowerCase()}`)
   if (!issue.parent)
     console.error(`warning: #${number} has no parent issue; the session gets the spec, #${SPEC}`)
-  launch({ number: issue.number, title: issue.title, parent: issue.parent?.number ?? SPEC })
+  return launch(
+    { number: issue.number, title: issue.title, parent: issue.parent?.number ?? SPEC },
+    options,
+  )
 }
 
-async function launchNext() {
+async function launchNext(options) {
   const parents = annotate(await readParents(), liveSessionTickets())
   const next = parents.flatMap((p) => p.tickets).find((t) => t.takeable)
   if (!next) {
@@ -278,19 +358,21 @@ async function launchNext() {
     console.error(`nothing takeable on ${names}; see --list`)
     process.exit(1)
   }
-  launch(next)
+  return launch(next, options)
 }
 
 async function main(argv) {
-  const [arg] = argv
-  if (arg === undefined) return launchNext()
+  const implement = argv.includes('--implement')
+  const rest = argv.filter((arg) => arg !== '--implement')
+  const [arg] = rest
   if (arg === '--list') return list()
+  if (arg === undefined) return launchNext({ implement })
   const number = Number(arg)
-  if (!Number.isInteger(number) || number <= 0) {
-    console.error('usage: node scripts/next.mjs [--list | <number>]')
+  if (rest.length > 1 || !Number.isInteger(number) || number <= 0) {
+    console.error('usage: node scripts/next.mjs [--list | [--implement] [<number>]]')
     process.exit(2)
   }
-  launchNumber(number)
+  return launchNumber(number, { implement })
 }
 
 try {
