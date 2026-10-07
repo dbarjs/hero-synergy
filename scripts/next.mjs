@@ -37,6 +37,8 @@ const SKILL_LINE = ({ parent, ticket }) => `/mattpocock-skills:wayfinder ${paren
 // The word the launch is typed with, resolved by the interactive shell (alias or function).
 const LAUNCHER = 'cc'
 const SHELL = 'zsh'
+// Flags every launch gets, before the name, the worktree and the skill line.
+const LAUNCH_FLAGS = ['--dangerously-skip-permissions']
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const issueUrl = (number) => `https://github.com/${OWNER}/${REPO}/issues/${number}`
@@ -199,7 +201,7 @@ const shellQuote = (s) => (/^[\w@%+=:,./-]+$/.test(s) ? s : `'${s.replaceAll("'"
 function launch(ticket) {
   const name = `#${ticket.number} ${ticket.title}`
   const skill = SKILL_LINE({ parent: issueUrl(ticket.parent), ticket: issueUrl(ticket.number) })
-  const args = ['-n', name, '-w', String(ticket.number), skill]
+  const args = [...LAUNCH_FLAGS, '-n', name, '-w', String(ticket.number), skill]
   console.log([LAUNCHER, ...args].map(shellQuote).join(' '))
   console.log()
   // `zsh -ic '<launcher> "$@"' <argv0> <args…>`: interactive so the alias expands, args passed
