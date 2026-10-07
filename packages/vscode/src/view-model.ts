@@ -16,7 +16,15 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
+import {
+  canLaunchFrom,
+  type Launching,
+  NOT_LAUNCHING,
+  sessionView,
+  workTicketAction,
+} from './launch.ts'
 import type {
+  ActionView,
   BudgetNote,
   Detail,
   Focus,
@@ -52,8 +60,24 @@ interface Selected {
   readonly target: OpenTarget
 }
 
+/** The ticket a row key names with its map; null when the key names no ticket in the snapshot. */
+export const ticketOf = (
+  snapshot: Snapshot,
+  key: string,
+): { readonly map: WayfinderMap; readonly ticket: Ticket } | null => {
+  for (const map of snapshot.maps) {
+    const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
+    if (ticket !== undefined) return { map, ticket }
+  }
+  return null
+}
+
 /** The row a key selects, with what its pane shows; null when the key names nothing in the snapshot. */
-export const selectionOf = (snapshot: Snapshot, key: string | null): Selected | null => {
+export const selectionOf = (
+  snapshot: Snapshot,
+  key: string | null,
+  launching: Launching = NOT_LAUNCHING,
+): Selected | null => {
   if (key === null) return null
   for (const map of snapshot.maps) {
     const target = (ref: Ref): OpenTarget => targetOf(snapshot.repoRoot, ref)
@@ -85,6 +109,8 @@ export const selectionOf = (snapshot: Snapshot, key: string | null): Selected | 
           state: ticket.state,
           claim: ticket.claim === null ? null : ticket.claim.by,
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
+          session: sessionView(launching.sessions.get(key)),
+          action: actionOf(snapshot, launching, map, ticket, key),
         },
       }
     }
@@ -104,7 +130,11 @@ const neighbour = (
 })
 
 /** What the Detail shows for a selected row, with the full issue; null when the key names nothing. */
-export const detailOf = (snapshot: Snapshot, key: string | null): Detail | null => {
+export const detailOf = (
+  snapshot: Snapshot,
+  key: string | null,
+  launching: Launching = NOT_LAUNCHING,
+): Detail | null => {
   if (key === null) return null
   const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
   for (const map of snapshot.maps) {
@@ -151,6 +181,8 @@ export const detailOf = (snapshot: Snapshot, key: string | null): Detail | null 
         resolution: ticket.resolution,
         waitsOn: waitsOn.map((blocker) => neighbour(map, blocker)),
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
+        session: sessionView(launching.sessions.get(key)),
+        action: actionOf(snapshot, launching, map, ticket, key),
       }
     }
   }
@@ -188,11 +220,32 @@ export const defaultExpanded = (snapshot: Snapshot): ReadonlySet<string> => {
   return new Set(first === undefined ? [] : [mapKey(first)])
 }
 
-const ticketRow = (map: WayfinderMap, ticket: Ticket, next: Ticket | null): TicketRow => {
+/** Work ticket for a frontier ticket with no terminal on it; every other ticket has none to offer. */
+const actionOf = (
+  snapshot: Snapshot,
+  launching: Launching,
+  map: WayfinderMap,
+  ticket: Ticket,
+  key: string,
+): ActionView | null =>
+  placeOf(ticket) === 'frontier' && canLaunchFrom(launching.sessions.get(key))
+    ? workTicketAction(snapshot, launching, { map, ticket })
+    : null
+
+const ticketRow = (
+  snapshot: Snapshot,
+  launching: Launching,
+  map: WayfinderMap,
+  ticket: Ticket,
+  next: Ticket | null,
+): TicketRow => {
   const place = placeOf(ticket)
   if (place === 'closed') throw new Error(`#${ticket.number} is closed and has no row`)
+  const key = ticketKey(map, ticket.number)
   return {
-    key: ticketKey(map, ticket.number),
+    key,
+    session: sessionView(launching.sessions.get(key)),
+    action: actionOf(snapshot, launching, map, ticket, key),
     number: ticket.number,
     title: ticket.title,
     place,
@@ -206,7 +259,12 @@ const ticketRow = (map: WayfinderMap, ticket: Ticket, next: Ticket | null): Tick
   }
 }
 
-const mapNode = (map: WayfinderMap, expanded: ReadonlySet<string>): MapNode => {
+const mapNode = (
+  snapshot: Snapshot,
+  launching: Launching,
+  map: WayfinderMap,
+  expanded: ReadonlySet<string>,
+): MapNode => {
   const key = mapKey(map)
   const next = nextOf(map)
   const { decided, total } = decidedOfTotal(map)
@@ -220,7 +278,7 @@ const mapNode = (map: WayfinderMap, expanded: ReadonlySet<string>): MapNode => {
     decided,
     total,
     destination: map.destination,
-    tickets: orderTickets(map).map((ticket) => ticketRow(map, ticket, next)),
+    tickets: orderTickets(map).map((ticket) => ticketRow(snapshot, launching, map, ticket, next)),
     fog: {
       key: `${key}:fog`,
       expanded: expanded.has(`${key}:fog`),
@@ -255,6 +313,7 @@ export const buildViewModel = (
   facts: SessionFacts = NO_SESSIONS,
   notice: Notice | null = null,
   budget: BudgetNote | null = null,
+  launching: Launching = NOT_LAUNCHING,
 ): ViewModel => {
   const ordered = orderMaps(snapshot.maps, facts)
   const active = ordered.filter((map) => !isFinished(map))
@@ -268,15 +327,15 @@ export const buildViewModel = (
         : null,
     notice,
     budget,
-    selection: selectionOf(snapshot, selected)?.focus ?? null,
-    maps: active.map((map) => mapNode(map, expanded)),
+    selection: selectionOf(snapshot, selected, launching)?.focus ?? null,
+    maps: active.map((map) => mapNode(snapshot, launching, map, expanded)),
     finished:
       finished.length === 0
         ? null
         : {
             key: FINISHED_KEY,
             expanded: expanded.has(FINISHED_KEY),
-            maps: finished.map((map) => mapNode(map, expanded)),
+            maps: finished.map((map) => mapNode(snapshot, launching, map, expanded)),
           },
   }
 }

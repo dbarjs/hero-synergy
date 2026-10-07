@@ -90,3 +90,128 @@ export class CollectProgress extends Context.Service<CollectProgress, CollectPro
       }),
     })
 }
+
+export type TerminalLocation = 'panel' | 'editor'
+
+/** A terminal the Cockpit opens: the process is the terminal's own, never typed into a shell. */
+export interface TerminalSpec {
+  readonly name: string
+  readonly shellPath: string
+  readonly shellArgs: ReadonlyArray<string>
+  readonly cwd: string
+  readonly env: Readonly<Record<string, string>>
+  /** A codicon id, without the `$(…)` wrapper. */
+  readonly icon: string
+  readonly location: TerminalLocation
+}
+
+/** How a terminal ended, from VS Code's exit status. */
+export interface TerminalExit {
+  readonly reason: 'user' | 'shutdown' | 'process' | 'extension' | 'unknown'
+  readonly code: number | null
+}
+
+export interface TerminalClosed {
+  readonly id: number
+  readonly exit: TerminalExit
+}
+
+export interface TerminalsShape {
+  /** Creates and shows a terminal; its id is the Cockpit's own, valid until it closes. */
+  readonly open: (spec: TerminalSpec) => Effect.Effect<number>
+  readonly focus: (id: number) => Effect.Effect<void>
+  /** Calls the listener each time a terminal this service opened closes. */
+  readonly onClosed: (listener: (closed: TerminalClosed) => void) => void
+}
+
+/** What a test holds to see the terminals the Cockpit opens and to play one closing. */
+export interface TerminalRecorder {
+  readonly opened: TerminalSpec[]
+  readonly focused: number[]
+  readonly close: (id: number, exit: TerminalExit) => void
+}
+
+/** The terminals the Cockpit launches sessions in, behind a service so tests see the spec and drive the close. */
+export class Terminals extends Context.Service<Terminals, TerminalsShape>()(
+  'hero-synergy/Terminals',
+) {
+  /** A recorder and the layer over it: ids are 1, 2, … in opening order. */
+  static readonly inMemory = (): { recorder: TerminalRecorder; layer: Layer.Layer<Terminals> } => {
+    const listeners: Array<(closed: TerminalClosed) => void> = []
+    const recorder: TerminalRecorder = {
+      opened: [],
+      focused: [],
+      close: (id, exit) => listeners.forEach((listener) => listener({ id, exit })),
+    }
+    return {
+      recorder,
+      layer: Layer.succeed(Terminals, {
+        open: (spec) =>
+          Effect.sync(() => {
+            recorder.opened.push(spec)
+            return recorder.opened.length
+          }),
+        focus: (id) =>
+          Effect.sync(() => {
+            recorder.focused.push(id)
+          }),
+        onClosed: (listener) => {
+          listeners.push(listener)
+        },
+      }),
+    }
+  }
+}
+
+export interface ClipboardShape {
+  readonly write: (text: string) => Effect.Effect<void>
+}
+
+/** The copy button's destination, behind a service so tests see the text instead of a clipboard. */
+export class Clipboard extends Context.Service<Clipboard, ClipboardShape>()(
+  'hero-synergy/Clipboard',
+) {
+  static readonly inMemory = (written: string[]): Layer.Layer<Clipboard> =>
+    Layer.succeed(Clipboard, {
+      write: (text) =>
+        Effect.sync(() => {
+          written.push(text)
+        }),
+    })
+}
+
+export interface HostEnvironmentShape {
+  /** `process.platform`. */
+  readonly platform: string
+  /** The home directory, whose `.claude/skills` holds personal skills; null when unknown. */
+  readonly home: string | null
+  /** The `PATH` variable. */
+  readonly pathVariable: string
+  /** `heroSynergy.claude.path`, read each time so a change applies to the next launch. */
+  readonly claudeSetting: Effect.Effect<string>
+  /** `heroSynergy.sessions.terminalLocation`, read each time. */
+  readonly terminalLocation: Effect.Effect<TerminalLocation>
+  /** The full path of the extension's `claude-plugin` directory. */
+  readonly pluginPath: string
+  /** The status events file for a repo, one per repo identity. */
+  readonly eventsFile: (repoRoot: string) => string
+}
+
+/** What the window and the extension's install say about where things are. */
+export class HostEnvironment extends Context.Service<HostEnvironment, HostEnvironmentShape>()(
+  'hero-synergy/HostEnvironment',
+) {
+  static readonly inMemory = (
+    overrides: Partial<HostEnvironmentShape> = {},
+  ): Layer.Layer<HostEnvironment> =>
+    Layer.succeed(HostEnvironment, {
+      platform: 'linux',
+      home: null,
+      pathVariable: '',
+      claudeSetting: Effect.succeed(''),
+      terminalLocation: Effect.succeed<TerminalLocation>('panel'),
+      pluginPath: '/ext/claude-plugin',
+      eventsFile: () => '/storage/events/repo.jsonl',
+      ...overrides,
+    })
+}

@@ -12,9 +12,12 @@ import {
   registerTreeView,
 } from './vscode/tree-view.ts'
 import {
+  clipboardLive,
   collectProgressLive,
+  hostEnvironmentLive,
   openerLive,
   storageLive,
+  terminalsLive,
   workspaceFoldersLive,
 } from './vscode/workspace.ts'
 
@@ -85,6 +88,9 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
           workspaceFoldersLive,
           collectProgressLive,
           openerLive,
+          clipboardLive,
+          terminalsLive(context),
+          hostEnvironmentLive(context),
           storageLive(context.workspaceState),
           FileSystem.live,
           countedRunner,
@@ -92,6 +98,9 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
       ),
     ),
   )
+
+  // Resolves `claude` on the setting or `PATH` and logs where it is; spawns nothing.
+  await Effect.runPromise(cockpit.activated)
 
   const run = (effect: Effect.Effect<unknown>): void => void Effect.runPromise(effect)
   const tree = registerTreeView(context, {

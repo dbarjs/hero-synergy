@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Focus } from '../../src/protocol.ts'
+import ActionBlock from './ActionBlock.vue'
 
 /**
  * The Focus pane, open inline under the selected row. It is a stack of labelled
@@ -8,7 +9,14 @@ import type { Focus } from '../../src/protocol.ts'
  */
 defineProps<{ focus: Focus; depth: number }>()
 
-const emit = defineEmits<{ close: []; open: [key: string]; detail: [key: string] }>()
+const emit = defineEmits<{
+  close: []
+  open: [key: string]
+  detail: [key: string]
+  launch: [key: string]
+  focusTerminal: [key: string]
+  copy: [key: string]
+}>()
 </script>
 
 <template>
@@ -38,6 +46,18 @@ const emit = defineEmits<{ close: []; open: [key: string]; detail: [key: string]
           <dt>Claim</dt>
           <dd>{{ focus.claim === null ? 'unclaimed' : focus.claim.join(', ') }}</dd>
         </div>
+        <div v-if="focus.session.kind !== 'none'" class="fact session">
+          <dt>Session</dt>
+          <dd>
+            <template v-if="focus.session.kind === 'starting'">
+              starting
+              <button type="button" class="link" @click="emit('focusTerminal', focus.key)">
+                focus terminal
+              </button>
+            </template>
+            <template v-else>ended: {{ focus.session.detail }}</template>
+          </dd>
+        </div>
       </template>
       <template v-else>
         <div class="fact counts">
@@ -53,6 +73,14 @@ const emit = defineEmits<{ close: []; open: [key: string]; detail: [key: string]
         </div>
       </template>
     </dl>
+
+    <ActionBlock
+      v-if="focus.kind === 'ticket' && focus.action"
+      :action="focus.action"
+      :ticket-key="focus.key"
+      @launch="(key) => emit('launch', key)"
+      @copy="(key) => emit('copy', key)"
+    />
   </section>
 </template>
 
@@ -110,6 +138,13 @@ const emit = defineEmits<{ close: []; open: [key: string]; detail: [key: string]
 .fact {
   display: flex;
   gap: 8px;
+}
+.link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: var(--vscode-textLink-foreground);
+  cursor: pointer;
 }
 dt {
   flex: none;

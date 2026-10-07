@@ -79,7 +79,13 @@ describe('the manifest the registries show', () => {
       enum: ['panel', 'editor'],
       default: 'panel',
     })
-    expect(properties['heroSynergy.claude.path']).toMatchObject({ type: 'string', default: '' })
+    // Machine scope: a repository's `.vscode/settings.json` must never choose the program the
+    // Cockpit spawns.
+    expect(properties['heroSynergy.claude.path']).toMatchObject({
+      type: 'string',
+      default: '',
+      scope: 'machine',
+    })
     for (const setting of Object.values<{ markdownDescription?: string }>(properties)) {
       expect(setting.markdownDescription).toBeTruthy()
     }

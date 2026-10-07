@@ -17,6 +17,9 @@ const emit = defineEmits<{
   refresh: []
   /** Select the row and open the Detail on it, scrolled to a section of a map. */
   openDetail: [key: string, section: MapSection | null]
+  launch: [key: string]
+  focusTerminal: [key: string]
+  copy: [key: string]
 }>()
 
 // The repo row's age is read against the clock, so tick to keep "tracker read 2 min ago" honest.
@@ -112,6 +115,9 @@ const toggle = (key: string, expanded: boolean): void => {
       @close="emit('select', null)"
       @open="(key) => emit('open', key)"
       @open-detail="(key, section) => emit('openDetail', key, section)"
+      @launch="(key) => emit('launch', key)"
+      @focus-terminal="(key) => emit('focusTerminal', key)"
+      @copy="(key) => emit('copy', key)"
     />
     <template v-if="viewModel.finished">
       <Row
@@ -137,6 +143,9 @@ const toggle = (key: string, expanded: boolean): void => {
           @close="emit('select', null)"
           @open="(key) => emit('open', key)"
           @open-detail="(key, section) => emit('openDetail', key, section)"
+          @launch="(key) => emit('launch', key)"
+          @focus-terminal="(key) => emit('focusTerminal', key)"
+          @copy="(key) => emit('copy', key)"
         />
       </template>
     </template>

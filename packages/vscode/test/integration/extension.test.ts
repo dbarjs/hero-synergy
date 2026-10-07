@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict'
+import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import path from 'node:path'
 import * as vscode from 'vscode'
 
 import type { ExtensionApi } from '../../src/extension.ts'
@@ -75,8 +77,9 @@ describe('hero-synergy in the extension host', () => {
       viewModel.finished?.maps.map(({ number, title }) => `#${number} ${title}`),
       ['#1 Archive search'],
     )
-    // `git rev-parse` for the repo root and `git remote` are not needed on a local tracker: one process.
-    assert.equal(spawnedProcesses, 1)
+    // `git rev-parse` for the repo root, then the stub `claude plugin list --json` for skill
+    // discovery; the remote is not needed on a local tracker.
+    assert.equal(spawnedProcesses, 2)
   })
 
   it('collects again on the Refresh command', async () => {
@@ -160,5 +163,108 @@ describe('hero-synergy in the extension host', () => {
     assert.equal(api().state().detailOpen, true)
     assert.equal(api().state().detailView?.detail?.key, 'map:3:ticket:2')
     blank.dispose()
+  })
+})
+
+/** What the stub `claude` recorded, one value per line; the stub writes these when it starts. */
+const records = (): string => {
+  const dir = process.env.HERO_SYNERGY_STUB_RECORDS
+  assert.ok(dir, 'the host was started with HERO_SYNERGY_STUB_RECORDS')
+  return dir
+}
+
+const recorded = (name: string): string[] =>
+  readFileSync(path.join(records(), name), 'utf8').trimEnd().split('\n')
+
+const rowOf = (key: string) => {
+  const { viewModel } = api().state()
+  if (viewModel?.kind !== 'maps') return undefined
+  return viewModel.maps.flatMap((map) => map.tickets).find((ticket) => ticket.key === key)
+}
+
+describe('hero-synergy launching a ticket', () => {
+  const PALETTE = 'map:3:ticket:1'
+
+  it('creates a terminal that is claude itself, named like the session', async () => {
+    const before = vscode.window.terminals.length
+    assert.equal(await api().receive({ type: 'launch', key: PALETTE }), true)
+    await until('the terminal', () => vscode.window.terminals.length === before + 1)
+
+    const terminal = vscode.window.terminals.at(-1)
+    assert.ok(terminal)
+    assert.equal(terminal.name, '#1 Palette')
+    const options = terminal.creationOptions as vscode.TerminalOptions
+    assert.equal(options.name, '#1 Palette')
+    assert.equal(options.shellPath, path.join(records(), 'claude'))
+    const plugin = path.join(extension().extensionPath, 'claude-plugin')
+    assert.deepEqual(options.shellArgs?.slice(0, 4), ['-n', '#1 Palette', '--plugin-dir', plugin])
+    assert.equal(
+      options.shellArgs?.at(-1),
+      '/wayfinder .scratch/cockpit-colors/map.md .scratch/cockpit-colors/issues/01-palette.md',
+    )
+    assert.ok(!options.shellArgs?.includes('-w'), 'no worktree on a local tracker')
+    const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+    assert.ok(folder)
+    assert.equal(String(options.cwd), folder)
+    assert.equal(options.env?.HERO_SYNERGY_TICKET, '1')
+    assert.match(String(options.env?.HERO_SYNERGY_EVENTS), /events[\\/][0-9a-f]{16}\.jsonl$/)
+    assert.equal((options.iconPath as vscode.ThemeIcon).id, 'beaker')
+    assert.equal(options.location, vscode.TerminalLocation.Panel)
+    assert.equal(options.isTransient ?? false, false)
+    assert.equal(options.hideFromUser ?? false, false)
+  })
+
+  it('runs the stub with the argv and env it was given, in the repo root', async () => {
+    await until('the stub to record', () => existsSync(path.join(records(), 'cwd.txt')))
+    const options = vscode.window.terminals.at(-1)?.creationOptions as vscode.TerminalOptions
+    assert.deepEqual(recorded('argv.txt'), options.shellArgs)
+    const [ticket, events] = recorded('env.txt')
+    assert.equal(ticket, '1')
+    assert.equal(events, options.env?.HERO_SYNERGY_EVENTS)
+    assert.equal(
+      realpathSync(recorded('cwd.txt')[0] ?? ''),
+      realpathSync(String(vscode.workspace.workspaceFolders?.[0]?.uri.fsPath)),
+    )
+    // The events file exists before the plugin first appends to it.
+    assert.ok(existsSync(String(events)))
+  })
+
+  it('shows the ticket as starting, with no second launch', async () => {
+    await until('the row to be starting', () => rowOf(PALETTE)?.session.kind === 'starting')
+    assert.equal(rowOf(PALETTE)?.action, null)
+    const before = vscode.window.terminals.length
+    assert.equal(await api().receive({ type: 'launch', key: PALETTE }), true)
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    assert.equal(vscode.window.terminals.length, before)
+  })
+
+  it('moves the ticket to ended when its terminal closes', async () => {
+    vscode.window.terminals.at(-1)?.show()
+    await vscode.commands.executeCommand('workbench.action.terminal.kill')
+    await until('the row to be ended', () => rowOf(PALETTE)?.session.kind === 'ended')
+    assert.deepEqual(rowOf(PALETTE)?.session, { kind: 'ended', detail: 'terminal closed' })
+    // Taking it again is possible.
+    assert.equal(rowOf(PALETTE)?.action?.disabled, null)
+  })
+
+  it('opens the terminal in the editor area when the setting says so', async () => {
+    const settings = vscode.workspace.getConfiguration('heroSynergy')
+    await settings.update('sessions.terminalLocation', 'editor', vscode.ConfigurationTarget.Global)
+    try {
+      const before = vscode.window.terminals.length
+      assert.equal(await api().receive({ type: 'launch', key: 'map:3:ticket:3' }), true)
+      await until('the terminal', () => vscode.window.terminals.length === before + 1)
+      const options = vscode.window.terminals.at(-1)?.creationOptions as vscode.TerminalOptions
+      assert.equal(options.name, '#3 Contrast audit')
+      assert.equal((options.iconPath as vscode.ThemeIcon).id, 'checklist')
+      assert.deepEqual(options.location, { viewColumn: vscode.ViewColumn.Active })
+    } finally {
+      await settings.update(
+        'sessions.terminalLocation',
+        undefined,
+        vscode.ConfigurationTarget.Global,
+      )
+      vscode.window.terminals.forEach((terminal) => terminal.dispose())
+    }
   })
 })

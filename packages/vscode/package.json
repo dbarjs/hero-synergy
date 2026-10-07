@@ -128,7 +128,8 @@
         "heroSynergy.claude.path": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Location of the `claude` executable. Leave empty to resolve `claude` on `PATH`."
+          "scope": "machine",
+          "markdownDescription": "Location of the `claude` executable. Leave empty to resolve `claude` on `PATH`. Only your user settings are read, so a repository cannot point the Cockpit at a program of its own."
         }
       }
     }

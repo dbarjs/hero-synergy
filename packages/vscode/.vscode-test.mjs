@@ -6,7 +6,8 @@ import { defineConfig } from '@vscode/test-cli'
 import {
   createBareWorkspace,
   createGitHubWorkspace,
-  createWorkspace,
+  createLaunchableWorkspace,
+  writeUserSettings,
 } from './test/fixtures/workspace.mjs'
 
 // Electron's IPC socket lives under the user data dir and Unix caps socket paths at 107
@@ -29,11 +30,20 @@ const build = (label, version, { files, workspaceFolder, env }) => ({
   mocha: { ui: 'bdd', timeout: 20_000 },
 })
 
-const local = (label, version) =>
-  build(label, version, {
-    files: 'out-test/extension.test.cjs',
-    workspaceFolder: createWorkspace(path.join(scratch, label)),
+// The window launches sessions against a stub `claude` named in the user settings (the setting is
+// machine-scoped, so a workspace file could not carry it). The test reads what the stub recorded
+// from `HERO_SYNERGY_STUB_RECORDS`.
+const local = (label, version) => {
+  const launchable = createLaunchableWorkspace(path.join(scratch, label))
+  writeUserSettings(path.join(scratch, label, 'ud'), {
+    'heroSynergy.claude.path': launchable.claude,
   })
+  return build(label, version, {
+    files: 'out-test/extension.test.cjs',
+    workspaceFolder: launchable.workspace,
+    env: { HERO_SYNERGY_STUB_RECORDS: path.dirname(launchable.claude) },
+  })
+}
 
 // The windows that look at the Tree's one-message cases, each on the floor only: a repo with no
 // tracker doc, and a GitHub repo whose `gh` (a stub replaying a recording) is not logged in.
