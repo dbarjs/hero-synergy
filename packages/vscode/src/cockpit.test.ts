@@ -8,9 +8,10 @@ import {
 import { Effect, Layer } from 'effect'
 
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
-import { type Cockpit, EXPANDED_KEY, makeCockpit } from './cockpit.ts'
+import { type Cockpit, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
 import type { MapNode, ViewModel } from './protocol.ts'
-import { Storage, WorkspaceFolders } from './services.ts'
+import { Opener, Storage, WorkspaceFolders } from './services.ts'
+import type { OpenTarget } from './view-model.ts'
 
 const ROOT = '/home/ana/billing'
 
@@ -61,12 +62,15 @@ const withCockpit = <A>(
     cockpit: Cockpit
     published: ViewModel[]
     logged: string[]
+    opened: OpenTarget[]
     runs: () => number
     fs: FileSystem['Service']
-  }) => Effect.Effect<A, never, Storage | WorkspaceFolders | FileSystem | ProcessRunner>,
+  }) => Effect.Effect<A, never, Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener>,
 ) => {
   const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)])
+  const opened: OpenTarget[] = []
   const layer = Layer.mergeAll(
+    Opener.inMemory(opened),
     WorkspaceFolders.inMemory(setup.folders ?? [ROOT]),
     Storage.inMemory(setup.stored),
     FileSystem.inMemory(setup.files ?? workspaceFiles(ROOT)),
@@ -80,7 +84,7 @@ const withCockpit = <A>(
       log: (line) => logged.push(line),
     })
     const fs = yield* FileSystem
-    return yield* body({ cockpit, published, logged, runs: runner.runs, fs })
+    return yield* body({ cockpit, published, logged, opened, runs: runner.runs, fs })
   }).pipe(Effect.provide(layer))
 }
 
@@ -217,7 +221,77 @@ describe('the Cockpit controller', () => {
     }),
   )
 
+  it.effect('selects one row, confirms it in the view model and remembers it', () =>
+    withCockpit({}, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const selection = (): unknown => {
+          const last = published.at(-1)
+          return last?.kind === 'maps' ? last.selection : undefined
+        }
+        expect(selection()).toBeNull()
+
+        yield* cockpit.receive({ type: 'select', key: 'map:3:ticket:4' })
+        expect(selection()).toMatchObject({ kind: 'ticket', number: 4, state: 'open' })
+
+        // Selecting another row replaces the first: there is one selection.
+        yield* cockpit.receive({ type: 'select', key: 'map:3:map' })
+        expect(selection()).toMatchObject({ kind: 'map', number: 3, title: 'Cockpit colors' })
+        expect(yield* (yield* Storage).get(SELECTED_KEY)).toBe('map:3:map')
+
+        yield* cockpit.receive({ type: 'select', key: null })
+        expect(selection()).toBeNull()
+        expect(yield* (yield* Storage).get(SELECTED_KEY)).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('restores the selected row and the expanded maps after a reload', () =>
+    withCockpit(
+      { stored: { [EXPANDED_KEY]: ['map:2'], [SELECTED_KEY]: 'map:2:map' } },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const shown = published[0]
+          expect(maps(shown).map((map) => map.expanded)).toEqual([false, true])
+          expect(shown?.kind === 'maps' && shown.selection).toMatchObject({
+            kind: 'map',
+            number: 2,
+          })
+        }),
+    ),
+  )
+
+  it.effect('shows no pane for a stored selection that no longer exists', () =>
+    withCockpit({ stored: { [SELECTED_KEY]: 'map:9:ticket:9' } }, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(published[0]).toMatchObject({ kind: 'maps', selection: null })
+      }),
+    ),
+  )
+
+  it.effect('opens the selected ticket as its file on a local tracker, and a map as its file', () =>
+    withCockpit({}, ({ cockpit, opened }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'open', key: 'map:3:ticket:4' })
+        yield* cockpit.receive({ type: 'open', key: 'map:3:map' })
+        yield* cockpit.receive({ type: 'open', key: 'map:3:ticket:99' })
+        expect(opened).toHaveLength(2)
+        expect(opened[0]).toMatchObject({ kind: 'file' })
+        expect(opened[0]?.kind === 'file' && opened[0].path).toMatch(
+          new RegExp(`^${ROOT}/\\.scratch/cockpit-colors/issues/`),
+        )
+        expect(opened[1]?.kind === 'file' && opened[1].path.startsWith(ROOT)).toBe(true)
+      }),
+    ),
+  )
+
   it.effect.each([
+    ['select without a key', { type: 'select' }],
+    ['open without a key', { type: 'open' }],
+    ['open with a null key', { type: 'open', key: null }],
     ['null', null],
     ['a string', 'refresh'],
     ['no type', { key: 'map:1' }],

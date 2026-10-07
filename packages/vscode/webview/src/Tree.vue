@@ -4,9 +4,21 @@ import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
 
 /** The Tree: the maps in the order the host sent them, the finished ones folded at the bottom. */
-defineProps<{ viewModel: ViewModel }>()
+const props = defineProps<{ viewModel: ViewModel }>()
 
-const emit = defineEmits<{ expand: [key: string]; collapse: [key: string] }>()
+const emit = defineEmits<{
+  expand: [key: string]
+  collapse: [key: string]
+  /** The row to select, or null to close the pane. */
+  select: [key: string | null]
+  open: [key: string]
+}>()
+
+/** A click on the selected row again closes its pane. */
+const select = (key: string): void => {
+  const selected = props.viewModel.kind === 'maps' ? props.viewModel.selection?.key : undefined
+  emit('select', selected === key ? null : key)
+}
 
 const toggle = (key: string, expanded: boolean): void => {
   if (expanded) emit('expand', key)
@@ -26,7 +38,16 @@ const toggle = (key: string, expanded: boolean): void => {
     <p v-if="viewModel.maps.length === 0 && viewModel.finished === null" class="note">
       No maps yet.
     </p>
-    <MapBranch v-for="map in viewModel.maps" :key="map.key" :map="map" @toggle="toggle" />
+    <MapBranch
+      v-for="map in viewModel.maps"
+      :key="map.key"
+      :map="map"
+      :selection="viewModel.selection"
+      @toggle="toggle"
+      @select="select"
+      @close="emit('select', null)"
+      @open="(key) => emit('open', key)"
+    />
     <template v-if="viewModel.finished">
       <Row
         :depth="0"
@@ -45,7 +66,11 @@ const toggle = (key: string, expanded: boolean): void => {
           :map="map"
           :base="1"
           finished
+          :selection="viewModel.selection"
           @toggle="toggle"
+          @select="select"
+          @close="emit('select', null)"
+          @open="(key) => emit('open', key)"
         />
       </template>
     </template>

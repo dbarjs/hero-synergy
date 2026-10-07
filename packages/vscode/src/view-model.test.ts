@@ -87,7 +87,12 @@ describe('the Tree view model of the fixture workspace', () => {
     const { maps } = mapsOf(buildViewModel(snapshot, new Set()))
     expect(maps[0]?.fog.entries).toEqual([{ text: 'Spacing, once the palette is fixed.' }])
     expect(maps[0]?.decisions.entries).toEqual([
-      { number: 5, title: 'Icon set', gist: 'Codicons: they ship with VS Code' },
+      {
+        key: 'map:3:ticket:5',
+        number: 5,
+        title: 'Icon set',
+        gist: 'Codicons: they ship with VS Code',
+      },
     ])
   })
 

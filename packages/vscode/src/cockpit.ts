@@ -12,11 +12,13 @@ import { Effect, Ref } from 'effect'
 
 import { decodeWebviewMessage } from './messages.ts'
 import type { ViewModel } from './protocol.ts'
-import { Storage, WorkspaceFolders } from './services.ts'
-import { buildViewModel, defaultExpanded } from './view-model.ts'
+import { Opener, Storage, WorkspaceFolders } from './services.ts'
+import { buildViewModel, defaultExpanded, selectionOf } from './view-model.ts'
 
 /** The key the expanded nodes are stored under in workspace storage. */
 export const EXPANDED_KEY = 'expanded'
+/** The key the selected row is stored under: a row key, or nothing selected. */
+export const SELECTED_KEY = 'selected'
 
 export interface CockpitOptions {
   /** Sends a view model to the Tree's webview. */
@@ -106,12 +108,23 @@ const storedExpanded = (value: unknown): ReadonlySet<string> | null =>
     ? new Set(value)
     : null
 
+const storedSelected = (value: unknown): string | null => (typeof value === 'string' ? value : null)
+
 export const makeCockpit = (
   options: CockpitOptions,
-): Effect.Effect<Cockpit, never, WorkspaceFolders | Storage | FileSystem | ProcessRunner> =>
+): Effect.Effect<
+  Cockpit,
+  never,
+  WorkspaceFolders | Storage | FileSystem | ProcessRunner | Opener
+> =>
   Effect.gen(function* () {
     const context = yield* Effect.context<WorkspaceFolders | Storage | FileSystem | ProcessRunner>()
     const storage = yield* Storage
+    const opener = yield* Opener
+    // The host holds the one selection; the webview only asks to change it.
+    const selected = yield* Ref.make<string | null>(
+      storedSelected(yield* storage.get(SELECTED_KEY)),
+    )
     const base = yield* Ref.make<Base>({ kind: 'loading' })
     const expanded = yield* Ref.make<ReadonlySet<string> | null>(
       storedExpanded(yield* storage.get(EXPANDED_KEY)),
@@ -123,7 +136,7 @@ export const makeCockpit = (
       const state = yield* Ref.get(base)
       if (state.kind !== 'snapshot') return state
       const open = (yield* Ref.get(expanded)) ?? defaultExpanded(state.snapshot)
-      return buildViewModel(state.snapshot, open)
+      return buildViewModel(state.snapshot, open, yield* Ref.get(selected))
     })
 
     const publish = current.pipe(Effect.map(options.publish))
@@ -152,6 +165,25 @@ export const makeCockpit = (
         yield* publish
       })
 
+    const select = (key: string | null): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        yield* Ref.set(selected, key)
+        yield* storage.set(SELECTED_KEY, key)
+        yield* publish
+      })
+
+    const open = (key: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot') return
+        const found = selectionOf(state.snapshot, key)
+        if (found === null) {
+          options.log(`Nothing to open for ${key}`)
+          return
+        }
+        yield* opener.open(found.target)
+      })
+
     return {
       show: collect,
       refresh: collect,
@@ -175,6 +207,12 @@ export const makeCockpit = (
               break
             case 'collapse':
               yield* setExpanded(message.key, false)
+              break
+            case 'select':
+              yield* select(message.key)
+              break
+            case 'open':
+              yield* open(message.key)
               break
           }
           return true

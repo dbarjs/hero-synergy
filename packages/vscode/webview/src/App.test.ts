@@ -13,6 +13,7 @@ const map: MapNode = {
   number: 1,
   title: 'Billing rewrite',
   expanded: false,
+  focusKey: 'map:1:map',
   takeable: 1,
   decided: 0,
   total: 2,
@@ -39,6 +40,7 @@ describe('the Cockpit app', () => {
         collectedAt: '2026-10-07T00:00:00.000Z',
         maps: [map],
         finished: null,
+        selection: null,
       },
     })
     await flushPromises()
@@ -56,6 +58,7 @@ describe('the Cockpit app', () => {
         collectedAt: '2026-10-07T00:00:00.000Z',
         maps: [map, { ...map, key: 'map:2', number: 2, expanded: true }],
         finished: null,
+        selection: null,
       },
     })
     await flushPromises()

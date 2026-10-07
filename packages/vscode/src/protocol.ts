@@ -14,6 +14,8 @@ export interface BlockerView {
 
 /** An open ticket of a map, in the place the Tree lists it. */
 export interface TicketRow {
+  /** What the webview sends to select the row. */
+  readonly key: string
   readonly number: number
   readonly title: string
   readonly place: 'claimed' | 'frontier' | 'blocked'
@@ -28,6 +30,8 @@ export interface TicketRow {
 
 /** A closed ticket in the Decisions fold, with the gist the map recorded. */
 export interface DecisionRow {
+  /** The key that selects the closed ticket; null when the decision names no ticket. */
+  readonly key: string | null
   readonly number: number | null
   readonly title: string
   readonly gist: string
@@ -52,6 +56,8 @@ export interface MapNode {
   readonly number: number
   readonly title: string
   readonly expanded: boolean
+  /** What the webview sends to select the ⚑ Map row under this map. */
+  readonly focusKey: string
   /** How many tickets are on the frontier; zero shows as "nothing takeable". */
   readonly takeable: number
   readonly decided: number
@@ -70,6 +76,33 @@ export interface FinishedFold {
   readonly maps: ReadonlyArray<MapNode>
 }
 
+/**
+ * What the Focus pane shows for the selected row. `key` is the selected row's
+ * key, so the webview opens the pane under that row.
+ */
+export type Focus =
+  | {
+      readonly kind: 'ticket'
+      readonly key: string
+      readonly number: number
+      readonly title: string
+      readonly state: 'open' | 'closed'
+      /** Who claimed it; null when unclaimed. */
+      readonly claim: ReadonlyArray<string> | null
+      /** The issue's URL on GitHub; null on a local tracker, which opens a file. */
+      readonly url: string | null
+    }
+  | {
+      readonly kind: 'map'
+      readonly key: string
+      readonly number: number
+      readonly title: string
+      readonly takeable: number
+      readonly decided: number
+      readonly total: number
+      readonly destination: string | null
+    }
+
 /** What the Tree draws: a wait, one plain message, or the maps. */
 export type ViewModel =
   | { readonly kind: 'loading' }
@@ -80,6 +113,8 @@ export type ViewModel =
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
       readonly finished: FinishedFold | null
+      /** The one selected row's pane; null when nothing is selected. */
+      readonly selection: Focus | null
     }
 
 export type HostMessage = { readonly type: 'view-model'; readonly viewModel: ViewModel }
@@ -89,4 +124,8 @@ export type WebviewMessage =
   | { readonly type: 'ready' }
   | { readonly type: 'expand'; readonly key: string }
   | { readonly type: 'collapse'; readonly key: string }
+  /** Select a row, or null to close the pane; the host confirms with a new view model. */
+  | { readonly type: 'select'; readonly key: string | null }
+  /** The pane's ↗ Open and its title link: open the selected ticket or map. */
+  | { readonly type: 'open'; readonly key: string }
   | { readonly type: 'refresh' }

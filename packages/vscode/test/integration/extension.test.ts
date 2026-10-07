@@ -86,4 +86,15 @@ describe('hero-synergy in the extension host', () => {
     assert.equal(await api().receive('refresh'), false, 'not an object')
     assert.equal(await api().receive({ type: 'expand', key: 'map:2' }), true)
   })
+
+  it('confirms a selection in the view model and drops it again', async () => {
+    assert.equal(await api().receive({ type: 'select', key: 'map:3:map' }), true)
+    const confirmed = api().state().viewModel
+    assert.equal(confirmed?.kind === 'maps' && confirmed.selection?.key, 'map:3:map')
+
+    assert.equal(await api().receive({ type: 'select', key: null }), true)
+    const closed = api().state().viewModel
+    assert.equal(closed?.kind === 'maps' && closed.selection, null)
+    assert.equal(await api().receive({ type: 'select' }), false, 'select without a key')
+  })
 })

@@ -11,6 +11,8 @@ const WebviewMessageSchema = Schema.Union([
   Schema.Struct({ type: Schema.Literal('ready') }),
   Schema.Struct({ type: Schema.Literal('expand'), key: Schema.String }),
   Schema.Struct({ type: Schema.Literal('collapse'), key: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('select'), key: Schema.NullOr(Schema.String) }),
+  Schema.Struct({ type: Schema.Literal('open'), key: Schema.String }),
   Schema.Struct({ type: Schema.Literal('refresh') }),
 ])
 

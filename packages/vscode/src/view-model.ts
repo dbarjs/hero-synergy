@@ -9,18 +9,78 @@ import {
   orderTickets,
   placeOf,
   type SessionFacts,
+  type Ref,
   type Snapshot,
   type Ticket,
   type WayfinderMap,
 } from '@hero-synergy/core'
 
-import type { MapNode, TicketRow, ViewModel } from './protocol.ts'
+import type { Focus, MapNode, TicketRow, ViewModel } from './protocol.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }
 
 export const mapKey = (map: WayfinderMap): string => `map:${map.number}`
 export const FINISHED_KEY = 'finished'
+export const ticketKey = (map: WayfinderMap, number: number): string =>
+  `${mapKey(map)}:ticket:${number}`
+/** The ⚑ Map row under a map. */
+export const focusKeyOf = (map: WayfinderMap): string => `${mapKey(map)}:map`
+
+/** Where ↗ Open goes: an issue URL on GitHub, an absolute file path on a local tracker. */
+export type OpenTarget =
+  | { readonly kind: 'url'; readonly url: string }
+  | { readonly kind: 'file'; readonly path: string }
+
+const targetOf = (repoRoot: string, ref: Ref): OpenTarget =>
+  ref.tracker === 'github'
+    ? { kind: 'url', url: ref.url }
+    : { kind: 'file', path: `${repoRoot.replace(/\/+$/, '')}/${ref.path}` }
+
+interface Selected {
+  readonly focus: Focus
+  readonly target: OpenTarget
+}
+
+/** The row a key selects, with what its pane shows; null when the key names nothing in the snapshot. */
+export const selectionOf = (snapshot: Snapshot, key: string | null): Selected | null => {
+  if (key === null) return null
+  for (const map of snapshot.maps) {
+    const target = (ref: Ref): OpenTarget => targetOf(snapshot.repoRoot, ref)
+    if (key === focusKeyOf(map)) {
+      const { decided, total } = decidedOfTotal(map)
+      return {
+        target: target(map.ref),
+        focus: {
+          kind: 'map',
+          key,
+          number: map.number,
+          title: map.title,
+          takeable: frontierOf(map).length,
+          decided,
+          total,
+          destination: map.destination,
+        },
+      }
+    }
+    const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
+    if (ticket !== undefined) {
+      return {
+        target: target(ticket.ref),
+        focus: {
+          kind: 'ticket',
+          key,
+          number: ticket.number,
+          title: ticket.title,
+          state: ticket.state,
+          claim: ticket.claim === null ? null : ticket.claim.by,
+          url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
+        },
+      }
+    }
+  }
+  return null
+}
 
 /**
  * What the Tree opens on when nothing was stored: the first map in display
@@ -31,10 +91,11 @@ export const defaultExpanded = (snapshot: Snapshot): ReadonlySet<string> => {
   return new Set(first === undefined ? [] : [mapKey(first)])
 }
 
-const ticketRow = (ticket: Ticket, next: Ticket | null): TicketRow => {
+const ticketRow = (map: WayfinderMap, ticket: Ticket, next: Ticket | null): TicketRow => {
   const place = placeOf(ticket)
   if (place === 'closed') throw new Error(`#${ticket.number} is closed and has no row`)
   return {
+    key: ticketKey(map, ticket.number),
     number: ticket.number,
     title: ticket.title,
     place,
@@ -57,11 +118,12 @@ const mapNode = (map: WayfinderMap, expanded: ReadonlySet<string>): MapNode => {
     number: map.number,
     title: map.title,
     expanded: expanded.has(key),
+    focusKey: focusKeyOf(map),
     takeable: frontierOf(map).length,
     decided,
     total,
     destination: map.destination,
-    tickets: orderTickets(map).map((ticket) => ticketRow(ticket, next)),
+    tickets: orderTickets(map).map((ticket) => ticketRow(map, ticket, next)),
     fog: {
       key: `${key}:fog`,
       expanded: expanded.has(`${key}:fog`),
@@ -70,7 +132,16 @@ const mapNode = (map: WayfinderMap, expanded: ReadonlySet<string>): MapNode => {
     decisions: {
       key: `${key}:decisions`,
       expanded: expanded.has(`${key}:decisions`),
-      entries: map.decisions.map(({ number, title, gist }) => ({ number, title, gist })),
+      entries: map.decisions.map(({ number, title, gist }) => ({
+        // Only a decision whose ticket is in the map can be selected.
+        key:
+          number !== null && map.tickets.some((ticket) => ticket.number === number)
+            ? ticketKey(map, number)
+            : null,
+        number,
+        title,
+        gist,
+      })),
     },
   }
 }
@@ -83,6 +154,7 @@ const mapNode = (map: WayfinderMap, expanded: ReadonlySet<string>): MapNode => {
 export const buildViewModel = (
   snapshot: Snapshot,
   expanded: ReadonlySet<string>,
+  selected: string | null = null,
   facts: SessionFacts = NO_SESSIONS,
 ): ViewModel => {
   const ordered = orderMaps(snapshot.maps, facts)
@@ -91,6 +163,7 @@ export const buildViewModel = (
   return {
     kind: 'maps',
     collectedAt: snapshot.collectedAt,
+    selection: selectionOf(snapshot, selected)?.focus ?? null,
     maps: active.map((map) => mapNode(map, expanded)),
     finished:
       finished.length === 0

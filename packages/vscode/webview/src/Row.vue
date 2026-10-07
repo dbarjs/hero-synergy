@@ -17,6 +17,8 @@ withDefaults(
     /** Muted trailing text next to the label; it gives way first when the row is narrow. */
     description?: string
     muted?: boolean
+    /** The row the Focus pane is open under. */
+    selected?: boolean
     /** The tooltip, for text the row has to cut. */
     title?: string
   }>(),
@@ -30,11 +32,12 @@ defineEmits<{ activate: [] }>()
 <template>
   <div
     class="row"
-    :class="[`depth-${depth}`, { muted }]"
+    :class="[`depth-${depth}`, { muted, selected }]"
     role="treeitem"
     tabindex="0"
     :aria-level="depth + 1"
     :aria-expanded="expanded === undefined ? undefined : expanded"
+    :aria-selected="selected"
     :title="title"
     @click="$emit('activate')"
     @keydown.enter.prevent="$emit('activate')"
@@ -69,6 +72,9 @@ defineEmits<{ activate: [] }>()
 }
 .row:hover {
   background: var(--vscode-list-hoverBackground);
+}
+.row.selected {
+  background: var(--vscode-list-inactiveSelectionBackground);
 }
 .row:focus-visible {
   outline: 1px solid var(--vscode-focusBorder);

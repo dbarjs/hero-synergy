@@ -5,7 +5,7 @@ import type { ExtensionContext } from 'vscode'
 import { makeCockpit } from './cockpit.ts'
 import type { ViewModel } from './protocol.ts'
 import { createLog, registerRefreshCommand, registerTreeView } from './vscode/tree-view.ts'
-import { storageLive, workspaceFoldersLive } from './vscode/workspace.ts'
+import { openerLive, storageLive, workspaceFoldersLive } from './vscode/workspace.ts'
 
 /**
  * What the extension host tier looks at: what the extension has done so far. The
@@ -59,6 +59,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
       Effect.provide(
         Layer.mergeAll(
           workspaceFoldersLive,
+          openerLive,
           storageLive(context.workspaceState),
           FileSystem.live,
           countedRunner,
