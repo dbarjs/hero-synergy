@@ -4,6 +4,20 @@
   "version": "0.0.0",
   "private": true,
   "description": "Unofficial cockpit for mattpocock/skills: wayfinder maps, frontier tickets and named Claude Code sessions in VS Code terminals.",
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "agent",
+    "claude code",
+    "mattpocock",
+    "skills",
+    "wayfinder"
+  ],
+  "homepage": "https://github.com/dbarjs/hero-synergy#readme",
+  "bugs": {
+    "url": "https://github.com/dbarjs/hero-synergy/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -15,6 +29,7 @@
     "dist",
     "claude-plugin",
     "media",
+    "README.md",
     "CHANGELOG.md",
     "LICENSE"
   ],
@@ -67,6 +82,16 @@
     },
     "commands": [
       {
+        "command": "heroSynergy.openDetail",
+        "title": "Open Cockpit Detail",
+        "category": "Hero Synergy"
+      },
+      {
+        "command": "heroSynergy.runSkill",
+        "title": "Run skill…",
+        "category": "Hero Synergy"
+      },
+      {
         "command": "heroSynergy.refresh",
         "title": "Refresh",
         "category": "Hero Synergy",
@@ -81,6 +106,29 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "Hero Synergy",
+      "properties": {
+        "heroSynergy.sessions.terminalLocation": {
+          "type": "string",
+          "enum": [
+            "panel",
+            "editor"
+          ],
+          "enumDescriptions": [
+            "Open ticket sessions in the terminal panel.",
+            "Open ticket sessions in editor tabs."
+          ],
+          "default": "panel",
+          "markdownDescription": "Where the Cockpit opens a ticket session's terminal."
+        },
+        "heroSynergy.claude.path": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Location of the `claude` executable. Leave empty to resolve `claude` on `PATH`."
+        }
+      }
     }
   },
   "activationEvents": [
@@ -90,6 +138,7 @@
   "extensionKind": [
     "workspace"
   ],
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.105.0"
   }

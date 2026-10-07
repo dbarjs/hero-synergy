@@ -28,6 +28,14 @@ jobs:
       - run: vp check
       - run: vp test --coverage
       - run: vp run --filter hero-synergy typecheck
+      # The VSIX the registries will get, built from this commit; the file list is the one the
+      # manifest's `files` allows and nothing else.
+      - run: vp run --filter hero-synergy package --out hero-synergy.vsix
+      - uses: actions/upload-artifact@v7
+        with:
+          name: hero-synergy-vsix
+          path: packages/vscode/hero-synergy.vsix
+          if-no-files-found: error
 
   # The two tiers that need a real VS Code: the Mocha host tier on the floor and on stable, then
   # the Playwright-driven e2e project. Linux runs under xvfb; macOS has a window server.
