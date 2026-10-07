@@ -50,6 +50,12 @@ export interface Fold<Entry> {
   readonly entries: ReadonlyArray<Entry>
 }
 
+/** Why the last collect failed, and the fix when there is one. */
+export interface Notice {
+  readonly message: string
+  readonly fix: string | null
+}
+
 /** One open map and everything under it. */
 export interface MapNode {
   readonly key: string
@@ -110,6 +116,10 @@ export type ViewModel =
   | {
       readonly kind: 'maps'
       readonly collectedAt: string
+      /** `owner/name` on a GitHub tracker, which shows the repo row; null on a local one. */
+      readonly repo: string | null
+      /** Set when the last collect failed and the maps shown are from an earlier one. */
+      readonly notice: Notice | null
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
       readonly finished: FinishedFold | null

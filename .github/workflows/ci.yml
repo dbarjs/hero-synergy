@@ -37,6 +37,26 @@ jobs:
           path: packages/vscode/hero-synergy.vsix
           if-no-files-found: error
 
+  # The one job that calls GitHub for real: the collect against this repo's own maps, with the
+  # workflow token. Not a required check, so an outage at GitHub never blocks a merge; every
+  # other test replays recordings and needs no credentials.
+  live:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - run: vp test --project live
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   # The two tiers that need a real VS Code: the Mocha host tier on the floor and on stable, then
   # the Playwright-driven e2e project. Linux runs under xvfb; macOS has a window server.
   vscode:

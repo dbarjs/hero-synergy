@@ -38,6 +38,8 @@ describe('the Cockpit app', () => {
       viewModel: {
         kind: 'maps',
         collectedAt: '2026-10-07T00:00:00.000Z',
+        repo: null,
+        notice: null,
         maps: [map],
         finished: null,
         selection: null,
@@ -56,6 +58,8 @@ describe('the Cockpit app', () => {
       viewModel: {
         kind: 'maps',
         collectedAt: '2026-10-07T00:00:00.000Z',
+        repo: null,
+        notice: null,
         maps: [map, { ...map, key: 'map:2', number: 2, expanded: true }],
         finished: null,
         selection: null,

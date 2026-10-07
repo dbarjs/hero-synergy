@@ -167,6 +167,8 @@ describe('the Tree states with no maps', () => {
     const wrapper = render({
       kind: 'maps',
       collectedAt: '2026-10-07T00:00:00.000Z',
+      repo: null,
+      notice: null,
       maps: [],
       finished: null,
       selection: null,
@@ -205,6 +207,8 @@ describe('a repo with 45 maps, 38 of them finished', () => {
   const model = (finishedOpen: boolean): ViewModel => ({
     kind: 'maps',
     collectedAt: '2026-10-07T00:00:00.000Z',
+    repo: null,
+    notice: null,
     maps: active,
     finished: { key: 'finished', expanded: finishedOpen, maps: finishedMaps },
     selection: null,
@@ -231,6 +235,8 @@ describe('what the Tree asks for', () => {
     const wrapper = render({
       kind: 'maps',
       collectedAt: '2026-10-07T00:00:00.000Z',
+      repo: null,
+      notice: null,
       maps: [node(1), node(2, { expanded: true })],
       finished: null,
       selection: null,
@@ -246,6 +252,8 @@ describe('what the Tree asks for', () => {
     const wrapper = render({
       kind: 'maps',
       collectedAt: '2026-10-07T00:00:00.000Z',
+      repo: null,
+      notice: null,
       maps: [],
       finished: { key: 'finished', expanded: false, maps: [node(1, { decided: 1, total: 1 })] },
       selection: null,

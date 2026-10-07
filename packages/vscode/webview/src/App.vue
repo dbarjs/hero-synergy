@@ -27,5 +27,6 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     @collapse="(key) => post({ type: 'collapse', key })"
     @select="(key) => post({ type: 'select', key })"
     @open="(key) => post({ type: 'open', key })"
+    @refresh="post({ type: 'refresh' })"
   />
 </template>

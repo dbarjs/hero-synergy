@@ -15,7 +15,7 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
-import type { Focus, MapNode, TicketRow, ViewModel } from './protocol.ts'
+import type { Focus, MapNode, Notice, TicketRow, ViewModel } from './protocol.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }
@@ -156,6 +156,7 @@ export const buildViewModel = (
   expanded: ReadonlySet<string>,
   selected: string | null = null,
   facts: SessionFacts = NO_SESSIONS,
+  notice: Notice | null = null,
 ): ViewModel => {
   const ordered = orderMaps(snapshot.maps, facts)
   const active = ordered.filter((map) => !isFinished(map))
@@ -163,6 +164,11 @@ export const buildViewModel = (
   return {
     kind: 'maps',
     collectedAt: snapshot.collectedAt,
+    repo:
+      snapshot.tracker.kind === 'github'
+        ? `${snapshot.tracker.owner}/${snapshot.tracker.repo}`
+        : null,
+    notice,
     selection: selectionOf(snapshot, selected)?.focus ?? null,
     maps: active.map((map) => mapNode(map, expanded)),
     finished:

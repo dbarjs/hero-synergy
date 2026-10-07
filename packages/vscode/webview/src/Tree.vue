@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
 import type { ViewModel } from '../../src/protocol.ts'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
@@ -12,7 +14,25 @@ const emit = defineEmits<{
   /** The row to select, or null to close the pane. */
   select: [key: string | null]
   open: [key: string]
+  refresh: []
 }>()
+
+// The repo row's age is read against the clock, so tick to keep "tracker read 2 min ago" honest.
+const now = ref(Date.now())
+let timer: ReturnType<typeof setInterval> | undefined
+onMounted(() => {
+  timer = setInterval(() => (now.value = Date.now()), 30_000)
+})
+onBeforeUnmount(() => clearInterval(timer))
+
+const age = (collectedAt: string): string => {
+  const seconds = Math.max(0, Math.round((now.value - Date.parse(collectedAt)) / 1000))
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} min ago`
+  const hours = Math.floor(minutes / 60)
+  return hours < 24 ? `${hours} h ago` : `${Math.floor(hours / 24)} d ago`
+}
 
 /** A click on the selected row again closes its pane. */
 const select = (key: string): void => {
@@ -35,6 +55,22 @@ const toggle = (key: string, expanded: boolean): void => {
   </div>
 
   <div v-else role="tree" aria-label="Maps">
+    <Row
+      v-if="viewModel.repo !== null"
+      class="repo"
+      :depth="0"
+      icon="repo"
+      :label="viewModel.repo"
+      :description="`tracker read ${age(viewModel.collectedAt)}`"
+      @activate="emit('refresh')"
+    >
+      <span class="codicon codicon-refresh" title="Refresh" />
+    </Row>
+    <div v-if="viewModel.notice" class="notice" role="alert">
+      <p class="message">{{ viewModel.notice.message }}</p>
+      <p v-if="viewModel.notice.fix" class="detail">{{ viewModel.notice.fix }}</p>
+      <p class="detail">Showing the maps from the last read.</p>
+    </div>
     <p v-if="viewModel.maps.length === 0 && viewModel.finished === null" class="note">
       No maps yet.
     </p>
@@ -89,6 +125,12 @@ const toggle = (key: string, expanded: boolean): void => {
 }
 .detail {
   margin: 0;
+}
+.notice {
+  margin: 0;
+  padding: 4px 12px 8px;
+  color: var(--vscode-descriptionForeground);
+  border-left: 2px solid var(--vscode-editorWarning-foreground);
 }
 .count {
   color: var(--vscode-descriptionForeground);

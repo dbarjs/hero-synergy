@@ -39,6 +39,8 @@ export default defineConfig({
             '**/.vscode-test/**',
             // The Playwright-driven tier lives in the `e2e` project.
             'packages/vscode/test/e2e/**',
+            // The one test that calls GitHub for real lives in the `live` project.
+            'packages/core/test/live/**',
             // The Cockpit's Vue app runs under happy-dom in the `webview` project.
             'packages/vscode/webview/**',
           ],
@@ -54,6 +56,14 @@ export default defineConfig({
       },
       ...(projectFilterGiven
         ? [
+            {
+              root: 'packages/core',
+              test: {
+                name: 'live',
+                include: ['test/live/**/*.test.ts'],
+                testTimeout: 60_000,
+              },
+            },
             {
               root: 'packages/vscode',
               test: {
