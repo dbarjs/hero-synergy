@@ -72,3 +72,26 @@ export {
   ProcessSpawnFailed,
   toRecording,
 } from './process-runner.ts'
+export {
+  NoRemote,
+  NoRepoFound,
+  NoTrackerDoc,
+  type ScoutError,
+  UnsupportedTracker,
+} from './scout/errors.ts'
+export { findRepo, ownerAndRepo, type RepoTracker } from './scout/find-repo.ts'
+export {
+  collectLocal,
+  type LocalEffort,
+  readLocalTracker,
+  SCRATCH_DIRECTORY,
+} from './scout/local.ts'
+export {
+  linkedTrackerDoc,
+  locateTrackerDoc,
+  readTrackerHeading,
+  TRACKER_DOC_PATH,
+  type TrackerDoc,
+  type TrackerHeading,
+  type TrackerKind,
+} from './scout/tracker-doc.ts'

@@ -9,3 +9,7 @@ out-test
 .vscode-test
 coverage
 CLAUDE.local.md
+
+# Fixture repos on the local tracker keep their .scratch efforts.
+!packages/*/fixtures/**/.scratch/
+!packages/*/test/fixtures/**/.scratch/
