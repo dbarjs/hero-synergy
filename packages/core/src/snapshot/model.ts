@@ -133,3 +133,9 @@ export const decodeSnapshot: (input: unknown) => Snapshot = Schema.decodeUnknown
 
 /** The snapshot as the JSON it is stored and sent as. */
 export const encodeSnapshot: (snapshot: Snapshot) => SnapshotJson = Schema.encodeSync(Snapshot)
+
+/**
+ * The shape of a stored snapshot. Bump it whenever the schema above changes, so
+ * a cache written under the old shape is ignored instead of decoded.
+ */
+export const snapshotSchemaVersion = 1

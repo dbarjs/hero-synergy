@@ -65,3 +65,28 @@ export class Opener extends Context.Service<Opener, OpenerShape>()('hero-synergy
         }),
     })
 }
+
+export interface CollectProgressShape {
+  /** A collect began: shows VS Code's progress bar and returns the effect that ends it. */
+  readonly begin: Effect.Effect<Effect.Effect<void>>
+}
+
+/** The progress bar over the Tree while a collect runs; the Tree has no row spinners. */
+export class CollectProgress extends Context.Service<CollectProgress, CollectProgressShape>()(
+  'hero-synergy/CollectProgress',
+) {
+  /** Counts the bars shown in `shown` and how many are still open in `open`. */
+  static readonly inMemory = (counts: {
+    shown: number
+    open: number
+  }): Layer.Layer<CollectProgress> =>
+    Layer.succeed(CollectProgress, {
+      begin: Effect.sync(() => {
+        counts.shown += 1
+        counts.open += 1
+        return Effect.sync(() => {
+          counts.open -= 1
+        })
+      }),
+    })
+}

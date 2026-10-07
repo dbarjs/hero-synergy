@@ -20,9 +20,12 @@ const repoRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], { encodin
 
 describe("collecting this repo's own maps from GitHub", () => {
   it('finds the open maps with their tickets and reads them into a snapshot', async () => {
-    const snapshot = await Effect.runPromise(
+    const { snapshot, rateLimit } = await Effect.runPromise(
       readGitHubTracker(repoRoot).pipe(Effect.provide(ProcessRunner.live)),
     )
+
+    expect(rateLimit.remaining).toBeGreaterThan(0)
+    expect(Date.parse(rateLimit.resetAt)).not.toBeNaN()
 
     expect(snapshot.tracker).toEqual({ kind: 'github', owner: 'dbarjs', repo: 'hero-synergy' })
     expect(Date.parse(snapshot.collectedAt)).not.toBeNaN()

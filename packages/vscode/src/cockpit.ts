@@ -5,17 +5,32 @@ import {
   type GitHubCollectFailed,
   type ProcessError,
   ProcessRunner,
+  type RateLimit,
   readGitHubTracker,
   readLocalTracker,
+  type RepoTracker,
   type ScoutError,
   type Snapshot,
 } from '@hero-synergy/core'
-import { Effect, Ref } from 'effect'
+import { Clock, Deferred, Effect, Fiber, Ref } from 'effect'
 
 import { decodeWebviewMessage } from './messages.ts'
 import { describeCollectFailure } from './notices.ts'
-import type { DetailView, MapSection, Notice, ViewModel } from './protocol.ts'
-import { Opener, Storage, WorkspaceFolders } from './services.ts'
+import type { BudgetNote, DetailView, MapSection, Notice, ViewModel } from './protocol.ts'
+import {
+  admit,
+  afterFailure,
+  afterSuccess,
+  budgetStatus,
+  drain,
+  initialPolicy,
+  type PolicyState,
+  type RateBudget,
+  type TrackerKind,
+  type Trigger,
+} from './refresh-policy.ts'
+import { CollectProgress, Opener, Storage, WorkspaceFolders } from './services.ts'
+import { CACHE_KEY, readCache, writeCache } from './snapshot-cache.ts'
 import {
   buildViewModel,
   defaultExpanded,
@@ -41,15 +56,23 @@ export interface CockpitOptions {
   readonly log: (line: string) => void
 }
 
+/** A file under `.scratch` changes this long before the local tracker is read again. */
+export const SCRATCH_DEBOUNCE_MS = 1000
+
 /**
  * The Tree's controller: collects through the scout, derives the view model and
- * holds what the Tree remembers (the expanded nodes). It runs one collect only
- * when asked, so an activated extension with its view hidden spawns nothing.
+ * holds what the Tree remembers (the expanded nodes). A collect starts only on
+ * a cause the refresh policy admits, so an activated extension with its view
+ * hidden spawns nothing, and nothing runs on a timer.
  */
 export interface Cockpit {
-  /** The view was shown: collect once and publish. */
+  /** The view became visible, activation with the view open included: an automatic trigger. */
   readonly show: Effect.Effect<void>
-  /** The Refresh button: collect again and publish. */
+  /** The window gained focus: an automatic trigger. */
+  readonly focus: Effect.Effect<void>
+  /** A file under `.scratch` changed: one automatic collect after the debounce, on a local tracker only. */
+  readonly scratchChanged: Effect.Effect<void>
+  /** The Refresh button: ignores the gap, and joins a collect that is already running. */
   readonly refresh: Effect.Effect<void>
   /** A message from the webview; false when it was rejected as malformed. */
   readonly receive: (input: unknown) => Effect.Effect<boolean>
@@ -66,8 +89,21 @@ type Base =
   | { readonly kind: 'message'; readonly message: string; readonly detail: string | null }
   | { readonly kind: 'snapshot'; readonly snapshot: Snapshot; readonly notice: Notice | null }
 
-/** What one collect came to: a base to show, or a failure that keeps the old snapshot if there is one. */
-type Loaded = Base | { readonly kind: 'failed'; readonly notice: Notice }
+/** What one collect came to: a snapshot, a plain message, or a failure that keeps the old snapshot if there is one. */
+type Loaded =
+  | {
+      readonly kind: 'snapshot'
+      readonly snapshot: Snapshot
+      readonly tracker: TrackerKind
+      /** The figures of the last request; null on a local tracker. */
+      readonly rateLimit: RateLimit | null
+    }
+  | { readonly kind: 'message'; readonly message: string; readonly detail: string | null }
+  | {
+      readonly kind: 'failed'
+      readonly notice: Notice
+      readonly error: GitHubCollectFailed
+    }
 
 type LoadError = ScoutError | FileSystemError | ProcessError | GitHubCollectFailed
 
@@ -112,17 +148,18 @@ const describeError = (error: LoadError): { message: string; detail: string | nu
 
 const load = Effect.gen(function* () {
   const folders = yield* (yield* WorkspaceFolders).paths
-  const found = yield* findRepo(folders)
-  const snapshot =
-    found.tracker.kind === 'github'
-      ? yield* readGitHubTracker(found.repoRoot)
-      : yield* readLocalTracker(found.repoRoot)
-  return { kind: 'snapshot', snapshot, notice: null } satisfies Loaded
+  const found: RepoTracker = yield* findRepo(folders)
+  if (found.tracker.kind === 'github') {
+    const { snapshot, rateLimit } = yield* readGitHubTracker(found.repoRoot)
+    return { kind: 'snapshot', snapshot, tracker: 'github', rateLimit } satisfies Loaded
+  }
+  const snapshot = yield* readLocalTracker(found.repoRoot)
+  return { kind: 'snapshot', snapshot, tracker: 'local', rateLimit: null } satisfies Loaded
 }).pipe(
   Effect.catch((error: LoadError) =>
     Effect.succeed<Loaded>(
       error._tag === 'GitHubCollectFailed'
-        ? { kind: 'failed', notice: describeCollectFailure(error) }
+        ? { kind: 'failed', notice: describeCollectFailure(error), error }
         : { kind: 'message', ...describeError(error) },
     ),
   ),
@@ -140,31 +177,61 @@ export const makeCockpit = (
 ): Effect.Effect<
   Cockpit,
   never,
-  WorkspaceFolders | Storage | FileSystem | ProcessRunner | Opener
+  WorkspaceFolders | Storage | FileSystem | ProcessRunner | Opener | CollectProgress
 > =>
   Effect.gen(function* () {
     const context = yield* Effect.context<WorkspaceFolders | Storage | FileSystem | ProcessRunner>()
     const storage = yield* Storage
     const opener = yield* Opener
+    const progress = yield* CollectProgress
+    const workspace = yield* WorkspaceFolders
+    // The last good snapshot of this window's repo is shown before anything spawns.
+    const cached = readCache(yield* storage.get(CACHE_KEY), yield* workspace.paths)
     // The host holds the one selection; the webview only asks to change it.
     const selected = yield* Ref.make<string | null>(
       storedSelected(yield* storage.get(SELECTED_KEY)),
     )
-    const base = yield* Ref.make<Base>({ kind: 'loading' })
+    const base = yield* Ref.make<Base>(
+      cached === null
+        ? { kind: 'loading' }
+        : { kind: 'snapshot', snapshot: cached.snapshot, notice: null },
+    )
+    const tracker = yield* Ref.make<TrackerKind | null>(cached?.repo.kind ?? null)
+    // The cache counts as the last successful collect, so a reload does not spend the budget twice.
+    const policy = yield* Ref.make<PolicyState>({
+      ...initialPolicy,
+      lastSuccessAt: cached === null ? null : Date.parse(cached.snapshot.collectedAt),
+    })
+    // Finishes when the collect now running does, for a button press to attach to.
+    const running = yield* Ref.make<Deferred.Deferred<void> | null>(null)
+    const debounced = yield* Ref.make<Fiber.Fiber<void> | null>(null)
     const expanded = yield* Ref.make<ReadonlySet<string> | null>(
       storedExpanded(yield* storage.get(EXPANDED_KEY)),
     )
     // Which section the Detail was asked to scroll to, and how many times it has been asked.
     const section = yield* Ref.make<MapSection | null>(null)
     const scroll = yield* Ref.make(0)
-    // A collect that finishes after a newer one started must not overwrite it.
-    const generation = yield* Ref.make(0)
+    /** What holds automatic refreshes back right now; a local tracker has no budget. */
+    const budgetNote: Effect.Effect<BudgetNote | null> = Effect.gen(function* () {
+      if ((yield* Ref.get(tracker)) !== 'github') return null
+      const status = budgetStatus(yield* Ref.get(policy), yield* Clock.currentTimeMillis)
+      return status === null
+        ? null
+        : { kind: status.kind, until: new Date(status.until).toISOString() }
+    })
 
     const current: Effect.Effect<ViewModel> = Effect.gen(function* () {
       const state = yield* Ref.get(base)
       if (state.kind !== 'snapshot') return state
       const open = (yield* Ref.get(expanded)) ?? defaultExpanded(state.snapshot)
-      return buildViewModel(state.snapshot, open, yield* Ref.get(selected), undefined, state.notice)
+      return buildViewModel(
+        state.snapshot,
+        open,
+        yield* Ref.get(selected),
+        undefined,
+        state.notice,
+        yield* budgetNote,
+      )
     })
 
     const currentDetail: Effect.Effect<DetailView> = Effect.gen(function* () {
@@ -182,23 +249,109 @@ export const makeCockpit = (
       options.publishDetail(yield* currentDetail)
     })
 
-    const collect: Effect.Effect<void> = Effect.gen(function* () {
-      const mine = yield* Ref.updateAndGet(generation, (n) => n + 1)
-      const loaded = yield* load.pipe(Effect.provideContext(context))
-      if ((yield* Ref.get(generation)) !== mine) return
-      if (loaded.kind === 'failed') {
-        // A failure after a good collect keeps the maps on screen with the reason; without one it is the whole view.
-        const before = yield* Ref.get(base)
-        yield* Ref.set(
-          base,
-          before.kind === 'snapshot'
-            ? { ...before, notice: loaded.notice }
-            : { kind: 'message', message: loaded.notice.message, detail: loaded.notice.fix },
-        )
-      } else {
-        yield* Ref.set(base, loaded)
-      }
+    const budgetOf = (rateLimit: RateLimit | null): RateBudget | null =>
+      rateLimit === null
+        ? null
+        : { remaining: rateLimit.remaining, resetAt: Date.parse(rateLimit.resetAt) }
+
+    /** Takes what one collect came to into the view, the cache and the policy. */
+    const settle = (loaded: Loaded, now: number): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        switch (loaded.kind) {
+          case 'snapshot':
+            yield* Ref.set(base, { kind: 'snapshot', snapshot: loaded.snapshot, notice: null })
+            yield* Ref.set(tracker, loaded.tracker)
+            yield* Ref.update(policy, (state) =>
+              afterSuccess(state, now, budgetOf(loaded.rateLimit)),
+            )
+            yield* storage.set(
+              CACHE_KEY,
+              writeCache(yield* storage.get(CACHE_KEY), yield* workspace.paths, loaded.snapshot),
+            )
+            break
+          case 'message':
+            yield* Ref.set(base, loaded)
+            yield* Ref.update(policy, (state) => afterFailure(state, now, { reason: 'message' }))
+            break
+          case 'failed': {
+            // A failure after a good collect keeps the maps on screen with the reason; without one it is the whole view.
+            const before = yield* Ref.get(base)
+            yield* Ref.set(
+              base,
+              before.kind === 'snapshot'
+                ? { ...before, notice: loaded.notice }
+                : { kind: 'message', message: loaded.notice.message, detail: loaded.notice.fix },
+            )
+            yield* Ref.set(tracker, 'github')
+            yield* Ref.update(policy, (state) => afterFailure(state, now, loaded.error))
+            break
+          }
+        }
+      })
+
+    const collectOnce: Effect.Effect<void> = Effect.gen(function* () {
+      const end = yield* progress.begin
+      const loaded = yield* load.pipe(Effect.provideContext(context), Effect.ensuring(end))
+      yield* settle(loaded, yield* Clock.currentTimeMillis)
       yield* publish
+    })
+
+    /** Runs the collect this call was admitted for, then the one queued behind it, one at a time. */
+    const collectLoop: Effect.Effect<void> = Effect.gen(function* () {
+      for (;;) {
+        const finished = yield* Deferred.make<void>()
+        yield* Ref.set(running, finished)
+        yield* collectOnce.pipe(
+          Effect.ensuring(
+            Effect.andThen(Ref.set(running, null), Deferred.succeed(finished, undefined)),
+          ),
+        )
+        const now = yield* Clock.currentTimeMillis
+        const kind = (yield* Ref.get(tracker)) ?? 'github'
+        const again = yield* Ref.modify(policy, (state) => drain(state, now, kind))
+        if (!again) return
+      }
+    }).pipe(
+      Effect.onInterrupt(() =>
+        Ref.update(policy, (state) => ({ ...state, running: false, queued: false })),
+      ),
+    )
+
+    /** One cause asks for a collect; the policy says whether it runs, waits, joins or is dropped. */
+    const trigger = (cause: Trigger): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const now = yield* Clock.currentTimeMillis
+        const kind = (yield* Ref.get(tracker)) ?? 'github'
+        const decision = yield* Ref.modify(policy, (state) => {
+          const [decided, next] = admit(state, cause, now, kind)
+          return [decided, next] as const
+        })
+        switch (decision.action) {
+          case 'start':
+            return yield* collectLoop
+          case 'attach': {
+            const current = yield* Ref.get(running)
+            if (current !== null) yield* Deferred.await(current)
+            return
+          }
+          case 'refuse':
+            // The row says "rate-limited until HH:MM"; nothing is called.
+            return yield* publish
+          case 'queue':
+          case 'coalesced':
+          case 'skip':
+            return
+        }
+      })
+
+    const scratchChanged: Effect.Effect<void> = Effect.gen(function* () {
+      if ((yield* Ref.get(tracker)) !== 'local') return
+      const previous = yield* Ref.getAndSet(debounced, null)
+      if (previous !== null) yield* Fiber.interrupt(previous)
+      const fiber = yield* Effect.forkDetach(
+        Effect.sleep(SCRATCH_DEBOUNCE_MS).pipe(Effect.andThen(trigger('automatic'))),
+      )
+      yield* Ref.set(debounced, fiber)
     })
 
     const setExpanded = (key: string, open: boolean): Effect.Effect<void> =>
@@ -259,7 +412,7 @@ export const makeCockpit = (
       })
 
     const openDetailCommand: Effect.Effect<void> = Effect.gen(function* () {
-      if ((yield* Ref.get(base)).kind === 'loading') yield* collect
+      if ((yield* Ref.get(base)).kind === 'loading') yield* trigger('button')
       const state = yield* Ref.get(base)
       if (state.kind !== 'snapshot') return
       const key = yield* Ref.get(selected)
@@ -287,8 +440,10 @@ export const makeCockpit = (
       })
 
     return {
-      show: collect,
-      refresh: collect,
+      show: trigger('automatic'),
+      focus: trigger('automatic'),
+      scratchChanged,
+      refresh: trigger('button'),
       current,
       currentDetail,
       openDetail: openDetailCommand,
@@ -304,7 +459,7 @@ export const makeCockpit = (
               yield* publish
               break
             case 'refresh':
-              yield* collect
+              yield* trigger('button')
               break
             case 'expand':
               yield* setExpanded(message.key, true)

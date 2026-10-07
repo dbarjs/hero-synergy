@@ -1,7 +1,8 @@
 import { Effect, Layer } from 'effect'
 import * as vscode from 'vscode'
 
-import { Opener, Storage, WorkspaceFolders } from '../services.ts'
+import { TREE_VIEW_ID } from './tree-view.ts'
+import { CollectProgress, Opener, Storage, WorkspaceFolders } from '../services.ts'
 
 /** The window's workspace folders, read each time so a folder added later is seen by the next collect. */
 export const workspaceFoldersLive: Layer.Layer<WorkspaceFolders> = Layer.succeed(WorkspaceFolders, {
@@ -26,4 +27,16 @@ export const openerLive: Layer.Layer<Opener> = Layer.succeed(Opener, {
     }),
   openLink: (url) =>
     Effect.promise(async () => void (await vscode.env.openExternal(vscode.Uri.parse(url)))),
+})
+
+/** VS Code's progress bar over the Tree's view, shown from the start of a collect to its end. */
+export const collectProgressLive: Layer.Layer<CollectProgress> = Layer.succeed(CollectProgress, {
+  begin: Effect.sync(() => {
+    let end: () => void = () => {}
+    const held = new Promise<void>((resolve) => {
+      end = resolve
+    })
+    void vscode.window.withProgress({ location: { viewId: TREE_VIEW_ID } }, () => held)
+    return Effect.sync(end)
+  }),
 })

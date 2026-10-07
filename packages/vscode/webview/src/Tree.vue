@@ -36,6 +36,31 @@ const age = (collectedAt: string): string => {
   return hours < 24 ? `${hours} h ago` : `${Math.floor(hours / 24)} d ago`
 }
 
+/** The age is emphasised once the snapshot is older than this, or when the last collect failed. */
+const STALE_AFTER_MS = 5 * 60_000
+
+const clock = (iso: string): string =>
+  new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+
+const BUDGET_WORDS = {
+  paused: 'paused until',
+  'rate-limited': 'rate-limited until',
+  backoff: 'backing off until',
+} as const
+
+/** The repo row's text: how old the read is, why the last collect failed, and what holds refreshes back. */
+const repoDescription = (model: Extract<ViewModel, { kind: 'maps' }>): string =>
+  [
+    `tracker read ${age(model.collectedAt)}`,
+    model.notice?.message,
+    model.budget && `${BUDGET_WORDS[model.budget.kind]} ${clock(model.budget.until)}`,
+  ]
+    .filter((part) => part)
+    .join(' · ')
+
+const isStale = (model: Extract<ViewModel, { kind: 'maps' }>): boolean =>
+  model.notice !== null || now.value - Date.parse(model.collectedAt) > STALE_AFTER_MS
+
 /** A click on the selected row again closes its pane. */
 const select = (key: string): void => {
   const selected = props.viewModel.kind === 'maps' ? props.viewModel.selection?.key : undefined
@@ -60,10 +85,11 @@ const toggle = (key: string, expanded: boolean): void => {
     <Row
       v-if="viewModel.repo !== null"
       class="repo"
+      :class="{ stale: isStale(viewModel) }"
       :depth="0"
       icon="repo"
       :label="viewModel.repo"
-      :description="`tracker read ${age(viewModel.collectedAt)}`"
+      :description="repoDescription(viewModel)"
       @activate="emit('refresh')"
     >
       <span class="codicon codicon-refresh" title="Refresh" />
@@ -135,6 +161,10 @@ const toggle = (key: string, expanded: boolean): void => {
   padding: 4px 12px 8px;
   color: var(--vscode-descriptionForeground);
   border-left: 2px solid var(--vscode-editorWarning-foreground);
+}
+.repo.stale :deep(.description) {
+  color: var(--vscode-editorWarning-foreground);
+  font-weight: 600;
 }
 .count {
   color: var(--vscode-descriptionForeground);

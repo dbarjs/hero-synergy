@@ -6,15 +6,18 @@ import { describe, expect, it } from '@effect/vitest'
 import {
   FileSystem,
   type ProcessRecording,
+  readLocalTracker,
   ProcessRunner,
   type ProcessRunnerShape,
 } from '@hero-synergy/core'
-import { Effect, Layer } from 'effect'
+import { Effect, Fiber, Layer } from 'effect'
+import { TestClock } from 'effect/testing'
 
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
 import { type Cockpit, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
 import type { DetailView, MapNode, ViewModel } from './protocol.ts'
-import { Opener, Storage, WorkspaceFolders } from './services.ts'
+import { CollectProgress, Opener, Storage, WorkspaceFolders } from './services.ts'
+import { CACHE_KEY, writeCache } from './snapshot-cache.ts'
 import type { OpenTarget } from './view-model.ts'
 
 const ROOT = '/home/ana/billing'
@@ -36,18 +39,22 @@ const notARepo = (folder: string): ProcessRecording => ({
 })
 
 /** Answers from recordings like the replay layer does, and counts what it was asked to run. */
-const countingRunner = (recordings: ReadonlyArray<ProcessRecording>) => {
+const countingRunner = (recordings: ReadonlyArray<ProcessRecording>, delayMillis = 0) => {
   let runs = 0
   const shape: ProcessRunnerShape = {
     run: (request) =>
-      Effect.sync(() => {
-        runs += 1
-        const recorded = recordings.find(
-          (r) => r.command === request.command && r.args.join('\0') === request.args.join('\0'),
-        )
-        if (recorded === undefined) throw new Error(`not recorded: ${request.args.join(' ')}`)
-        return { ...recorded, timedOut: recorded.timedOut ?? false }
-      }),
+      Effect.sleep(delayMillis).pipe(
+        Effect.andThen(
+          Effect.sync(() => {
+            runs += 1
+            const recorded = recordings.find(
+              (r) => r.command === request.command && r.args.join('\0') === request.args.join('\0'),
+            )
+            if (recorded === undefined) throw new Error(`not recorded: ${request.args.join(' ')}`)
+            return { ...recorded, timedOut: recorded.timedOut ?? false }
+          }),
+        ),
+      ),
   }
   return { layer: Layer.succeed(ProcessRunner, shape), runs: () => runs }
 }
@@ -58,6 +65,8 @@ interface Setup {
   /** Read at every run, so a test can change what the next collect gets. */
   readonly recordings?: ProcessRecording[]
   readonly stored?: Record<string, unknown>
+  /** Each process takes this long on the test clock, so triggers can overlap a collect. */
+  readonly delay?: number
 }
 
 /** Runs `body` against a Cockpit on the fixture workspace; every layer is in memory. */
@@ -71,14 +80,17 @@ const withCockpit = <A>(
     shown: boolean[]
     logged: string[]
     opened: OpenTarget[]
+    progress: { shown: number; open: number }
     runs: () => number
     fs: FileSystem['Service']
-  }) => Effect.Effect<A, never, Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener>,
+  }) => Effect.Effect<A, never, Storage | WorkspaceFolders | FileSystem | ProcessRunner | Opener | CollectProgress>,
 ) => {
-  const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)])
+  const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)], setup.delay)
   const opened: OpenTarget[] = []
+  const progress = { shown: 0, open: 0 }
   const layer = Layer.mergeAll(
     Opener.inMemory(opened),
+    CollectProgress.inMemory(progress),
     WorkspaceFolders.inMemory(setup.folders ?? [ROOT]),
     Storage.inMemory(setup.stored),
     FileSystem.inMemory(setup.files ?? workspaceFiles(ROOT)),
@@ -103,6 +115,7 @@ const withCockpit = <A>(
       shown,
       logged,
       opened,
+      progress,
       runs: runner.runs,
       fs,
     })
@@ -713,5 +726,252 @@ describe('the Cockpit controller and the Detail', () => {
         expect(logged).toHaveLength(2)
       }),
     ),
+  )
+})
+
+/** The recorded second request with the budget it reports changed. */
+const withRemaining = (remaining: number): ProcessRecording[] => {
+  const [list, maps] = goodCollect() as [ProcessRecording, ProcessRecording]
+  return [
+    list,
+    { ...maps, stdout: maps.stdout.replace('"remaining":4828', `"remaining":${remaining}`) },
+  ]
+}
+const RESET_AT = Date.parse('2026-10-07T18:47:48Z')
+
+describe('the Cockpit refreshes on causes, never on a timer', () => {
+  it.effect('collects on show and focus, but not again within 60 s on a GitHub tracker', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, runs, progress }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          yield* TestClock.adjust('30 seconds')
+          yield* cockpit.focus
+          expect(runs()).toBe(perCollect)
+          yield* TestClock.adjust('31 seconds')
+          yield* cockpit.focus
+          expect(runs()).toBeGreaterThan(perCollect)
+          expect(progress).toEqual({ shown: 2, open: 0 })
+        }),
+    ),
+  )
+
+  it.effect('lets the button ignore the gap', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          yield* TestClock.adjust('1 second')
+          yield* cockpit.refresh
+          expect(runs()).toBe(perCollect * 2)
+        }),
+    ),
+  )
+
+  it.effect('has no gap on a local tracker', () =>
+    withCockpit({}, ({ cockpit, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.focus
+        yield* cockpit.show
+        expect(runs()).toBe(3)
+      }),
+    ),
+  )
+
+  it.effect(
+    'coalesces triggers during a collect into one queued collect and attaches the button',
+    () =>
+      withCockpit({ delay: 1000 }, ({ cockpit, runs, published }) =>
+        Effect.gen(function* () {
+          const first = yield* Effect.forkChild(cockpit.show)
+          yield* Effect.yieldNow
+          const during = [
+            yield* Effect.forkChild(cockpit.focus),
+            yield* Effect.forkChild(cockpit.focus),
+            yield* Effect.forkChild(cockpit.refresh),
+          ]
+          yield* TestClock.adjust('1 minute')
+          yield* Fiber.joinAll([first, ...during])
+          // One collect for show, one queued for the two focuses; the button joined the first.
+          expect(runs()).toBe(2)
+          expect(published).toHaveLength(2)
+        }),
+      ),
+  )
+
+  it.effect(
+    'collects once after the debounce when a .scratch file changes on a local tracker',
+    () =>
+      withCockpit({}, ({ cockpit, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          expect(runs()).toBe(1)
+          yield* cockpit.scratchChanged
+          yield* TestClock.adjust('500 millis')
+          yield* cockpit.scratchChanged
+          yield* TestClock.adjust('999 millis')
+          expect(runs()).toBe(1)
+          yield* TestClock.adjust('1 millis')
+          expect(runs()).toBe(2)
+          yield* TestClock.adjust('10 seconds')
+          expect(runs()).toBe(2)
+        }),
+      ),
+  )
+
+  it.effect('does nothing when a .scratch file changes on a GitHub tracker', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          yield* TestClock.adjust('2 minutes')
+          yield* cockpit.scratchChanged
+          yield* TestClock.adjust('5 seconds')
+          expect(runs()).toBe(perCollect)
+        }),
+    ),
+  )
+
+  it.effect(
+    'pauses automatic triggers below 1,000 points until resetAt; the button still works',
+    () =>
+      withCockpit(
+        { files: GITHUB_DOC, recordings: onGitHub(...withRemaining(999)) },
+        ({ cockpit, runs, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            const perCollect = runs()
+            expect(mapsOf(published[0]).budget).toEqual({
+              kind: 'paused',
+              until: '2026-10-07T18:47:48.000Z',
+            })
+            yield* TestClock.adjust('5 minutes')
+            yield* cockpit.focus
+            expect(runs()).toBe(perCollect)
+            yield* cockpit.refresh
+            expect(runs()).toBe(perCollect * 2)
+            yield* TestClock.setTime(RESET_AT + 1000)
+            yield* cockpit.focus
+            expect(runs()).toBe(perCollect * 3)
+          }),
+      ),
+  )
+
+  it.effect('stops at 0 points and the button says rate-limited without calling', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...withRemaining(0)) },
+      ({ cockpit, runs, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          yield* TestClock.adjust('5 minutes')
+          yield* cockpit.focus
+          yield* cockpit.refresh
+          expect(runs()).toBe(perCollect)
+          expect(mapsOf(published.at(-1)).budget).toEqual({
+            kind: 'rate-limited',
+            until: '2026-10-07T18:47:48.000Z',
+          })
+        }),
+    ),
+  )
+
+  it.effect('does not try again on its own after a failure; the next trigger does', () => {
+    const recordings = onGitHub(recorded('github/list-timeout.json'))
+    return withCockpit({ files: GITHUB_DOC, recordings }, ({ cockpit, runs, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const failed = runs()
+        yield* TestClock.adjust('10 minutes')
+        expect(runs()).toBe(failed)
+        recordings.splice(3, recordings.length, ...goodCollect())
+        yield* cockpit.focus
+        expect(runs()).toBeGreaterThan(failed)
+        expect(mapsOf(published.at(-1)).notice).toBeNull()
+      }),
+    )
+  })
+
+  it.effect('backs automatic triggers off after a secondary limit', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(recorded('github/list-secondary-limit.json')) },
+      ({ cockpit, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          yield* TestClock.adjust('30 seconds')
+          yield* cockpit.focus
+          expect(runs()).toBe(perCollect)
+        }),
+    ),
+  )
+})
+
+describe('the Cockpit keeps the last snapshot', () => {
+  const localSnapshot = readLocalTracker(ROOT).pipe(
+    Effect.provide(FileSystem.inMemory(workspaceFiles(ROOT))),
+  )
+
+  it.effect('renders the cache before any process spawns, then swaps it for a fresh collect', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* localSnapshot
+      const stored = { [CACHE_KEY]: writeCache(undefined, [ROOT], snapshot) }
+      yield* withCockpit({ stored }, ({ cockpit, runs, published }) =>
+        Effect.gen(function* () {
+          expect(runs()).toBe(0)
+          expect(maps(yield* cockpit.current)).toHaveLength(2)
+          yield* cockpit.show
+          expect(runs()).toBe(1)
+          expect(published).toHaveLength(1)
+        }),
+      )
+    }),
+  )
+
+  it.effect('stores the last successful snapshot for the next activation', () =>
+    withCockpit({}, ({ cockpit }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const storage = yield* Storage
+        expect(yield* storage.get(CACHE_KEY)).toMatchObject({
+          last: { folders: [ROOT], key: `local|${ROOT}|v1` },
+        })
+      }),
+    ),
+  )
+
+  it.effect('ignores a cache under an older schema version, another repo or other folders', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* localSnapshot
+      const good = writeCache(undefined, [ROOT], snapshot) as {
+        last: { folders: string[]; key: string }
+        entries: Record<string, { version: number }>
+      }
+      const entry = good.entries[good.last.key] as { version: number }
+      const moved = (key: string) => ({
+        last: { folders: [ROOT], key },
+        entries: { [key]: entry },
+      })
+      const cases: ReadonlyArray<unknown> = [
+        { ...good, entries: { [good.last.key]: { ...entry, version: 0 } } },
+        moved('local|/home/ana/another|v1'),
+        { ...good, last: { ...good.last, folders: ['/elsewhere'] } },
+        'garbage',
+      ]
+      for (const value of cases) {
+        yield* withCockpit({ stored: { [CACHE_KEY]: value } }, ({ cockpit }) =>
+          Effect.gen(function* () {
+            expect(yield* cockpit.current).toEqual({ kind: 'loading' })
+          }),
+        )
+      }
+    }),
   )
 })
