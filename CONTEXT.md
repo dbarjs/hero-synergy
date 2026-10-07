@@ -83,6 +83,22 @@ _Avoid_: sandbox, checkout
 Anything the Cockpit offers that spawns a process in a terminal, always shown with the exact command it will run. A user-invoked skill is the common case; Resume and an install command are Actions too. Opening an issue or focusing a terminal is a button, not an Action.
 _Avoid_: command, launcher
 
+**Upstream**:
+A tool the Cockpit relies on but does not ship: Claude Code, mattpocock-skills, VS Code, `gh` and Node. Each has a floor, a tested ceiling and its contracts listed in the upstream register, `docs/upstream.md`.
+_Avoid_: dependency (a package in `package.json`), integration
+
+**Contract**:
+One thing the Cockpit reads from an upstream or passes to it and would break on if it changed: a flag, a JSON field, a hook event, a heading, a label, a frontmatter key, an API.
+_Avoid_: dependency, API surface
+
+**Floor**:
+The lowest version of an upstream the Cockpit works on. The README states it as a requirement; the Cockpit never gates on it.
+_Avoid_: minimum version, requirement
+
+**Tested ceiling**:
+The newest version of an upstream the Cockpit's behaviour was actually run or measured on. Newer versions are expected to work and are not promised.
+_Avoid_: maximum version, latest supported
+
 ### Relationships
 
 - A tracker holds many maps; a map holds many tickets.
@@ -97,8 +113,10 @@ _Avoid_: command, launcher
 - The scout reports drift; the extension host reports health; both are warnings, shown in the same places. A warning never gates: the Cockpit says, it never stops.
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
+- An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
 
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
+- "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
