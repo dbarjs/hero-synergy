@@ -1,0 +1,249 @@
+name: Canary
+
+# The Cockpit's own checks, run daily against the newest upstreams (docs/upstream.md, #34). Each
+# job writes a report and never fails on a break; the last job turns the reports into at most one
+# open issue per upstream. On green nothing is written to `main`: the step summary lists the
+# versions seen.
+
+on:
+  schedule:
+    # An off-the-hour minute: the top of the hour is when scheduled runs queue up.
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+    inputs:
+      force_fail:
+        description: Force one upstream red, to prove the filing end to end
+        type: choice
+        default: none
+        options: [none, claude, skills, vscode, gh, node]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canary
+  cancel-in-progress: false
+
+env:
+  CANARY_FORCE_FAIL: ${{ inputs.force_fail }}
+
+jobs:
+  # The native installer, latest, no login.
+  claude:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - run: vp run -r build
+      # A failed install shows up as the contracts that could not run, not as a red job.
+      - run: curl -fsSL https://claude.ai/install.sh | bash
+        continue-on-error: true
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: node packages/canary/src/cli.ts claude --out reports/claude.json
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: canary-claude
+          path: reports
+          if-no-files-found: warn
+
+  # The latest tag, `main` and the marketplace install, each read the way the scout reads them.
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - run: vp run -r build
+      - run: curl -fsSL https://claude.ai/install.sh | bash
+        continue-on-error: true
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: claude plugin install mattpocock-skills@claude-plugins-official
+        continue-on-error: true
+      - id: tag
+        run: echo "name=$(node packages/canary/src/cli.ts tag -- https://github.com/mattpocock/skills.git)" >> "$GITHUB_OUTPUT"
+      - run: git clone --quiet --depth 1 --branch "${{ steps.tag.outputs.name }}" https://github.com/mattpocock/skills.git "$RUNNER_TEMP/skills-tag"
+      - run: git clone --quiet --depth 1 https://github.com/mattpocock/skills.git "$RUNNER_TEMP/skills-main"
+      - id: main
+        run: echo "sha=$(git -C "$RUNNER_TEMP/skills-main" rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+      - run: >-
+          node packages/canary/src/cli.ts skills --out reports/skills.json --marketplace
+          --seen "tag=${{ steps.tag.outputs.name }}" --seen "main=${{ steps.main.outputs.sha }}"
+          --source "tag=$RUNNER_TEMP/skills-tag" --source "main=$RUNNER_TEMP/skills-main"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: canary-skills
+          path: reports
+          if-no-files-found: warn
+
+  # The host and end-to-end tiers on stable, where the existing CI also runs the floor.
+  vscode:
+    name: vscode (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+            xvfb: xvfb-run -a
+          - name: macos
+            os: macos-latest
+            xvfb: ''
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - id: stable
+        run: echo "version=$(curl -fsSL https://update.code.visualstudio.com/api/releases/stable | jq -r '.[0]')" >> "$GITHUB_OUTPUT"
+      - run: vp run -r build
+      - run: >-
+          node packages/canary/src/cli.ts run --upstream vscode
+          --version "${{ steps.stable.outputs.version }}"
+          --contract "suites on stable (${{ matrix.name }})"
+          --row "VS Code › Terminals, views and the host runtime: the extension-host and end-to-end tiers"
+          --out reports/vscode-${{ matrix.name }}.json
+          -- ${{ matrix.xvfb }} sh -c 'cd packages/vscode && vp exec vscode-test --label stable && cd ../.. && vp test --project e2e'
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: canary-vscode-${{ matrix.name }}
+          path: reports
+          if-no-files-found: warn
+
+  # The live job, on the schedule: this repo's own maps through GitHub's current API.
+  gh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - id: gh
+        run: echo "version=$(gh --version | head -n 1 | cut -d ' ' -f 3)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: >-
+          node packages/canary/src/cli.ts run --upstream gh
+          --version "${{ steps.gh.outputs.version }}"
+          --contract "live collect"
+          --row "gh and the GitHub API › the map-first GraphQL query and its fields"
+          --out reports/gh.json
+          -- vp test --project live
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: canary-gh
+          path: reports
+          if-no-files-found: warn
+
+  # `vp test` on the newest Node, built there too: a build that no longer runs is a break.
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version: latest
+          cache: true
+      - id: node
+        run: echo "version=$(node --version | cut -c 2-)" >> "$GITHUB_OUTPUT"
+      - run: >-
+          node packages/canary/src/cli.ts run --upstream node
+          --version "${{ steps.node.outputs.version }}"
+          --contract "build and unit suites"
+          --row "Node › the workspace builds and tests on the newest Node"
+          --out reports/node.json
+          -- sh -c 'vp run -r build && vp test'
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: canary-node
+          path: reports
+          if-no-files-found: warn
+
+  # Files the breaks, writes the step summary and keeps the schedule alive.
+  report:
+    needs: [claude, skills, vscode, gh, node]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+      contents: write
+      issues: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: canary-*
+          path: reports
+      # The previous run's state: what the last green and the first red were.
+      - run: |
+          for id in $(gh run list --workflow canary.yml --status completed --limit 10 --json databaseId --jq '.[].databaseId'); do
+            if gh run download "$id" --name state-canary --dir previous 2>/dev/null; then break; fi
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - run: >-
+          node packages/canary/src/cli.ts file --reports reports
+          --state previous/state.json --state-out state/state.json
+          --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --assignee "${{ vars.CANARY_ASSIGNEE || github.repository_owner }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: state-canary
+          path: state
+      # GitHub disables a scheduled workflow after 60 days without repository activity. Enabling
+      # it again every run is meant to reset that clock; whether it does is unverified.
+      - run: gh api --method PUT "repos/${{ github.repository }}/actions/workflows/canary.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # The fallback, off until a run proves the call above does not reset the clock: set the
+      # repository variable CANARY_KEEPALIVE_COMMIT to `true`. One dated commit per run, on a
+      # branch of its own so `main` stays untouched.
+      - if: vars.CANARY_KEEPALIVE_COMMIT == 'true'
+        run: |
+          git config user.name "hero-synergy canary"
+          git config user.email "canary@users.noreply.github.com"
+          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          git checkout --orphan canary-keepalive
+          git rm -rf --quiet .
+          date -u +%F > KEEPALIVE
+          git add KEEPALIVE
+          git commit --quiet -m "Keepalive $(date -u +%F)"
+          git push --force origin canary-keepalive
+        env:
+          GH_TOKEN: ${{ github.token }}
