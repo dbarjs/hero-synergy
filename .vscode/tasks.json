@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pack extension",
+      "type": "shell",
+      "command": "pnpm exec vp pack",
+      "options": { "cwd": "${workspaceFolder}/packages/vscode" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent" }
+    }
+  ]
+}

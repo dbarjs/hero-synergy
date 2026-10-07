@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Debugs the Mocha tier through the Extension Test Runner (ms-vscode.extension-test-runner),
+      // which reads packages/vscode/.vscode-test.mjs. The pack runs first so out-test/ is current.
+      "name": "Extension Tests",
+      "type": "extensionHost",
+      "request": "launch",
+      "testConfiguration": "${workspaceFolder}/packages/vscode/.vscode-test.mjs",
+      "args": ["--extensionDevelopmentPath=${workspaceFolder}/packages/vscode"],
+      "preLaunchTask": "pack extension"
+    }
+  ]
+}

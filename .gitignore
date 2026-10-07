@@ -5,3 +5,6 @@ dist
 *.tsbuildinfo
 .claude/worktrees/
 .vitest
+out-test
+.vscode-test
+coverage
