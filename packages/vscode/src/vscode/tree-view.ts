@@ -84,3 +84,33 @@ export function createLog(context: vscode.ExtensionContext): (line: string) => v
   context.subscriptions.push(channel)
   return (line) => channel.appendLine(line)
 }
+
+export interface RefreshTriggers {
+  /** The window gained focus. */
+  readonly onFocus: () => void
+  /** A file under `.scratch` was created, changed or deleted. */
+  readonly onScratchChange: () => void
+}
+
+/** The automatic causes besides the view becoming visible: window focus and `.scratch` changes. Never a timer. */
+export function registerRefreshTriggers(
+  context: vscode.ExtensionContext,
+  triggers: RefreshTriggers,
+): void {
+  context.subscriptions.push(
+    vscode.window.onDidChangeWindowState((state) => {
+      if (state.focused) triggers.onFocus()
+    }),
+  )
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const watcher = vscode.workspace.createFileSystemWatcher(
+      new vscode.RelativePattern(folder, '.scratch/**'),
+    )
+    context.subscriptions.push(
+      watcher,
+      watcher.onDidCreate(triggers.onScratchChange),
+      watcher.onDidChange(triggers.onScratchChange),
+      watcher.onDidDelete(triggers.onScratchChange),
+    )
+  }
+}

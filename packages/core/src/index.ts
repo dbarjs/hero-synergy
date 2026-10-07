@@ -97,6 +97,7 @@ export {
   type Decision,
   decodeSnapshot,
   encodeSnapshot,
+  snapshotSchemaVersion,
   type Outcome,
   type Ref,
   type Resolution,

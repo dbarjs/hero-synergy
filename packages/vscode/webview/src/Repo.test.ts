@@ -70,4 +70,41 @@ describe('the repo row', () => {
         .exists(),
     ).toBe(false)
   })
+
+  it('emphasises the age with the reason after a failed collect', () => {
+    const wrapper = mount(Tree, {
+      props: {
+        viewModel: onGitHub({
+          collectedAt: new Date().toISOString(),
+          notice: { message: 'gh is not logged in to GitHub.', fix: 'Run `gh auth login`.' },
+        }),
+      },
+    })
+    const row = wrapper.find('.repo')
+    expect(row.classes()).toContain('stale')
+    expect(row.text()).toContain('gh is not logged in to GitHub.')
+  })
+
+  it('emphasises the age after 5 minutes and not before', () => {
+    vi.useFakeTimers({ now: Date.parse('2026-10-07T00:05:01.000Z') })
+    const old = mount(Tree, {
+      props: { viewModel: onGitHub({ collectedAt: '2026-10-07T00:00:00.000Z' }) },
+    })
+    expect(old.find('.repo').classes()).toContain('stale')
+    const fresh = mount(Tree, {
+      props: { viewModel: onGitHub({ collectedAt: '2026-10-07T00:00:02.000Z' }) },
+    })
+    expect(fresh.find('.repo').classes()).not.toContain('stale')
+  })
+
+  it.each([
+    ['paused', 'paused until'],
+    ['rate-limited', 'rate-limited until'],
+    ['backoff', 'backing off until'],
+  ] as const)('says %s until the time of day on the repo row', (kind, words) => {
+    const wrapper = mount(Tree, {
+      props: { viewModel: onGitHub({ budget: { kind, until: '2026-10-07T18:47:48.000Z' } }) },
+    })
+    expect(wrapper.find('.repo').text()).toMatch(new RegExp(`${words} \\d{2}:\\d{2}`))
+  })
 })

@@ -56,6 +56,12 @@ export interface Notice {
   readonly fix: string | null
 }
 
+/** What holds the automatic refreshes back, until when (ISO); the webview words it with the time of day. */
+export interface BudgetNote {
+  readonly kind: 'paused' | 'rate-limited' | 'backoff'
+  readonly until: string
+}
+
 /** One open map and everything under it. */
 export interface MapNode {
   readonly key: string
@@ -120,6 +126,8 @@ export type ViewModel =
       readonly repo: string | null
       /** Set when the last collect failed and the maps shown are from an earlier one. */
       readonly notice: Notice | null
+      /** Set while the gh budget or a secondary limit holds automatic refreshes back. */
+      readonly budget: BudgetNote | null
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
       readonly finished: FinishedFold | null

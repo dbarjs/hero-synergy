@@ -17,6 +17,7 @@ import {
 } from '@hero-synergy/core'
 
 import type {
+  BudgetNote,
   Detail,
   Focus,
   MapNode,
@@ -253,6 +254,7 @@ export const buildViewModel = (
   selected: string | null = null,
   facts: SessionFacts = NO_SESSIONS,
   notice: Notice | null = null,
+  budget: BudgetNote | null = null,
 ): ViewModel => {
   const ordered = orderMaps(snapshot.maps, facts)
   const active = ordered.filter((map) => !isFinished(map))
@@ -265,6 +267,7 @@ export const buildViewModel = (
         ? `${snapshot.tracker.owner}/${snapshot.tracker.repo}`
         : null,
     notice,
+    budget,
     selection: selectionOf(snapshot, selected)?.focus ?? null,
     maps: active.map((map) => mapNode(map, expanded)),
     finished:

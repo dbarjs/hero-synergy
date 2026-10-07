@@ -5,8 +5,18 @@ import type { ExtensionContext, WebviewPanel } from 'vscode'
 import { makeCockpit } from './cockpit.ts'
 import type { DetailView, ViewModel } from './protocol.ts'
 import { registerDetailPanel } from './vscode/detail-panel.ts'
-import { createLog, registerRefreshCommand, registerTreeView } from './vscode/tree-view.ts'
-import { openerLive, storageLive, workspaceFoldersLive } from './vscode/workspace.ts'
+import {
+  createLog,
+  registerRefreshCommand,
+  registerRefreshTriggers,
+  registerTreeView,
+} from './vscode/tree-view.ts'
+import {
+  collectProgressLive,
+  openerLive,
+  storageLive,
+  workspaceFoldersLive,
+} from './vscode/workspace.ts'
 
 /**
  * What the extension host tier looks at: what the extension has done so far. The
@@ -32,9 +42,10 @@ export interface ExtensionApi {
 }
 
 /**
- * Activation renders nothing and spawns nothing. The Tree's first collect runs
- * when VS Code shows the view, the Refresh command or button, or the webview
- * asking for the model it missed.
+ * Activation spawns nothing, and renders the last good snapshot from storage once
+ * the view exists. The Tree's first collect runs when VS Code shows the view, the
+ * window gains focus, a `.scratch` file changes, or the Refresh command or button
+ * is used; the refresh policy decides which of them collect.
  */
 export async function activate(context: ExtensionContext): Promise<ExtensionApi> {
   let spawnedProcesses = 0
@@ -72,6 +83,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
       Effect.provide(
         Layer.mergeAll(
           workspaceFoldersLive,
+          collectProgressLive,
           openerLive,
           storageLive(context.workspaceState),
           FileSystem.live,
@@ -94,6 +106,10 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     onCommand: () => run(cockpit.openDetail),
   })
   registerRefreshCommand(context, () => run(cockpit.refresh))
+  registerRefreshTriggers(context, {
+    onFocus: () => run(cockpit.focus),
+    onScratchChange: () => run(cockpit.scratchChanged),
+  })
 
   return {
     state: () => ({
