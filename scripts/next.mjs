@@ -4,13 +4,22 @@
 // by ticket, and after the release it is the prior art the official CLI map starts from; nothing in
 // it ships. Reads and launches, never writes (ADR 0003).
 //
-//   node scripts/next.mjs --list      print the open tickets of the spec and of the map, `next` on the first takeable
-//   node scripts/next.mjs             print the launch command, then launch the first takeable ticket
-//   node scripts/next.mjs <number>    launch that ticket
+//   node scripts/next.mjs --list            print the open tickets of the spec and of the map, `next` on the first takeable
+//   node scripts/next.mjs                   print the launch command, then launch the first takeable ticket
+//   node scripts/next.mjs <number>          launch that ticket
+//   node scripts/next.mjs resume <number>   print the Resume command, then run it, for a ticket whose session ended
 //
 // --list shows each ticket's session as the Focus pane does (starting, working, waiting for you,
 // needs approval, failed, ended with its reason), derived by core from the status events and the
-// registry; a ticket whose session is ended is takeable again.
+// registry; a ticket whose session is ended is takeable again. Under a ticket whose worktree
+// exists it shows what the Focus pane shows of it: path, branch, and what it holds that is not on
+// `main` (uncommitted files, commits ahead), read through git's read-only commands (ADR 0003).
+// `next` never creates, merges or removes a worktree.
+//
+// `resume` is the Cockpit's Resume: core builds the command from the ended session's id and the
+// same context a launch uses (by name, a plain session, when no id is on record). A ticket with no
+// ended session is refused, as the Cockpit's row offers no Resume there; when nothing is running on
+// it, `resume` says so and offers the relaunch the Cockpit offers in its place.
 //
 // Add --implement to a launch to start the session on /implement <ticket URL> instead of the
 // wayfinder form; everything else on the command stays core's Work ticket command.
@@ -43,11 +52,14 @@ import {
   readRegistry,
   readSnapshot,
   readStatusEvents,
+  readWorktreesPromise,
   renderCommand,
+  resumeEnded,
   sessionsOf,
   sessionText,
   sessionView,
   workTicket,
+  worktreeText,
 } from '../packages/core/dist/index.mjs'
 
 const OWNER = 'dbarjs'
@@ -88,6 +100,13 @@ const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 // from the terminal, and the events file those hooks append to (`.scratch` is gitignored).
 const PLUGIN_PATH = join(REPO_ROOT, 'packages', 'vscode', 'claude-plugin')
 const EVENTS_FILE = join(REPO_ROOT, '.scratch', 'hero-synergy-events.jsonl')
+// What core's builders take beyond a ticket, the same for a launch and a resume.
+const LAUNCH_CONTEXT = {
+  repoRoot: REPO_ROOT,
+  tracker: 'github',
+  pluginPath: PLUGIN_PATH,
+  eventsFile: EVENTS_FILE,
+}
 const issueUrl = (number) => `https://github.com/${OWNER}/${REPO}/issues/${number}`
 
 function run(command, args) {
@@ -303,31 +322,9 @@ async function discoverCommands(needs) {
   return commands
 }
 
-async function launch(ticket, { implement }) {
-  const commands = await discoverCommands([implement ? IMPLEMENT : WAYFINDER])
-  const context = {
-    repoRoot: REPO_ROOT,
-    tracker: 'github',
-    pluginPath: PLUGIN_PATH,
-    eventsFile: EVENTS_FILE,
-  }
-  const built = workTicket(
-    context,
-    { wayfinder: commands[WAYFINDER], toSpec: commands[TO_SPEC] },
-    {
-      map: { ref: { tracker: 'github', url: issueUrl(ticket.parent) } },
-      ticket: {
-        number: ticket.number,
-        title: ticket.title,
-        ref: { tracker: 'github', url: issueUrl(ticket.number) },
-      },
-    },
-  )
-  // The skill line is the builder's last word; the implement form swaps it and nothing else.
-  const argv = implement
-    ? [...built.argv.slice(0, -1), `${commands[IMPLEMENT]} ${issueUrl(ticket.number)}`]
-    : built.argv
-  const args = [...LAUNCH_FLAGS, ...argv.slice(1)]
+// Prints a core `Launch`, then runs it: the one tail of a launch and of a resume.
+function start(built) {
+  const args = [...LAUNCH_FLAGS, ...built.argv.slice(1)]
   if (built.envLine) console.log(built.envLine)
   console.log(renderCommand([LAUNCHER, ...args]))
   console.log()
@@ -343,14 +340,43 @@ async function launch(ticket, { implement }) {
   process.exit(result.status ?? 1)
 }
 
+async function launch(ticket, { implement }) {
+  const commands = await discoverCommands([implement ? IMPLEMENT : WAYFINDER])
+  const built = workTicket(
+    LAUNCH_CONTEXT,
+    { wayfinder: commands[WAYFINDER], toSpec: commands[TO_SPEC] },
+    {
+      map: { ref: { tracker: 'github', url: issueUrl(ticket.parent) } },
+      ticket: {
+        number: ticket.number,
+        title: ticket.title,
+        ref: { tracker: 'github', url: issueUrl(ticket.number) },
+      },
+    },
+  )
+  // The skill line is the builder's last word; the implement form swaps it and nothing else.
+  const argv = implement
+    ? [...built.argv.slice(0, -1), `${commands[IMPLEMENT]} ${issueUrl(ticket.number)}`]
+    : built.argv
+  return start({ ...built, argv })
+}
+
+// Under a ticket whose worktree exists: where it is, its branch, and what it holds that is not on
+// `main`, as core words it for the Focus pane. Read through core's read-only git reads.
 async function list() {
   const parents = annotate(await readParents(), readSessions())
+  const worktrees = await readWorktreesPromise(
+    REPO_ROOT,
+    parents.flatMap((parent) => parent.tickets.map((t) => t.number)),
+  )
   parents.forEach((parent, i) => {
     if (i > 0) console.log()
     console.log(`#${parent.number} ${parent.title}`)
     for (const t of parent.tickets) {
       const notes = t.notes.length ? `  (${t.notes.join(', ')})` : ''
       console.log(`  #${t.number} ${t.title}${notes}`)
+      const worktree = worktrees.get(t.number)
+      if (worktree) console.log(`      worktree ${worktree.path} · ${worktreeText(worktree)}`)
     }
   })
 }
@@ -383,15 +409,65 @@ async function launchNext(options) {
   return launch(next, options)
 }
 
+// The Cockpit's Resume, for a ticket whose session ended. The id comes from the status events or
+// the registry the way the Focus pane reads it; core picks by id, with the plugin and env set
+// again, or by name, a plain session, when no id is on record.
+function resumeNumber(number) {
+  const state = readSessions().get(number)
+  if (state?.kind !== 'ended') return refuseResume(number, state)
+  const { title } = readTicket(number)
+  const resuming = resumeEnded(LAUNCH_CONTEXT, { number, title }, state.sessionId)
+  if (resuming.by === 'name')
+    console.error(
+      `warning: no session id is on record for #${number}; resuming by name, as a plain session without the status plugin`,
+    )
+  return start(resuming.launch)
+}
+
+// The Cockpit's row offers Resume only on an ended session. A session still running gets no Action
+// there; with none running the Cockpit relaunches (Work ticket, or Launch fresh on a claimed
+// ticket) and `next <number>` is that relaunch.
+function refuseResume(number, state) {
+  if (isRunning(state)) {
+    const session = sessionText(sessionView(state), Date.now())
+    console.error(
+      `#${number} has no ended session to resume: its session is still running (${session})`,
+    )
+  } else {
+    console.error(
+      `#${number} has no ended session to resume: no session of it is on record in the status events or the registry`,
+    )
+    console.error(
+      `the Cockpit relaunches it instead; to do the same: node scripts/next.mjs ${number}`,
+    )
+  }
+  process.exit(1)
+}
+
+const USAGE = 'usage: node scripts/next.mjs [--list | resume <number> | [--implement] [<number>]]'
+
+const ticketNumber = (arg) => {
+  const number = Number(arg)
+  return Number.isInteger(number) && number > 0 ? number : null
+}
+
 async function main(argv) {
   const implement = argv.includes('--implement')
   const rest = argv.filter((arg) => arg !== '--implement')
   const [arg] = rest
   if (arg === '--list') return list()
   if (arg === undefined) return launchNext({ implement })
-  const number = Number(arg)
-  if (rest.length > 1 || !Number.isInteger(number) || number <= 0) {
-    console.error('usage: node scripts/next.mjs [--list | [--implement] [<number>]]')
+  if (arg === 'resume') {
+    const number = ticketNumber(rest[1])
+    if (implement || rest.length !== 2 || number === null) {
+      console.error(USAGE)
+      process.exit(2)
+    }
+    return resumeNumber(number)
+  }
+  const number = ticketNumber(arg)
+  if (rest.length > 1 || number === null) {
+    console.error(USAGE)
     process.exit(2)
   }
   return launchNumber(number, { implement })

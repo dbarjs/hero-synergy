@@ -9,7 +9,13 @@ import status12 from '../../fixtures/process/git-status-worktree-12.json' with {
 import status13 from '../../fixtures/process/git-status-worktree-13.json' with { type: 'json' }
 import status14 from '../../fixtures/process/git-status-worktree-14.json' with { type: 'json' }
 import { type ProcessRecording, type ProcessRequest, ProcessRunner } from '../process-runner.ts'
-import { parseWorktreeList, readWorktrees, ticketOfBranch } from './worktrees.ts'
+import {
+  parseWorktreeList,
+  readWorktrees,
+  readWorktreesPromise,
+  ticketOfBranch,
+  worktreeText,
+} from './worktrees.ts'
 
 const recordings: ReadonlyArray<ProcessRecording> = [
   listing,
@@ -96,5 +102,26 @@ describe('readWorktrees over the replay runner', () => {
     expect((await read([12], []).states).size).toBe(0)
     const noLog = await read([14], [listing, status14]).states
     expect(noLog.get(14)).toMatchObject({ uncommitted: 0, ahead: null })
+  })
+})
+
+describe('readWorktreesPromise', () => {
+  test('settles with no worktrees where git cannot list them', async () => {
+    expect((await readWorktreesPromise('/', [12])).size).toBe(0)
+  })
+})
+
+describe('worktreeText', () => {
+  test.each([
+    [{ branch: 'worktree-12', uncommitted: 0, ahead: 0 }, 'worktree-12 · clean'],
+    [{ branch: 'worktree-13', uncommitted: 2, ahead: 0 }, 'worktree-13 · 2 uncommitted files'],
+    [{ branch: 'worktree-14', uncommitted: 0, ahead: 2 }, 'worktree-14 · 2 commits not on main'],
+    [
+      { branch: 'worktree-15', uncommitted: 1, ahead: 1 },
+      'worktree-15 · 1 uncommitted file · 1 commit not on main',
+    ],
+    [{ branch: 'worktree-16', uncommitted: 0, ahead: null }, 'worktree-16 · clean'],
+  ])('%j reads %s', (state, text) => {
+    expect(worktreeText(state)).toBe(text)
   })
 })
