@@ -40,6 +40,8 @@ describe('session state', () => {
         registry: null,
         adopted: false,
         duplicates: 0,
+        startedAt: 1,
+        name: null,
       }),
     ).toBe(false)
   })

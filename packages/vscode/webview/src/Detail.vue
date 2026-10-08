@@ -118,6 +118,10 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
         <dt>Claim</dt>
         <dd>{{ view.detail.claim === null ? 'unclaimed' : view.detail.claim.join(', ') }}</dd>
       </div>
+      <div v-if="view.detail.disagreement" class="fact disagreement">
+        <dt>Tracker</dt>
+        <dd :class="view.detail.disagreement.level">{{ view.detail.disagreement.text }}</dd>
+      </div>
       <div v-if="view.detail.session.kind !== 'none'" class="fact session">
         <dt>Session</dt>
         <dd>
@@ -526,5 +530,8 @@ h3 {
   .neighbourhood {
     grid-template-columns: 1fr;
   }
+}
+.disagreement .warning {
+  color: var(--vscode-editorWarning-foreground);
 }
 </style>

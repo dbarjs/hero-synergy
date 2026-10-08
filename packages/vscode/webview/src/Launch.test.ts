@@ -38,6 +38,8 @@ const live = (status: SessionStatus | null = null): SessionState => ({
   registry: null,
   adopted: false,
   duplicates: 0,
+  startedAt: 0,
+  name: null,
 })
 const ended = (detail: string): SessionState => ({
   ...BASE,
@@ -57,6 +59,7 @@ const launchable = (sessions: Record<string, SessionState> = {}): Launching => (
   userInvoked: 3,
   pluginPath: '/ext/claude-plugin',
   eventsFile: '/storage/events/repo.jsonl',
+  me: null,
 })
 
 const render = (launching: Launching, selected: string | null = null): VueWrapper =>

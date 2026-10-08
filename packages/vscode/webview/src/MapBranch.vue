@@ -3,6 +3,7 @@ import type { ActionId, Focus, MapNode, MapSection, TicketRow } from '../../src/
 import { ageSince } from './age.ts'
 import FocusPane from './FocusPane.vue'
 import Row from './Row.vue'
+import RowSession from './RowSession.vue'
 
 /** One map and what unfolds under it, drawn from its node. */
 const props = defineProps<{
@@ -171,10 +172,20 @@ const takeableText = (map: MapNode): string =>
         >
           ended · {{ ticket.session.detail }}
         </span>
+        <span
+          v-if="ticket.disagreement"
+          class="disagreement"
+          :class="ticket.disagreement.level"
+          :title="ticket.disagreement.text"
+        >
+          {{ ticket.disagreement.text }}
+        </span>
         <span v-if="ticket.place === 'blocked'" class="waits">
           waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
         </span>
-        <span v-if="ticket.place === 'claimed'" class="claimed">claimed</span>
+        <span v-if="ticket.place === 'claimed' && ticket.disagreement === null" class="claimed">
+          claimed
+        </span>
         <span v-if="ticket.next" class="next">next</span>
         <span v-if="ticket.mode" class="mode">{{ ticket.mode }}</span>
       </Row>
@@ -228,6 +239,9 @@ const takeableText = (map: MapNode): string =>
         @activate="emit('toggle', map.decisions.key, !map.decisions.expanded)"
         @open-detail="emit('openDetail', map.focusKey, 'decisions')"
       >
+        <span v-if="map.decisions.wrappingUp > 0" class="disagreement note">
+          {{ map.decisions.wrappingUp }} wrapping up
+        </span>
         <span class="count">{{ map.decisions.entries.length }}</span>
       </Row>
       <template v-if="map.decisions.expanded">
@@ -244,7 +258,20 @@ const takeableText = (map: MapNode): string =>
             opens-detail
             @activate="entry.key !== null && emit('select', entry.key)"
             @open-detail="entry.key !== null && emit('openDetail', entry.key, null)"
-          />
+          >
+            <RowSession
+              :session="entry.session"
+              @focus-terminal="entry.key !== null && emit('focusTerminal', entry.key)"
+            />
+            <span
+              v-if="entry.disagreement"
+              class="disagreement"
+              :class="entry.disagreement.level"
+              :title="entry.disagreement.text"
+            >
+              {{ entry.disagreement.text }}
+            </span>
+          </Row>
           <FocusPane
             v-if="selection && isSelected(entry.key)"
             :focus="selection"
@@ -300,6 +327,12 @@ const takeableText = (map: MapNode): string =>
   color: var(--vscode-descriptionForeground);
 }
 .duplicate {
+  color: var(--vscode-editorWarning-foreground);
+}
+.disagreement {
+  color: var(--vscode-descriptionForeground);
+}
+.disagreement.warning {
   color: var(--vscode-editorWarning-foreground);
 }
 .session.needs {

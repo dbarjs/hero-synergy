@@ -43,6 +43,8 @@ export interface Launching {
   readonly userInvoked: number | null
   readonly pluginPath: string
   readonly eventsFile: string
+  /** The GitHub login of the person at this machine, to tell their claim from someone else's; null when not known. */
+  readonly me: string | null
 }
 
 /** Nothing resolved and nothing running: what a Tree shows before the first collect finds out. */
@@ -55,6 +57,7 @@ export const NOT_LAUNCHING: Launching = {
   userInvoked: null,
   pluginPath: '',
   eventsFile: '',
+  me: null,
 }
 
 const INSTALL_HINT =

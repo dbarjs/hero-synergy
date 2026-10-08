@@ -5,6 +5,7 @@ import type { ActionId, MapSection, ViewModel } from '../../src/protocol.ts'
 import FocusPane from './FocusPane.vue'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
+import RowSession from './RowSession.vue'
 import StartActions from './StartActions.vue'
 
 /** The Tree: the maps in the order the host sent them, the finished ones folded at the bottom. */
@@ -131,6 +132,21 @@ const toggle = (key: string, expanded: boolean): void => {
       @focus-terminal="(key) => emit('focusTerminal', key)"
       @copy="(key, action) => emit('copy', key, action)"
     />
+    <template v-if="viewModel.unlisted">
+      <Row :depth="0" icon="terminal" label="Sessions without a ticket in view" muted>
+        <span class="count">{{ viewModel.unlisted.length }}</span>
+      </Row>
+      <Row
+        v-for="row in viewModel.unlisted"
+        :key="row.key"
+        class="unlisted"
+        :depth="1"
+        :number="row.number"
+        :label="row.title ?? 'session'"
+      >
+        <RowSession :session="row.session" @focus-terminal="emit('focusTerminal', row.key)" />
+      </Row>
+    </template>
     <template v-if="viewModel.unmapped">
       <Row
         :depth="0"

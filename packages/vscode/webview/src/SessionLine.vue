@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { SessionView } from '../../src/protocol.ts'
+import type { SessionView } from '@hero-synergy/core'
 import { ageSince } from './age.ts'
 
 /**

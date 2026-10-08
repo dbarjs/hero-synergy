@@ -6,6 +6,17 @@ import type { Mode, SessionView, TicketType } from '@hero-synergy/core'
  * host validates what arrives from the webview in `messages.ts`.
  */
 
+/**
+ * A situation where the tracker and the session side disagree, named and never overridden. A
+ * `note` is what is expected to settle at the next refresh; a `warning` is a disagreement that
+ * stands until someone acts.
+ */
+export interface DisagreementView {
+  readonly kind: 'claim-pending' | 'unclaimed' | 'claimed-by-other' | 'wrapping-up'
+  readonly text: string
+  readonly level: 'note' | 'warning'
+}
+
 /** Which Action a button runs; the host looks it up among the Actions of the row it was pressed on. */
 export type ActionId =
   | 'work-ticket'
@@ -105,6 +116,8 @@ export interface TicketRow {
   /** The blockers still open; empty unless the ticket is blocked. */
   readonly waitsOn: ReadonlyArray<BlockerView>
   readonly session: SessionView
+  /** What the tracker and the session disagree about on this row; null when they agree. */
+  readonly disagreement: DisagreementView | null
   /** The Action ▶ runs, the first of the row's context; null when the context offers none. */
   readonly action: ActionView | null
   /** The loud messages the ⚠ shows on hover; empty when the row is unmarked. */
@@ -126,6 +139,9 @@ export interface DecisionRow {
   readonly number: number | null
   readonly title: string
   readonly gist: string
+  /** The ticket's session: a closed ticket whose session is live is wrapping up and keeps its status. */
+  readonly session: SessionView
+  readonly disagreement: DisagreementView | null
 }
 
 /** One patch of the map's Not yet specified. */
@@ -139,6 +155,21 @@ export interface Fold<Entry> {
   readonly key: string
   readonly expanded: boolean
   readonly entries: ReadonlyArray<Entry>
+}
+
+/** The Decisions fold, with how many of its tickets are wrapping up, for when it is closed. */
+export interface DecisionFold extends Fold<DecisionRow> {
+  readonly wrappingUp: number
+}
+
+/** A live session whose `#number` matches no ticket in view, or its ended record. */
+export interface UnlistedRow {
+  /** The key the session is held under, which focus terminal is sent. */
+  readonly key: string
+  readonly number: number
+  /** The session's name without its `#number`; null when only the number is known. */
+  readonly title: string | null
+  readonly session: SessionView
 }
 
 /** Why the last collect failed, and the fix when there is one. */
@@ -171,7 +202,7 @@ export interface MapNode {
   /** The open tickets: claimed, then the frontier, then blocked. */
   readonly tickets: ReadonlyArray<TicketRow>
   readonly fog: Fold<FogRow>
-  readonly decisions: Fold<DecisionRow>
+  readonly decisions: DecisionFold
   /** The ⚠ tooltip when the map or any of its tickets has a loud warning, with counts; else null. */
   readonly loud: string | null
 }
@@ -199,6 +230,7 @@ export type Focus =
       /** The issue's URL on GitHub; null on a local tracker, which opens a file. */
       readonly url: string | null
       readonly session: SessionView
+      readonly disagreement: DisagreementView | null
       /** The Actions of the ticket's context, first the one ▶ runs; empty when it offers none. */
       readonly actions: ReadonlyArray<ActionView>
       readonly drift: DriftSummary | null
@@ -252,6 +284,8 @@ export type ViewModel =
       readonly start: Start
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
+      /** Sessions with no ticket in view, one row at the repo level; null when there are none. */
+      readonly unlisted: ReadonlyArray<UnlistedRow> | null
       /** The tickets that belong to no map, folded above Finished; null when there are none. */
       readonly unmapped: Fold<UnmappedRow> | null
       readonly finished: FinishedFold | null
@@ -316,6 +350,7 @@ export type Detail =
       /** The tickets of the map that wait on it. */
       readonly clearsWayFor: ReadonlyArray<NeighbourView>
       readonly session: SessionView
+      readonly disagreement: DisagreementView | null
       /** The Actions of the ticket's context, first the one ▶ runs. */
       readonly actions: ReadonlyArray<ActionView>
       /** The Drift section; empty hides it. */

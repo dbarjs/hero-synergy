@@ -52,6 +52,8 @@ interface Common {
 export interface Listed {
   readonly sessionId: string
   readonly status: SessionStatus | null
+  /** The session's name as the registry lists it, `#<number> <title>` for a ticket's. */
+  readonly name: string | null
 }
 
 /** The registry's word for an entry, in the Cockpit's words; null for a status word Claude Code added after this reader. */
@@ -59,6 +61,7 @@ export function listedOf(entry: RegistryEntry): Listed {
   const word = registryStatusWord(entry)
   return {
     sessionId: entry.sessionId,
+    name: entry.name,
     status:
       word === 'working'
         ? 'working'
@@ -85,6 +88,10 @@ export type SessionState =
       readonly status: SessionStatus | null
       /** Epoch milliseconds of the last status event. */
       readonly since: number
+      /** Epoch milliseconds the session went live; a `compact` or `resume` start of the same session keeps it. */
+      readonly startedAt: number
+      /** The name the registry gave it; null until the registry has listed it. */
+      readonly name: string | null
       /** What the registry says now; null while it lists no such session. */
       readonly registry: { readonly status: SessionStatus | null; readonly since: number } | null
       /** Whether only the registry knows this session: no terminal of ours and no event of its own. */
@@ -121,6 +128,8 @@ export type SessionInput =
     }
   /** The registry reports the session busy. */
   | { readonly type: 'busy' }
+  /** A session with no ticket in view is no longer listed: it ends, and the record stays. */
+  | { readonly type: 'vanished'; readonly at: number }
   /** A read of the registry: the live sessions whose name starts with this ticket's number, none when it lists none. */
   | { readonly type: 'registry'; readonly listed: ReadonlyArray<Listed>; readonly at: number }
 
@@ -181,6 +190,8 @@ const startedBy = (
     terminal: state?.kind === 'ended' || state === undefined ? null : state.terminal,
     status: null,
     since: at,
+    startedAt: at,
+    name: state?.kind === 'live' ? state.name : null,
     registry: state?.kind === 'live' ? state.registry : null,
     adopted: false,
     duplicates: state?.kind === 'live' ? state.duplicates : 0,
@@ -286,6 +297,8 @@ const onRegistry = (
       terminal: state?.kind === 'starting' ? state.terminal : null,
       status: null,
       since: at,
+      startedAt: at,
+      name: chosen.name,
       registry: { status: chosen.status, since: at },
       adopted: state?.kind !== 'starting',
       duplicates,
@@ -297,6 +310,7 @@ const onRegistry = (
   return {
     ...state,
     sessionId: chosen.sessionId,
+    name: chosen.name ?? state.name,
     status:
       chosen.status !== null && chosen.status !== 'waiting' ? clearFailed(state) : state.status,
     registry: same ? state.registry : { status: chosen.status, since: at },
@@ -348,6 +362,18 @@ export function reduceSession(
       return state?.kind === 'live' ? { ...state, status: 'working' } : state
     case 'registry':
       return onRegistry(state, input.listed, input.at)
+    case 'vanished':
+      return state?.kind === 'live'
+        ? {
+            kind: 'ended',
+            terminal: state.terminal,
+            detail: 'process gone',
+            known: false,
+            since: input.at,
+            sessionId: state.sessionId,
+            finished: withFinished(state, state.sessionId),
+          }
+        : state
     case 'closed': {
       if (state === undefined) return state
       if (state.kind === 'ended') {
@@ -383,6 +409,20 @@ export function afterReload(state: SessionState, at: number): SessionState {
     finished: state.finished,
   }
 }
+
+/**
+ * Whether a session left live between two states of a ticket: it ended or was forgotten, or the
+ * registry stopped listing a live one. Each is a cause for the tracker to be read again.
+ */
+export const sessionLeft = (
+  before: SessionState | undefined,
+  after: SessionState | undefined,
+): boolean =>
+  (isRunning(before) && !isRunning(after)) ||
+  (before?.kind === 'live' &&
+    before.registry !== null &&
+    after?.kind === 'live' &&
+    after.registry === null)
 
 /** Whether a terminal of the Cockpit is running on the ticket, so ▶ is not offered. */
 export const isRunning = (state: SessionState | undefined): boolean =>

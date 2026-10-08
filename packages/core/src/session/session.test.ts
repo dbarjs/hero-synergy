@@ -337,7 +337,7 @@ describe('what the Tree is told', () => {
 
 const listed = (sessionId: string, status: Listed['status'], at = 400): SessionInput => ({
   type: 'registry',
-  listed: [{ sessionId, status }],
+  listed: [{ sessionId, status, name: null }],
   at,
 })
 const unlisted = (at = 500): SessionInput => ({ type: 'registry', listed: [], at })
@@ -456,8 +456,8 @@ describe('the registry as the first source of liveness', () => {
       {
         type: 'registry',
         listed: [
-          { sessionId: 'B', status: 'working' },
-          { sessionId: 'A', status: 'waiting' },
+          { sessionId: 'B', status: 'working', name: null },
+          { sessionId: 'A', status: 'waiting', name: null },
         ],
         at: 400,
       },
@@ -472,9 +472,9 @@ describe('the registry as the first source of liveness', () => {
         reduceSession(state, {
           type: 'registry',
           listed: [
-            { sessionId: 'A', status: 'waiting' },
-            { sessionId: 'B', status: 'waiting' },
-            { sessionId: 'C', status: 'waiting' },
+            { sessionId: 'A', status: 'waiting', name: null },
+            { sessionId: 'B', status: 'waiting', name: null },
+            { sessionId: 'C', status: 'waiting', name: null },
           ],
           at: 450,
         }),
@@ -513,7 +513,7 @@ describe('the sessions a reader without a terminal sees', () => {
   })
 
   it('brings a session the registry lists back to live, with the registry word', () => {
-    const listed = new Map([[68, [{ sessionId: 'a', status: 'waiting' as const }]]])
+    const listed = new Map([[68, [{ sessionId: 'a', status: 'waiting' as const, name: null }]]])
     const sessions = sessionsOf([at('SessionStart', 'a', '68', 100, 'startup')], listed, 1000)
     expect(sessionView(sessions.get(68))).toMatchObject({
       kind: 'live',
