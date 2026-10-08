@@ -26,13 +26,14 @@ const age = computed(() =>
     <template v-else-if="session.kind === 'live'">
       <span class="word" :class="{ needs: session.needsYou }">{{ session.status ?? 'live' }}</span>
       <span class="age">{{ age }}</span>
+      <span v-if="session.warning !== null" class="warning">{{ session.warning }}</span>
     </template>
     <template v-else>
       <span class="word">{{ `ended: ${session.detail}` }}</span>
       <span class="age">{{ age }}</span>
     </template>
     <button
-      v-if="session.kind !== 'ended'"
+      v-if="session.kind === 'starting' || (session.kind === 'live' && session.focusable)"
       type="button"
       class="link"
       @click="emit('focusTerminal')"
@@ -44,6 +45,10 @@ const age = computed(() =>
 
 <style scoped>
 .hint {
+  display: block;
+  color: var(--vscode-editorWarning-foreground);
+}
+.warning {
   display: block;
   color: var(--vscode-editorWarning-foreground);
 }

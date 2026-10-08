@@ -26,6 +26,8 @@ import {
   type HostEnvironmentShape,
   Opener,
   Palette,
+  type RegistryWatcherRecorder,
+  RegistryWatcher,
   type SkillChoice,
   Storage,
   type TerminalRecorder,
@@ -86,6 +88,8 @@ interface Setup {
   readonly environment?: Partial<HostEnvironmentShape>
   /** What the Run skill… QuickPick chooses from the list it is shown; dismissed by default. */
   readonly choose?: (choices: ReadonlyArray<SkillChoice>) => string | null
+  /** Whether Claude Code's sessions directory exists to be watched; default yes. */
+  readonly registryDirectory?: boolean
 }
 
 /** Runs `body` against a Cockpit on the fixture workspace; every layer is in memory. */
@@ -112,6 +116,7 @@ const withCockpit = <A>(
       picks: Array<{ title: string; choices: ReadonlyArray<SkillChoice> }>
       informed: string[]
     }
+    registry: RegistryWatcherRecorder
   }) => Effect.Effect<
     A,
     never,
@@ -120,6 +125,7 @@ const withCockpit = <A>(
 ) => {
   const terminals = Terminals.inMemory()
   const watcher = EventsWatcher.inMemory()
+  const registry = RegistryWatcher.inMemory(setup.registryDirectory ?? true)
   const copied: string[] = []
   const palette = { picks: [], informed: [] } as Parameters<typeof Palette.inMemory>[0]
   const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)], setup.delay)
@@ -134,6 +140,7 @@ const withCockpit = <A>(
     runner.layer,
     terminals.layer,
     watcher.layer,
+    registry.layer,
     Clipboard.inMemory(copied),
     Palette.inMemory(palette, setup.choose),
     HostEnvironment.inMemory(setup.environment),
@@ -167,6 +174,7 @@ const withCockpit = <A>(
       badges,
       watcher: watcher.recorder,
       palette,
+      registry: registry.recorder,
     })
   }).pipe(Effect.provide(layer))
 }
@@ -2287,6 +2295,269 @@ describe('the Cockpit controller empty states', () => {
           }
           yield* cockpit.refresh
           expect(idsOf(published.at(-1))).toEqual(['chart-map'])
+        }),
+    ),
+  )
+})
+
+describe('the Cockpit controller reading the registry', () => {
+  const ROW = 'map:3:ticket:4'
+  const AGENTS_ARGS = ['agents', '--json']
+  const agents = (entries: ReadonlyArray<Record<string, unknown>>): ProcessRecording => ({
+    command: CLAUDE,
+    args: AGENTS_ARGS,
+    stdout: JSON.stringify(entries),
+    stderr: '',
+    exitCode: 0,
+  })
+  const entry = (
+    name: string,
+    status: string,
+    extra: Record<string, unknown> = {},
+  ): Record<string, unknown> => ({
+    sessionId: `id-${name}`,
+    name,
+    status,
+    kind: 'interactive',
+    startedAt: 1,
+    ...extra,
+  })
+
+  /** The launchable workspace with a registry the test can change between reads. */
+  const withRegistry = (
+    initial: ReadonlyArray<Record<string, unknown>>,
+    body: (
+      context: Parameters<Parameters<typeof withCockpit<void>>[1]>[0] & {
+        listing: (entries: ReadonlyArray<Record<string, unknown>>) => void
+      },
+    ) => Effect.Effect<void, never, never>,
+  ) => {
+    const setup = launchable()
+    const recordings = [...setup.recordings!, agents(initial)]
+    const slot = recordings.length - 1
+    return withCockpit({ ...setup, recordings }, (context) =>
+      body({
+        ...context,
+        listing: (entries) => {
+          recordings[slot] = agents(entries)
+        },
+      }),
+    )
+  }
+
+  const flush = Effect.gen(function* () {
+    for (let i = 0; i < 20; i++) yield* Effect.yieldNow
+  })
+  const sessionOfKey = (published: ViewModel[], key: string) =>
+    ticketRowOf(published.at(-1), key)?.session
+
+  it.effect('makes a ticket live from a registry entry with no Cockpit terminal', () =>
+    withRegistry([entry('#4 Row density', 'busy')], ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.visible(true)
+        expect(sessionOfKey(published, ROW)).toMatchObject({
+          kind: 'live',
+          status: 'working',
+          needsYou: false,
+          focusable: false,
+          warning: null,
+        })
+        expect(terminals.opened).toEqual([])
+      }),
+    ),
+  )
+
+  it.effect('reads the registry once when the view is shown, even before the first collect', () =>
+    withRegistry([entry('#4 Row density', 'idle')], ({ cockpit, published, badges }) =>
+      Effect.gen(function* () {
+        yield* cockpit.visible(true)
+        expect(published).toEqual([])
+        yield* cockpit.show
+        expect(sessionOfKey(published, ROW)).toMatchObject({
+          status: 'waiting for you',
+          needsYou: true,
+        })
+        expect(badges.at(-1)).toBe(1)
+      }),
+    ),
+  )
+
+  it.effect('warns under the ticket when a second live session has its number', () =>
+    withRegistry(
+      [
+        entry('#4 Row density', 'busy', { startedAt: 1 }),
+        entry('#4 Row density-calm-otter', 'idle', { startedAt: 2 }),
+      ],
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.visible(true)
+          expect(sessionOfKey(published, ROW)).toMatchObject({
+            kind: 'live',
+            status: 'working',
+            warning: 'Another live session has this ticket’s number',
+          })
+        }),
+    ),
+  )
+
+  it.effect('leaves entries whose names carry no ticket number alone', () =>
+    withRegistry([entry('refactor the build', 'busy')], ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.visible(true)
+        expect(sessionOfKey(published, ROW)).toEqual({ kind: 'none' })
+      }),
+    ),
+  )
+
+  it.effect('reads again a second after the sessions directory changes, once for a burst', () =>
+    withRegistry(
+      [entry('#4 Row density', 'busy')],
+      ({ cockpit, published, registry, listing, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.visible(true)
+          const before = runs()
+          listing([entry('#4 Row density', 'idle')])
+          registry.change()
+          yield* TestClock.adjust('600 millis')
+          registry.change()
+          registry.change()
+          yield* TestClock.adjust('999 millis')
+          yield* flush
+          expect(runs()).toBe(before)
+          expect(sessionOfKey(published, ROW)).toMatchObject({ status: 'working' })
+          yield* TestClock.adjust('1 millis')
+          yield* flush
+          expect(runs()).toBe(before + 1)
+          expect(sessionOfKey(published, ROW)).toMatchObject({ status: 'waiting for you' })
+        }),
+    ),
+  )
+
+  it.effect('falls back to the last status event when the entry vanishes', () =>
+    withRegistry(
+      [entry('#1 Palette', 'idle')],
+      ({ cockpit, published, registry, listing, terminals, fs, watcher }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(terminals.opened).toHaveLength(1)
+          yield* cockpit.visible(true)
+          yield* fs
+            .writeFile(EVENTS, eventLine('1', 'SessionStart', 'id-#1 Palette', 'startup'))
+            .pipe(Effect.orDie)
+          watcher.change()
+          yield* flush
+          expect(sessionOfKey(published, PALETTE)).toMatchObject({ status: 'waiting for you' })
+          listing([])
+          registry.change()
+          yield* TestClock.adjust('1 second')
+          yield* flush
+          expect(sessionOfKey(published, PALETTE)).toMatchObject({ kind: 'live', status: null })
+        }),
+    ),
+  )
+
+  it.effect('forgets a hand-started session once the registry stops listing it', () =>
+    withRegistry([entry('#4 Row density', 'busy')], ({ cockpit, published, registry, listing }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.visible(true)
+        listing([])
+        registry.change()
+        yield* TestClock.adjust('1 second')
+        yield* flush
+        expect(sessionOfKey(published, ROW)).toEqual({ kind: 'none' })
+      }),
+    ),
+  )
+
+  it.effect('stops watching while hidden, spawns nothing, and reads once when shown again', () =>
+    withRegistry(
+      [entry('#4 Row density', 'busy')],
+      ({ cockpit, published, registry, listing, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.visible(true)
+          expect(registry.watching()).toBe(true)
+          yield* cockpit.visible(false)
+          expect(registry.watching()).toBe(false)
+          const hidden = runs()
+          listing([entry('#4 Row density', 'idle')])
+          registry.change()
+          yield* TestClock.adjust('10 seconds')
+          yield* flush
+          expect(runs()).toBe(hidden)
+          expect(sessionOfKey(published, ROW)).toMatchObject({ status: 'working' })
+          yield* cockpit.visible(true)
+          expect(runs()).toBe(hidden + 1)
+          expect(registry.watching()).toBe(true)
+          expect(sessionOfKey(published, ROW)).toMatchObject({ status: 'waiting for you' })
+        }),
+    ),
+  )
+
+  it.effect('drops a read still waiting out its debounce when the view is hidden', () =>
+    withRegistry([entry('#4 Row density', 'busy')], ({ cockpit, registry, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.visible(true)
+        registry.change()
+        yield* TestClock.adjust('500 millis')
+        const before = runs()
+        yield* cockpit.visible(false)
+        yield* TestClock.adjust('5 seconds')
+        yield* flush
+        expect(runs()).toBe(before)
+      }),
+    ),
+  )
+
+  it.effect(
+    'says nothing about a registry it cannot read and keeps the sessions as they are',
+    () => {
+      const setup = launchable()
+      const recordings = [...setup.recordings!, { ...agents([]), stdout: 'not json' }]
+      return withCockpit({ ...setup, recordings }, ({ cockpit, published, logged }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          yield* cockpit.visible(true)
+          expect(logged.some((line) => line.startsWith('registry: registry-unreadable'))).toBe(true)
+          expect(sessionOfKey(published, PALETTE)).toMatchObject({ kind: 'starting' })
+        }),
+      )
+    },
+  )
+
+  it.effect('reads nothing when claude cannot be found', () =>
+    withCockpit({}, ({ cockpit, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const before = runs()
+        yield* cockpit.visible(true)
+        expect(runs()).toBe(before)
+      }),
+    ),
+  )
+
+  it.effect('still reads the registry where there is no sessions directory to watch', () =>
+    withCockpit(
+      {
+        ...launchable(),
+        recordings: [...launchable().recordings!, agents([])],
+        registryDirectory: false,
+      },
+      ({ cockpit, registry, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const before = runs()
+          yield* cockpit.visible(true)
+          expect(registry.watching()).toBe(false)
+          expect(runs()).toBe(before + 1)
         }),
     ),
   )

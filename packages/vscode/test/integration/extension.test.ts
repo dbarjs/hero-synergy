@@ -66,6 +66,9 @@ describe('hero-synergy in the extension host', () => {
     await until('the view to resolve', () => api().state().viewResolved)
     await until('the view model to go out', () => api().state().viewModel?.kind === 'maps')
 
+    // Showing the view also reads the registry once, after the first snapshot names the repo.
+    await until('the registry to be read', () => api().state().spawnedProcesses >= 3)
+
     const { viewModel, spawnedProcesses } = api().state()
     assert.equal(viewModel?.kind, 'maps')
     if (viewModel?.kind !== 'maps') return
@@ -79,8 +82,9 @@ describe('hero-synergy in the extension host', () => {
       ['#1 Archive search'],
     )
     // `git rev-parse` for the repo root, then the stub `claude plugin list --json` for skill
-    // discovery; the remote is not needed on a local tracker.
-    assert.equal(spawnedProcesses, 2)
+    // discovery, then the stub `claude agents --json` for the registry; the remote is not needed
+    // on a local tracker.
+    assert.equal(spawnedProcesses, 3)
   })
 
   it('collects again on the Refresh command', async () => {

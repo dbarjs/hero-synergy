@@ -32,6 +32,8 @@ export function createWorkspace(parent) {
  * - `argv.txt`: one argument per line, after the program name;
  * - `env.txt`: `HERO_SYNERGY_TICKET`, then `HERO_SYNERGY_EVENTS`, one per line;
  * - `cwd.txt`: the directory it started in;
+ * - `registry.json`, written by the test and served as the output of `agents --json` (`[]` while
+ *   absent), the way Claude Code's registry lists live sessions;
  * - `script.txt`, written by the test before the session starts: one status event per line,
  *   `<delay in ms> <hook> [detail]`. The stub waits the delay, appends the line the status plugin
  *   would (`ticket`, `hook`, `session`, `detail`, `at`, `payload`) to `HERO_SYNERGY_EVENTS`, and
@@ -40,7 +42,7 @@ export function createWorkspace(parent) {
  * A node script, so the same stub runs wherever the tests do.
  *
  * @param {string} parent an existing or creatable directory the stub and its records go into
- * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string, scriptFile: string, writtenFile: string }}
+ * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string, scriptFile: string, writtenFile: string, registryFile: string }}
  */
 export function createClaudeStub(parent) {
   const bin = path.join(parent, 'bin')
@@ -51,6 +53,7 @@ export function createClaudeStub(parent) {
   const cwdFile = path.join(bin, 'cwd.txt')
   const scriptFile = path.join(bin, 'script.txt')
   const writtenFile = path.join(bin, 'written.txt')
+  const registryFile = path.join(bin, 'registry.json')
   writeFileSync(
     claude,
     [
@@ -59,6 +62,10 @@ export function createClaudeStub(parent) {
       `const args = process.argv.slice(2)`,
       `if (args[0] === 'plugin') {`,
       `  console.log('[]')`,
+      `  process.exit(0)`,
+      `}`,
+      `if (args[0] === 'agents') {`,
+      `  console.log(fs.existsSync(${JSON.stringify(registryFile)}) ? fs.readFileSync(${JSON.stringify(registryFile)}, 'utf8') : '[]')`,
       `  process.exit(0)`,
       `}`,
       `const ticket = process.env.HERO_SYNERGY_TICKET ?? ''`,
@@ -87,7 +94,7 @@ export function createClaudeStub(parent) {
     ].join('\n'),
     { mode: 0o755 },
   )
-  return { claude, argvFile, envFile, cwdFile, scriptFile, writtenFile }
+  return { claude, argvFile, envFile, cwdFile, scriptFile, writtenFile, registryFile }
 }
 
 /**

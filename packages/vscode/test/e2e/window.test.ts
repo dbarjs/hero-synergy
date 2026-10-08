@@ -38,6 +38,10 @@ let workspaceDir: string
 let argvFile: string
 let scriptFile: string
 let writtenFile: string
+// What the stub serves as `claude agents --json`, and the sessions directory whose changes tell the
+// window to read it (the window's Claude config directory is this scratch one).
+let registryFile: string
+let sessionsDir: string
 
 beforeAll(async () => {
   const executablePath = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
@@ -48,12 +52,16 @@ beforeAll(async () => {
   argvFile = launchable.argvFile
   scriptFile = launchable.scriptFile
   writtenFile = launchable.writtenFile
+  registryFile = launchable.registryFile
+  sessionsDir = path.join(scratch, 'claude-config', 'sessions')
+  mkdirSync(sessionsDir, { recursive: true })
   // The setting is machine-scoped: the window reads it from the user settings, not the repo.
   writeUserSettings(path.join(scratch, 'user-data'), {
     'heroSynergy.claude.path': launchable.claude,
   })
   app = await electron.launch({
     executablePath,
+    env: { ...process.env, CLAUDE_CONFIG_DIR: path.join(scratch, 'claude-config') },
     args: [
       `--extensionDevelopmentPath=${extensionDir}`,
       `--user-data-dir=${path.join(scratch, 'user-data')}`,
@@ -392,6 +400,69 @@ it('shows a session live, then ended "exited", as its status events arrive', asy
     .poll(() => tree().locator('.pane .session dd').innerText(), { timeout: 15_000 })
     .toMatch(/^ended: exited · \d+[smhd] ago$/)
   await expect.poll(() => ticket.locator('.play').count(), { timeout: 15_000 }).toBe(1)
+})
+
+/** Serves these entries as the registry and touches the sessions directory, as Claude Code does. */
+let registryWrites = 0
+const serveRegistry = (status: string, waitingFor?: string): void => {
+  const entry = {
+    pid: 4242,
+    cwd: workspaceDir,
+    kind: 'interactive',
+    startedAt: 1,
+    sessionId: 'hand-started',
+    name: '#4 Row density',
+    status,
+    ...(waitingFor === undefined ? {} : { waitingFor }),
+  }
+  writeFileSync(registryFile, JSON.stringify([entry]))
+  writeFileSync(path.join(sessionsDir, `4242.json`), JSON.stringify({ n: (registryWrites += 1) }))
+}
+
+it('shows a session nobody launched from the registry: working, waiting for you, needs approval', async () => {
+  onTestFailed(() => captureFailure('registry-status'))
+  const ticket = row('#4 Row density')
+  const sessionText = async () =>
+    (
+      (await ticket
+        .locator('.session')
+        .textContent()
+        .catch(() => '')) ?? ''
+    ).trim()
+  const badge = async () =>
+    (
+      (await page
+        .locator('.part.activitybar .badge[aria-label^="Hero Synergy"] .badge-content')
+        .textContent()
+        .catch(() => '')) ?? ''
+    ).trim()
+
+  // The script: busy, then idle, then waiting on a permission prompt; the stub is the registry.
+  serveRegistry('busy')
+  await expect
+    .poll(sessionText, { timeout: 30_000, interval: 250 })
+    .toMatch(/^working · \d+[smhd]$/)
+  expect(await badge()).toBe('')
+
+  serveRegistry('idle')
+  await expect
+    .poll(sessionText, { timeout: 30_000, interval: 250 })
+    .toMatch(/^waiting for you · \d+[smhd]$/)
+  await expect.poll(badge, { timeout: 15_000, interval: 250 }).toBe('1')
+
+  serveRegistry('waiting', 'permission prompt')
+  await expect
+    .poll(sessionText, { timeout: 30_000, interval: 250 })
+    .toMatch(/^needs approval · \d+[smhd]$/)
+
+  // No terminal of ours runs it, so there is none to focus; and ▶ is not offered over a live session.
+  expect(await ticket.locator('.focus-terminal').count()).toBe(0)
+
+  // The entry vanishes (the session exited): the ticket goes back to none and the badge clears.
+  writeFileSync(registryFile, '[]')
+  writeFileSync(path.join(sessionsDir, '4243.json'), '{}')
+  await expect.poll(() => ticket.locator('.session').count(), { timeout: 30_000 }).toBe(0)
+  await expect.poll(badge, { timeout: 15_000, interval: 250 }).toBe('')
 })
 
 it('reopens the Detail on the last selection after the window reloads', async () => {

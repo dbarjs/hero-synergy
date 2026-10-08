@@ -30,9 +30,18 @@ describe('session state', () => {
     expect(canLaunchFrom(undefined)).toBe(true)
     expect(canLaunchFrom(ended)).toBe(true)
     expect(canLaunchFrom({ ...ended, kind: 'starting', terminal: null, hint: false })).toBe(false)
-    expect(canLaunchFrom({ ...ended, kind: 'live', terminal: 4, status: null, since: 1 })).toBe(
-      false,
-    )
+    expect(
+      canLaunchFrom({
+        ...ended,
+        kind: 'live',
+        terminal: 4,
+        status: null,
+        since: 1,
+        registry: null,
+        adopted: false,
+        duplicates: 0,
+      }),
+    ).toBe(false)
   })
 
   it('tells the person how to install the wayfinder skill', () => {

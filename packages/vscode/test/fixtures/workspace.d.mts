@@ -6,6 +6,7 @@ export function createClaudeStub(parent: string): {
   cwdFile: string
   scriptFile: string
   writtenFile: string
+  registryFile: string
 }
 export function createLaunchableWorkspace(parent: string): {
   workspace: string
@@ -15,6 +16,7 @@ export function createLaunchableWorkspace(parent: string): {
   cwdFile: string
   scriptFile: string
   writtenFile: string
+  registryFile: string
 }
 export function writeUserSettings(userDataDir: string, settings: Record<string, unknown>): void
 export function createGitHubWorkspace(

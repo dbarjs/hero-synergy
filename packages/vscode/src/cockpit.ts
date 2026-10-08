@@ -14,6 +14,7 @@ import {
   readLocalTracker,
   type RepoTracker,
   readPluginList,
+  readRegistry,
   type ScoutError,
   type Snapshot,
   type StatusEvent,
@@ -43,6 +44,7 @@ import {
   ticketActions,
 } from './launch.ts'
 import { decodeWebviewMessage } from './messages.ts'
+import { groupByTicket } from './registry-sessions.ts'
 import { describeCollectFailure } from './notices.ts'
 import {
   type ActionId,
@@ -81,6 +83,7 @@ import {
   HostEnvironment,
   Opener,
   Palette,
+  RegistryWatcher,
   Storage,
   Terminals,
   WorkspaceFolders,
@@ -118,6 +121,9 @@ export interface CockpitOptions {
   readonly log: (line: string) => void
 }
 
+/** Changes under Claude Code's sessions directory settle this long before the registry is read. */
+export const REGISTRY_DEBOUNCE_MS = 1000
+
 /** A file under `.scratch` changes this long before the local tracker is read again. */
 export const SCRATCH_DEBOUNCE_MS = 1000
 
@@ -132,6 +138,11 @@ export interface Cockpit {
   readonly show: Effect.Effect<void>
   /** The window gained focus: an automatic trigger. */
   readonly focus: Effect.Effect<void>
+  /**
+   * Whether the Cockpit is on screen (the Tree or the Detail). While it is, the registry directory
+   * is watched and read; showing it reads the registry once, hiding it stops the watcher.
+   */
+  readonly visible: (visible: boolean) => Effect.Effect<void>
   /** A file under `.scratch` changed: one automatic collect after the debounce, on a local tracker only. */
   readonly scratchChanged: Effect.Effect<void>
   /** The Refresh button: ignores the gap, and joins a collect that is already running. */
@@ -272,6 +283,7 @@ export const makeCockpit = (
   | CollectProgress
   | Terminals
   | EventsWatcher
+  | RegistryWatcher
   | Clipboard
   | HostEnvironment
   | Palette
@@ -286,6 +298,9 @@ export const makeCockpit = (
     const cached = readCache(yield* storage.get(CACHE_KEY), yield* workspace.paths)
     const terminals = yield* Terminals
     const watcher = yield* EventsWatcher
+    const registryWatcher = yield* RegistryWatcher
+    // The watcher's callbacks run outside any fiber: they fork with this fiber's services, clock included.
+    const forkHere = Effect.runForkWith(yield* Effect.context<never>())
     const clipboard = yield* Clipboard
     const palette = yield* Palette
     const environment = yield* HostEnvironment
@@ -300,6 +315,13 @@ export const makeCockpit = (
     // One read of the events file at a time, so the watcher and the poll never read the same bytes twice.
     const reading = Semaphore.makeUnsafe(1)
     const polling = yield* Ref.make(false)
+    // The registry is read only while the Cockpit is on screen; the watcher is its trigger.
+    const onScreen = yield* Ref.make(false)
+    const stopRegistryWatch = yield* Ref.make<Effect.Effect<void> | null>(null)
+    const registryDebounce = yield* Ref.make<Fiber.Fiber<void> | null>(null)
+    const readingRegistry = Semaphore.makeUnsafe(1)
+    // A read that found no snapshot to match tickets against waits for the first one.
+    const registryPending = yield* Ref.make(false)
     // What the last discovery found: where `claude` is and the skills; null skills until it has run.
     const discovery = yield* Ref.make<{
       readonly claude: ClaudeResolution
@@ -558,8 +580,8 @@ export const makeCockpit = (
     /**
      * Starts reading the events file of a repo, once its root is known: the file is created before
      * it is watched, read in full once, compacted if it grew past the cap, then watched. What the
-     * file says is live is not confirmed by a terminal of this window (adopting the terminals that
-     * survived a reload comes with the registry), so it is shown as ended, "window closed".
+     * file says is live is not confirmed by a terminal of this window, so it is shown as ended,
+     * "window closed", until the registry lists the session again.
      */
     const startEvents = (repoRoot: string, announce: boolean): Effect.Effect<void> =>
       reading
@@ -596,6 +618,94 @@ export const makeCockpit = (
           }),
         )
         .pipe(Effect.andThen(announce ? publish : Effect.void))
+
+    /**
+     * One read of the registry through `claude agents --json`, matched to tickets by the leading
+     * `#<number>` of each name, whoever started the session. A session the registry no longer
+     * lists falls back to its last status event.
+     */
+    const refreshRegistry: Effect.Effect<void> = readingRegistry.withPermits(1)(
+      Effect.gen(function* () {
+        if (!(yield* Ref.get(onScreen))) return
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot') return yield* Ref.set(registryPending, true)
+        yield* Ref.set(registryPending, false)
+        const claude = yield* resolveNow
+        if (claude.kind === 'missing') return
+        const result = yield* runner
+          .run({
+            command: claude.claude.path,
+            args: ['agents', '--json'],
+            cwd: state.snapshot.repoRoot,
+          })
+          .pipe(
+            Effect.catch((error) => {
+              options.log(`claude agents --json failed: ${error.message}`)
+              return Effect.succeed(null)
+            }),
+          )
+        if (result === null) return
+        if (result.exitCode !== 0) {
+          options.log(`claude agents --json exited with ${result.exitCode ?? 'a timeout'}`)
+          return
+        }
+        const read = readRegistry(result.stdout)
+        for (const warning of read.warnings) {
+          options.log(`registry: ${warning.code}${warning.detail ? ` ${warning.detail}` : ''}`)
+        }
+        // A registry that cannot be read says nothing about the sessions: they keep their state.
+        if (read.warnings.some((warning) => warning.code === 'registry-unreadable')) return
+        const grouped = groupByTicket(read.value)
+        const before = yield* Ref.get(sessions)
+        const at = yield* Clock.currentTimeMillis
+        const numbers = new Map<string, number>()
+        for (const key of before.keys())
+          numbers.set(key, Number(key.slice(key.lastIndexOf(':') + 1)))
+        for (const number of grouped.keys()) {
+          const key = yield* keyOfTicket(String(number))
+          if (key !== null) numbers.set(key, number)
+        }
+        for (const [key, number] of numbers) {
+          yield* dispatch(key, { type: 'registry', listed: grouped.get(number) ?? [], at })
+        }
+        if ((yield* Ref.get(sessions)) !== before) yield* publish
+      }),
+    )
+
+    /** Something changed under the sessions directory: read the registry once it has been quiet. */
+    const registryChanged: Effect.Effect<void> = Effect.gen(function* () {
+      if (!(yield* Ref.get(onScreen))) return
+      const previous = yield* Ref.getAndSet(registryDebounce, null)
+      if (previous !== null) yield* Fiber.interrupt(previous)
+      const fiber = yield* Effect.forkDetach(
+        Effect.sleep(REGISTRY_DEBOUNCE_MS).pipe(
+          Effect.andThen(Ref.set(registryDebounce, null)),
+          Effect.andThen(refreshRegistry),
+        ),
+      )
+      yield* Ref.set(registryDebounce, fiber)
+    })
+
+    /** Watches the sessions directory while on screen; where it does not exist yet, the next focus tries again. */
+    const ensureRegistryWatch: Effect.Effect<void> = Effect.gen(function* () {
+      if (!(yield* Ref.get(onScreen)) || (yield* Ref.get(stopRegistryWatch)) !== null) return
+      const stop = yield* registryWatcher.watch(() => forkHere(registryChanged))
+      if (stop !== null) yield* Ref.set(stopRegistryWatch, stop)
+    })
+
+    const visible = (shown: boolean): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        if ((yield* Ref.getAndSet(onScreen, shown)) === shown) return
+        if (shown) {
+          yield* ensureRegistryWatch
+          yield* refreshRegistry
+          return
+        }
+        const stop = yield* Ref.getAndSet(stopRegistryWatch, null)
+        if (stop !== null) yield* stop
+        const pending = yield* Ref.getAndSet(registryDebounce, null)
+        if (pending !== null) yield* Fiber.interrupt(pending)
+      })
 
     const budgetOf = (rateLimit: RateLimit | null): RateBudget | null =>
       rateLimit === null
@@ -655,6 +765,7 @@ export const makeCockpit = (
       // The events file is read once the first snapshot names the repo, before the Tree shows it.
       if (loaded.kind === 'snapshot') yield* startEvents(loaded.snapshot.repoRoot, false)
       yield* publish
+      if (yield* Ref.get(registryPending)) yield* refreshRegistry
     })
 
     /** Runs the collect this call was admitted for, then the one queued behind it, one at a time. */
@@ -1028,7 +1139,8 @@ export const makeCockpit = (
       chartMap: chartMapCommand,
       runSkill: runSkillCommand,
       show: trigger('automatic'),
-      focus: trigger('automatic'),
+      focus: trigger('automatic').pipe(Effect.andThen(ensureRegistryWatch)),
+      visible,
       scratchChanged,
       refresh: trigger('button'),
       current,

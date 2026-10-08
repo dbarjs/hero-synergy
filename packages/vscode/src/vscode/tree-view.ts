@@ -10,6 +10,8 @@ export const REFRESH_COMMAND = 'heroSynergy.refresh'
 export interface TreeViewHandlers {
   /** The view was shown: on resolve, and each time it becomes visible again. */
   readonly onShown: () => void
+  /** The view is on screen or not, each time that changes. */
+  readonly onVisibility: (visible: boolean) => void
   /** A message from the webview, unvalidated. */
   readonly onMessage: (message: unknown) => void
 }
@@ -61,13 +63,18 @@ export function registerTreeView(
       const disposables = [
         view.webview.onDidReceiveMessage(handlers.onMessage),
         view.onDidChangeVisibility(() => {
+          handlers.onVisibility(view.visible)
           if (view.visible) handlers.onShown()
         }),
         view.onDidDispose(() => {
-          if (current === view) current = null
+          if (current === view) {
+            current = null
+            handlers.onVisibility(false)
+          }
           disposables.forEach((disposable) => disposable.dispose())
         }),
       ]
+      handlers.onVisibility(view.visible)
       handlers.onShown()
     },
   }

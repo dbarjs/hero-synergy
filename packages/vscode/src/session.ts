@@ -1,4 +1,4 @@
-import type { StatusEvent } from '@hero-synergy/core'
+import { type RegistryEntry, registryStatusWord, type StatusEvent } from '@hero-synergy/core'
 
 import type { SessionView } from './protocol.ts'
 import type { TerminalExit } from './services.ts'
@@ -21,6 +21,28 @@ interface Common {
   readonly finished: ReadonlyArray<string>
 }
 
+/** What the registry lists for one live session: its id and the status word it gives, null when the word is not known. */
+export interface Listed {
+  readonly sessionId: string
+  readonly status: SessionStatus | null
+}
+
+/** The registry's word for an entry, in the Cockpit's words; null for a status word Claude Code added after this reader. */
+export function listedOf(entry: RegistryEntry): Listed {
+  const word = registryStatusWord(entry)
+  return {
+    sessionId: entry.sessionId,
+    status:
+      word === 'working'
+        ? 'working'
+        : word === 'waiting-for-you'
+          ? 'waiting'
+          : word === 'needs-approval'
+            ? 'approval'
+            : null,
+  }
+}
+
 export type SessionState =
   /** A terminal exists (`terminal` is null in the instant before VS Code has created it), no `SessionStart` yet. */
   | (Common & {
@@ -32,9 +54,16 @@ export type SessionState =
   | (Common & {
       readonly kind: 'live'
       readonly terminal: number | null
+      /** The status the last status event gave. The registry's word, while it lists the session, comes first. */
       readonly status: SessionStatus | null
       /** Epoch milliseconds of the last status event. */
       readonly since: number
+      /** What the registry says now; null while it lists no such session. */
+      readonly registry: { readonly status: SessionStatus | null; readonly since: number } | null
+      /** Whether only the registry knows this session: no terminal of ours and no event of its own. */
+      readonly adopted: boolean
+      /** How many other live sessions carry this ticket's number. */
+      readonly duplicates: number
     })
   | (Common & {
       readonly kind: 'ended'
@@ -65,6 +94,8 @@ export type SessionInput =
     }
   /** The registry reports the session busy. */
   | { readonly type: 'busy' }
+  /** A read of the registry: the live sessions whose name starts with this ticket's number, none when it lists none. */
+  | { readonly type: 'registry'; readonly listed: ReadonlyArray<Listed>; readonly at: number }
 
 export const NO_STATUS_HINT =
   'no status yet, the session may be waiting at the trust dialog, open the terminal'
@@ -116,13 +147,16 @@ const startedBy = (
   const finished = state?.finished ?? NO_FINISHED
   if (state?.kind === 'live' && (event.session === null || event.session === state.sessionId)) {
     // `compact` and `resume` starts of the same session: the status stays, the age restarts.
-    return { ...state, since: at }
+    return { ...state, since: at, adopted: false }
   }
   return {
     kind: 'live',
     terminal: state?.kind === 'ended' || state === undefined ? null : state.terminal,
     status: null,
     since: at,
+    registry: state?.kind === 'live' ? state.registry : null,
+    adopted: false,
+    duplicates: state?.kind === 'live' ? state.duplicates : 0,
     sessionId,
     finished,
   }
@@ -198,6 +232,67 @@ const onEvent = (
   }
 }
 
+/**
+ * Registry first: while it lists a session its word is the status. A failure the events reported
+ * stays through the registry saying idle (a failed session sits idle), and ends with any other word.
+ * Ended is left alone for an id that ended: its entry lingers about a second after exit.
+ */
+const onRegistry = (
+  state: SessionState | undefined,
+  listed: ReadonlyArray<Listed>,
+  at: number,
+): SessionState | undefined => {
+  const finished = state?.finished ?? NO_FINISHED
+  const alive = listed.filter((entry) => !finished.includes(entry.sessionId))
+  if (alive.length === 0) {
+    if (state?.kind !== 'live') return state
+    if (state.adopted) return undefined
+    return state.registry === null && state.duplicates === 0
+      ? state
+      : { ...state, registry: null, duplicates: 0 }
+  }
+  const chosen = alive.find((entry) => entry.sessionId === state?.sessionId) ?? alive[0]!
+  const duplicates = alive.length - 1
+  if (state?.kind !== 'live') {
+    return {
+      kind: 'live',
+      terminal: state?.kind === 'starting' ? state.terminal : null,
+      status: null,
+      since: at,
+      registry: { status: chosen.status, since: at },
+      adopted: state?.kind !== 'starting',
+      duplicates,
+      sessionId: chosen.sessionId,
+      finished,
+    }
+  }
+  const same = state.registry !== null && state.registry.status === chosen.status
+  return {
+    ...state,
+    sessionId: chosen.sessionId,
+    status:
+      chosen.status !== null && chosen.status !== 'waiting' ? clearFailed(state) : state.status,
+    registry: same ? state.registry : { status: chosen.status, since: at },
+    duplicates,
+  }
+}
+
+const clearFailed = (state: { readonly status: SessionStatus | null }): SessionStatus | null =>
+  state.status === 'failed' ? null : state.status
+
+/** The status a live session shows and since when: the registry's word, else the last status event's. */
+export function shownStatus(state: Extract<SessionState, { kind: 'live' }>): {
+  readonly status: SessionStatus | null
+  readonly since: number
+} {
+  const listed = state.registry
+  if (listed === null || listed.status === null) return { status: state.status, since: state.since }
+  if (state.status === 'failed' && listed.status === 'waiting') {
+    return { status: 'failed', since: state.since }
+  }
+  return { status: listed.status, since: listed.since }
+}
+
 /** The next state of a ticket's session; undefined stays none. */
 export function reduceSession(
   state: SessionState | undefined,
@@ -224,6 +319,8 @@ export function reduceSession(
       return onEvent(state, input.event, input.at)
     case 'busy':
       return state?.kind === 'live' ? { ...state, status: 'working' } : state
+    case 'registry':
+      return onRegistry(state, input.listed, input.at)
     case 'closed': {
       if (state === undefined) return state
       if (state.kind === 'ended') {
@@ -240,7 +337,7 @@ export function reduceSession(
         known: input.exit.reason !== 'unknown' && input.exit.reason !== 'extension',
         since: input.at,
         sessionId: state.sessionId,
-        finished: state.finished,
+        finished: withFinished(state, state.sessionId),
       }
     }
   }
@@ -272,9 +369,18 @@ export const STATUS_WORDS: Readonly<Record<SessionStatus, string>> = {
 }
 
 /** Whether the session needs me: waiting for you, needs approval, failed. */
-export const needsYou = (state: SessionState | undefined): boolean =>
-  state?.kind === 'live' &&
-  (state.status === 'waiting' || state.status === 'approval' || state.status === 'failed')
+export const needsYou = (state: SessionState | undefined): boolean => {
+  if (state?.kind !== 'live') return false
+  const { status } = shownStatus(state)
+  return status === 'waiting' || status === 'approval' || status === 'failed'
+}
+
+const duplicateWarning = (duplicates: number): string | null =>
+  duplicates === 0
+    ? null
+    : duplicates === 1
+      ? 'Another live session has this ticket’s number'
+      : `${duplicates} other live sessions have this ticket’s number`
 
 /** What the Tree is sent for a ticket's session. */
 export function sessionView(state: SessionState | undefined): SessionView {
@@ -282,13 +388,17 @@ export function sessionView(state: SessionState | undefined): SessionView {
   switch (state.kind) {
     case 'starting':
       return { kind: 'starting', hint: state.hint ? NO_STATUS_HINT : null }
-    case 'live':
+    case 'live': {
+      const { status, since } = shownStatus(state)
       return {
         kind: 'live',
-        status: state.status === null ? null : STATUS_WORDS[state.status],
+        status: status === null ? null : STATUS_WORDS[status],
         needsYou: needsYou(state),
-        since: state.since,
+        since,
+        focusable: state.terminal !== null,
+        warning: duplicateWarning(state.duplicates),
       }
+    }
     case 'ended':
       return { kind: 'ended', detail: state.detail, since: state.since }
   }

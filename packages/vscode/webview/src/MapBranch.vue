@@ -131,7 +131,10 @@ const takeableText = (map: MapNode): string =>
           @keydown.space.stop
         />
         <button
-          v-if="ticket.session.kind === 'starting' || ticket.session.kind === 'live'"
+          v-if="
+            ticket.session.kind === 'starting' ||
+            (ticket.session.kind === 'live' && ticket.session.focusable)
+          "
           type="button"
           class="focus-terminal codicon codicon-terminal"
           title="Focus terminal"
@@ -151,10 +154,16 @@ const takeableText = (map: MapNode): string =>
           v-if="ticket.session.kind === 'live'"
           class="session live"
           :class="{ needs: ticket.session.needsYou }"
-          :title="`last status event ${ageSince(ticket.session.since)} ago`"
+          :title="`status since ${ageSince(ticket.session.since)} ago`"
         >
           {{ ticket.session.status ?? 'live' }} · {{ ageSince(ticket.session.since) }}
         </span>
+        <span
+          v-if="ticket.session.kind === 'live' && ticket.session.warning !== null"
+          class="duplicate codicon codicon-warning"
+          :title="ticket.session.warning"
+          :aria-label="ticket.session.warning"
+        />
         <span
           v-if="ticket.session.kind === 'ended'"
           class="session"
@@ -289,6 +298,9 @@ const takeableText = (map: MapNode): string =>
 }
 .session {
   color: var(--vscode-descriptionForeground);
+}
+.duplicate {
+  color: var(--vscode-editorWarning-foreground);
 }
 .session.needs {
   color: var(--vscode-editorWarning-foreground);

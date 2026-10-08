@@ -8,7 +8,7 @@ import type { Mode, TicketType } from '@hero-synergy/core'
 
 /**
  * A ticket's session: none, starting while its terminal has reported nothing, live once it has,
- * ended once it is over. `since` is the epoch milliseconds of the last status event: the webview
+ * ended once it is over. `since` is the epoch milliseconds of the status shown: the registry's last change, else the last status event. The webview
  * shows the time since, so the age is never a timer of the host's.
  */
 export type SessionView =
@@ -21,6 +21,10 @@ export type SessionView =
       readonly status: string | null
       readonly needsYou: boolean
       readonly since: number
+      /** Whether a terminal of the Cockpit runs it, so focus terminal has somewhere to go. */
+      readonly focusable: boolean
+      /** The warning for a second live session with the same ticket number; null when there is none. */
+      readonly warning: string | null
     }
   | { readonly kind: 'ended'; readonly detail: string; readonly since: number }
 
