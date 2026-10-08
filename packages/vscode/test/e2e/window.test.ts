@@ -33,8 +33,11 @@ let scratch: string
 // A copy of the fixture workspace that is a git repo of its own: the fixture sits inside this repo,
 // and the scout would resolve the window to this repo's root and its GitHub tracker.
 let workspaceDir: string
-// What the stub `claude` named in the user settings records when a session starts.
+// What the stub `claude` named in the user settings records when a session starts, the script it
+// plays on start (one status event per line) and when it wrote each event.
 let argvFile: string
+let scriptFile: string
+let writtenFile: string
 
 beforeAll(async () => {
   const executablePath = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
@@ -43,6 +46,8 @@ beforeAll(async () => {
   const launchable = createLaunchableWorkspace(path.join(scratch, 'repo'))
   workspaceDir = launchable.workspace
   argvFile = launchable.argvFile
+  scriptFile = launchable.scriptFile
+  writtenFile = launchable.writtenFile
   // The setting is machine-scoped: the window reads it from the user settings, not the repo.
   writeUserSettings(path.join(scratch, 'user-data'), {
     'heroSynergy.claude.path': launchable.claude,
@@ -348,6 +353,45 @@ it('launches the next ticket from ▶ with the command the Focus pane showed', a
   await expect
     .poll(() => row('#2 Dark mode').locator('.focus-terminal').count(), { timeout: 15_000 })
     .toBe(1)
+})
+
+/** When the stub wrote the event of this hook, in epoch milliseconds; null before it did. */
+const writtenAt = (hook: string): number | null => {
+  if (!existsSync(writtenFile)) return null
+  const line = readFileSync(writtenFile, 'utf8')
+    .split('\n')
+    .find((entry) => entry.startsWith(`${hook} `))
+  return line === undefined ? null : Number(line.slice(hook.length + 1))
+}
+
+it('shows a session live, then ended "exited", as its status events arrive', async () => {
+  onTestFailed(() => captureFailure('session-status'))
+  // The stub plays this on start, as the status plugin would write it: a start, then an exit.
+  writeFileSync(scriptFile, '1500 SessionStart startup\n2500 SessionEnd prompt_input_exit\n')
+  const ticket = row('#3 Contrast audit')
+  await ticket.locator('.play').click()
+  const session = ticket.locator('.session')
+  const sessionText = async () => ((await session.textContent().catch(() => '')) ?? '').trim()
+
+  await expect.poll(sessionText, { timeout: 30_000, interval: 50 }).toMatch(/^live · \d+[smhd]$/)
+  const sawLive = Date.now()
+  const started = writtenAt('SessionStart')
+  expect(started).not.toBeNull()
+  // About a second from the event to the Tree.
+  expect(sawLive - (started ?? 0)).toBeLessThan(2_000)
+
+  await expect.poll(sessionText, { timeout: 30_000, interval: 50 }).toBe('ended · exited')
+  const sawEnded = Date.now()
+  const finished = writtenAt('SessionEnd')
+  expect(finished).not.toBeNull()
+  expect(sawEnded - (finished ?? 0)).toBeLessThan(2_000)
+
+  // The Focus pane says the same, with the age; an ended session offers ▶ again.
+  await ticket.click()
+  await expect
+    .poll(() => tree().locator('.pane .session dd').innerText(), { timeout: 15_000 })
+    .toMatch(/^ended: exited · \d+[smhd] ago$/)
+  await expect.poll(() => ticket.locator('.play').count(), { timeout: 15_000 }).toBe(1)
 })
 
 it('reopens the Detail on the last selection after the window reloads', async () => {

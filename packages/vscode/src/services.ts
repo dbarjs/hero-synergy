@@ -163,6 +163,47 @@ export class Terminals extends Context.Service<Terminals, TerminalsShape>()(
   }
 }
 
+export interface EventsWatcherShape {
+  /**
+   * Calls `onChange` each time the events file changes. The file exists by the time this is
+   * called; the watcher lives as long as the window, and a change may be reported more than once
+   * or not at all, which is why a slow poll backs it.
+   */
+  readonly watch: (file: string, onChange: () => void) => Effect.Effect<void>
+}
+
+/** What a test holds to see which files are watched and to play a change. */
+export interface EventsWatcherRecorder {
+  readonly watched: string[]
+  readonly change: () => void
+}
+
+/** The events file's watcher, behind a service so tests play the change instead of waiting for a disk. */
+export class EventsWatcher extends Context.Service<EventsWatcher, EventsWatcherShape>()(
+  'hero-synergy/EventsWatcher',
+) {
+  static readonly inMemory = (): {
+    recorder: EventsWatcherRecorder
+    layer: Layer.Layer<EventsWatcher>
+  } => {
+    const listeners: Array<() => void> = []
+    const recorder: EventsWatcherRecorder = {
+      watched: [],
+      change: () => listeners.forEach((listener) => listener()),
+    }
+    return {
+      recorder,
+      layer: Layer.succeed(EventsWatcher, {
+        watch: (file, onChange) =>
+          Effect.sync(() => {
+            recorder.watched.push(file)
+            listeners.push(onChange)
+          }),
+      }),
+    }
+  }
+}
+
 export interface ClipboardShape {
   readonly write: (text: string) => Effect.Effect<void>
 }

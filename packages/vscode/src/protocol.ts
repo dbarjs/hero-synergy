@@ -6,11 +6,23 @@ import type { Mode, TicketType } from '@hero-synergy/core'
  * host validates what arrives from the webview in `messages.ts`.
  */
 
-/** A ticket's session: none, starting while its terminal exists, ended once the terminal closed. */
+/**
+ * A ticket's session: none, starting while its terminal has reported nothing, live once it has,
+ * ended once it is over. `since` is the epoch milliseconds of the last status event: the webview
+ * shows the time since, so the age is never a timer of the host's.
+ */
 export type SessionView =
   | { readonly kind: 'none' }
-  | { readonly kind: 'starting' }
-  | { readonly kind: 'ended'; readonly detail: string }
+  /** `hint` is the line shown once the terminal has been quiet for 15 s; null before. */
+  | { readonly kind: 'starting'; readonly hint: string | null }
+  /** `status` is the word (working, waiting for you, needs approval, failed), null when none is known. */
+  | {
+      readonly kind: 'live'
+      readonly status: string | null
+      readonly needsYou: boolean
+      readonly since: number
+    }
+  | { readonly kind: 'ended'; readonly detail: string; readonly since: number }
 
 /**
  * What ▶ launches for a ticket, with the exact command it shows. A greyed Action

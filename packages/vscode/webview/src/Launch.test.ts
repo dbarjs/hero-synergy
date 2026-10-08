@@ -4,7 +4,8 @@ import { Effect } from 'effect'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import { workspaceFiles } from '../../test/fixtures/workspace-files.ts'
-import { type Launching, NOT_LAUNCHING, type SessionState } from '../../src/launch.ts'
+import { type Launching, NOT_LAUNCHING } from '../../src/launch.ts'
+import type { SessionState, SessionStatus } from '../../src/session.ts'
 import { buildViewModel, detailOf } from '../../src/view-model.ts'
 import Detail from './Detail.vue'
 import Tree from './Tree.vue'
@@ -19,6 +20,24 @@ beforeAll(async () => {
   snapshot = await Effect.runPromise(
     readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(workspaceFiles(ROOT)))),
   )
+})
+
+const BASE = { sessionId: null, finished: [] }
+const starting: SessionState = { ...BASE, kind: 'starting', terminal: 1, hint: false }
+const live = (status: SessionStatus | null = null): SessionState => ({
+  ...BASE,
+  kind: 'live',
+  terminal: 1,
+  status,
+  since: Date.now() - 12_000,
+})
+const ended = (detail: string): SessionState => ({
+  ...BASE,
+  kind: 'ended',
+  terminal: 1,
+  detail,
+  known: true,
+  since: Date.now() - 90_000,
 })
 
 const launchable = (sessions: Record<string, SessionState> = {}): Launching => ({
@@ -77,7 +96,7 @@ describe('▶ on the Tree rows', () => {
 
 describe('a ticket with a session', () => {
   it('swaps ▶ for focus terminal while starting', async () => {
-    const wrapper = render(launchable({ [PALETTE]: { kind: 'starting', terminal: 1 } }))
+    const wrapper = render(launchable({ [PALETTE]: starting }))
     const row = rowOf(wrapper, '#1 Palette')
     expect(row?.find('.play').exists()).toBe(false)
     expect(row?.find('.session').text()).toBe('starting')
@@ -86,13 +105,33 @@ describe('a ticket with a session', () => {
     expect(wrapper.emitted('select')).toBeUndefined()
   })
 
+  it('shows a live session with its word and the time since its last status event', async () => {
+    const wrapper = render(launchable({ [PALETTE]: live() }))
+    const row = rowOf(wrapper, '#1 Palette')
+    expect(row?.find('.play').exists()).toBe(false)
+    expect(row?.find('.session').text()).toBe('live · 12s')
+    expect(row?.find('.session').classes()).not.toContain('needs')
+    await row?.find('.focus-terminal').trigger('click')
+    expect(wrapper.emitted('focusTerminal')).toEqual([[PALETTE]])
+  })
+
+  it('marks a session that needs me', () => {
+    const row = rowOf(render(launchable({ [PALETTE]: live('failed') })), '#1 Palette')
+    expect(row?.find('.session').text()).toBe('failed · 12s')
+    expect(row?.find('.session').classes()).toContain('needs')
+  })
+
+  it('says a quiet terminal has no status yet, with the whole hint on hover', () => {
+    const quiet: SessionState = { ...starting, hint: true } as SessionState
+    const row = rowOf(render(launchable({ [PALETTE]: quiet })), '#1 Palette')
+    expect(row?.find('.session').text()).toBe('starting · no status yet')
+    expect(row?.find('.session').attributes('title')).toContain('trust dialog')
+  })
+
   it('says ended with the detail on hover and offers ▶ again', () => {
-    const row = rowOf(
-      render(launchable({ [PALETTE]: { kind: 'ended', detail: 'exited with code 3' } })),
-      '#1 Palette',
-    )
-    expect(row?.find('.session').text()).toBe('ended')
-    expect(row?.find('.session').attributes('title')).toBe('exited with code 3')
+    const row = rowOf(render(launchable({ [PALETTE]: ended('exited with code 3') })), '#1 Palette')
+    expect(row?.find('.session').text()).toBe('ended · exited with code 3')
+    expect(row?.find('.session').attributes('title')).toBe('exited with code 3, 1m ago')
     expect(row?.find('.play').exists()).toBe(true)
   })
 })
@@ -141,19 +180,31 @@ describe('the command in the Focus pane', () => {
   })
 
   it('swaps the command for the session state, with focus terminal, while starting', async () => {
-    const wrapper = render(launchable({ [PALETTE]: { kind: 'starting', terminal: 1 } }), PALETTE)
+    const wrapper = render(launchable({ [PALETTE]: starting }), PALETTE)
     expect(wrapper.find('.pane .action').exists()).toBe(false)
     expect(wrapper.find('.pane .session dd').text()).toContain('starting')
     await wrapper.find('.pane .session .link').trigger('click')
     expect(wrapper.emitted('focusTerminal')).toEqual([[PALETTE]])
   })
 
-  it('says how a session ended', () => {
-    const wrapper = render(
-      launchable({ [PALETTE]: { kind: 'ended', detail: 'window closed' } }),
-      PALETTE,
+  it('shows the live status word with its age in the pane', async () => {
+    const wrapper = render(launchable({ [PALETTE]: live('failed') }), PALETTE)
+    expect(wrapper.find('.pane .session dd').text()).toContain('failed · 12s ago')
+    await wrapper.find('.pane .session .link').trigger('click')
+    expect(wrapper.emitted('focusTerminal')).toEqual([[PALETTE]])
+  })
+
+  it('shows the hint in the pane once the terminal has been quiet', () => {
+    const quiet: SessionState = { ...starting, hint: true } as SessionState
+    const wrapper = render(launchable({ [PALETTE]: quiet }), PALETTE)
+    expect(wrapper.find('.pane .session .hint').text()).toBe(
+      'no status yet, the session may be waiting at the trust dialog, open the terminal',
     )
-    expect(wrapper.find('.pane .session dd').text()).toBe('ended: window closed')
+  })
+
+  it('says how a session ended', () => {
+    const wrapper = render(launchable({ [PALETTE]: ended('window closed') }), PALETTE)
+    expect(wrapper.find('.pane .session dd').text()).toBe('ended: window closed · 1m ago')
   })
 })
 
@@ -177,7 +228,7 @@ describe('the command in the Detail', () => {
   })
 
   it('offers focus terminal while starting, and no command', async () => {
-    const wrapper = renderDetail(launchable({ [PALETTE]: { kind: 'starting', terminal: 1 } }))
+    const wrapper = renderDetail(launchable({ [PALETTE]: starting }))
     expect(wrapper.find('.command').exists()).toBe(false)
     await wrapper.find('.session .link').trigger('click')
     expect(wrapper.emitted('focusTerminal')).toEqual([[PALETTE]])

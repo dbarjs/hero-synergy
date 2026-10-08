@@ -21,6 +21,19 @@ layer(FileSystem.inMemory(seed))('FileSystem.inMemory', (it) => {
     }),
   )
 
+  it.effect('reads from a byte offset and reports the whole size', () =>
+    Effect.gen(function* () {
+      const fs = yield* FileSystem
+      yield* fs.writeFile('/logs/events.jsonl', 'é1\nline2\n')
+      // `é` is two bytes: the offset counts bytes, not characters.
+      expect(yield* fs.readFrom('/logs/events.jsonl', 4)).toEqual({ text: 'line2\n', size: 10 })
+      expect(yield* fs.readFrom('/logs/events.jsonl', 10)).toEqual({ text: '', size: 10 })
+      expect(yield* fs.readFrom('/logs/events.jsonl', 99)).toEqual({ text: '', size: 10 })
+      const missing = yield* Effect.flip(fs.readFrom('/logs/nowhere.jsonl', 0))
+      expect([missing.code, missing.operation]).toEqual(['NotFound', 'readFrom'])
+    }),
+  )
+
   it.effect('reads back what it wrote, creating the parents on the way', () =>
     Effect.gen(function* () {
       const fs = yield* FileSystem
@@ -86,6 +99,21 @@ describe('FileSystem.live', () => {
       expect(yield* fs.readDirectory(join(root, 'nested'))).toEqual(['deeper'])
       expect(yield* fs.exists(join(root, 'nested'))).toBe(true)
       expect(yield* fs.exists(join(root, 'absent'))).toBe(false)
+    }).pipe(Effect.provide(FileSystem.live)),
+  )
+
+  it.live('reads from a byte offset like the in-memory layer', () =>
+    Effect.gen(function* () {
+      const root = yield* temporaryDirectory
+      const fs = yield* FileSystem
+      yield* fs.writeFile(join(root, 'events.jsonl'), 'é1\nline2\n')
+      expect(yield* fs.readFrom(join(root, 'events.jsonl'), 4)).toEqual({
+        text: 'line2\n',
+        size: 10,
+      })
+      expect(yield* fs.readFrom(join(root, 'events.jsonl'), 99)).toEqual({ text: '', size: 10 })
+      const missing = yield* Effect.flip(fs.readFrom(join(root, 'nowhere.jsonl'), 0))
+      expect(missing.code).toBe('NotFound')
     }).pipe(Effect.provide(FileSystem.live)),
   )
 

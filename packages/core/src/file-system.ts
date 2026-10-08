@@ -1,9 +1,9 @@
-import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { mkdir, open, readdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { dirname } from 'node:path'
 import posix from 'node:path/posix'
 import { Context, Data, Effect, Layer } from 'effect'
 
-export type FileSystemOperation = 'readFile' | 'writeFile' | 'exists' | 'readDirectory'
+export type FileSystemOperation = 'readFile' | 'readFrom' | 'writeFile' | 'exists' | 'readDirectory'
 
 export type FileSystemErrorCode =
   | 'NotFound'
@@ -22,6 +22,15 @@ export class FileSystemError extends Data.TaggedError('FileSystemError')<{
 export interface FileSystemShape {
   /** The file's content as UTF-8 text. */
   readonly readFile: (path: string) => Effect.Effect<string, FileSystemError>
+  /**
+   * The file's bytes from `offset` to the end, as UTF-8 text, with the file's whole size in bytes.
+   * An offset past the end gives no text, so a caller sees a file that shrank by `size < offset`.
+   * A multi-byte character cut by `offset` or by the end reads as U+FFFD.
+   */
+  readonly readFrom: (
+    path: string,
+    offset: number,
+  ) => Effect.Effect<{ readonly text: string; readonly size: number }, FileSystemError>
   /** Writes UTF-8 text, replacing the file and creating missing parent directories. */
   readonly writeFile: (path: string, content: string) => Effect.Effect<void, FileSystemError>
   /** Whether a file or directory is at the path. */
@@ -78,6 +87,22 @@ function liveFileSystem(): FileSystemShape {
         try: () => readFile(path, 'utf8'),
         catch: liveError('readFile', path),
       }),
+    readFrom: (path, offset) =>
+      Effect.tryPromise({
+        try: async () => {
+          const handle = await open(path, 'r')
+          try {
+            const { size } = await handle.stat()
+            if (offset >= size) return { text: '', size }
+            const buffer = Buffer.alloc(size - offset)
+            const { bytesRead } = await handle.read(buffer, 0, buffer.length, offset)
+            return { text: buffer.subarray(0, bytesRead).toString('utf8'), size }
+          } finally {
+            await handle.close()
+          }
+        },
+        catch: liveError('readFrom', path),
+      }),
     writeFile: (path, content) =>
       Effect.tryPromise({
         try: async () => {
@@ -122,6 +147,9 @@ const ancestors = function* (path: string): Generator<string> {
   }
 }
 
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+
 function inMemoryLayer(files: Readonly<Record<string, string>> = {}): Layer.Layer<FileSystem> {
   return Layer.sync(FileSystem, () => {
     const store = new Map<string, string>()
@@ -149,6 +177,21 @@ function inMemoryLayer(files: Readonly<Record<string, string>> = {}): Layer.Laye
           return isDirectory(key)
             ? fail('readFile', path, 'IsADirectory', `${path} is a directory`)
             : fail('readFile', path, 'NotFound', `${path} does not exist`)
+        }),
+      readFrom: (path, offset) =>
+        Effect.suspend(() => {
+          const key = normalize(path)
+          const content = store.get(key)
+          if (content === undefined) {
+            return isDirectory(key)
+              ? fail('readFrom', path, 'IsADirectory', `${path} is a directory`)
+              : fail('readFrom', path, 'NotFound', `${path} does not exist`)
+          }
+          const bytes = encoder.encode(content)
+          return Effect.succeed({
+            text: offset >= bytes.length ? '' : decoder.decode(bytes.subarray(offset)),
+            size: bytes.length,
+          })
         }),
       writeFile: (path, content) =>
         Effect.suspend(() => {

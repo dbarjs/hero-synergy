@@ -16,13 +16,7 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
-import {
-  canLaunchFrom,
-  type Launching,
-  NOT_LAUNCHING,
-  sessionView,
-  workTicketAction,
-} from './launch.ts'
+import { canLaunchFrom, type Launching, NOT_LAUNCHING, workTicketAction } from './launch.ts'
 import type {
   ActionView,
   BudgetNote,
@@ -34,6 +28,7 @@ import type {
   TicketRow,
   ViewModel,
 } from './protocol.ts'
+import { sessionView } from './session.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }

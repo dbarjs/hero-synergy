@@ -56,6 +56,7 @@ describe('hero-synergy in the extension host', () => {
       viewModel: null,
       detailOpen: false,
       detailView: null,
+      badge: 0,
     })
     assert.equal(vscode.window.terminals.length, 0)
   })
@@ -243,7 +244,9 @@ describe('hero-synergy launching a ticket', () => {
     vscode.window.terminals.at(-1)?.show()
     await vscode.commands.executeCommand('workbench.action.terminal.kill')
     await until('the row to be ended', () => rowOf(PALETTE)?.session.kind === 'ended')
-    assert.deepEqual(rowOf(PALETTE)?.session, { kind: 'ended', detail: 'terminal closed' })
+    const session = rowOf(PALETTE)?.session
+    assert.equal(session?.kind, 'ended')
+    assert.equal(session?.kind === 'ended' ? session.detail : null, 'terminal closed')
     // Taking it again is possible.
     assert.equal(rowOf(PALETTE)?.action?.disabled, null)
   })

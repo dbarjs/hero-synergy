@@ -8,7 +8,8 @@ import { attempt, type Decoded, decoder, parseJson, warn } from './decode.ts'
  * `{ticket, hook, session, detail, at, payload}`. `ticket` is the
  * `HERO_SYNERGY_TICKET` env var, `hook` the hook name, `session` and `detail`
  * what the payload carried (`source` for a start, `reason` for an end, `error`
- * for a failure), `at` the write time in epoch milliseconds, `payload` the
+ * for a failure), `at` the write time (the plugin writes an ISO string; the
+ * prototype's lines carry epoch milliseconds, which decode too), `payload` the
  * fields of the hook payload the Cockpit reads. The prototype's first lines
  * had no `payload`; they decode too, `session` and `detail` standing in.
  *
@@ -30,11 +31,19 @@ const Line = Schema.Struct({
   hook: Schema.String,
   session: Schema.optionalKey(Schema.NullOr(Schema.String)),
   detail: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  at: Schema.optionalKey(Schema.Number),
+  at: Schema.optionalKey(Schema.Union([Schema.Number, Schema.String])),
   payload: Schema.optionalKey(Payload),
 })
 
 const decodeLine = decoder(Line)
+
+/** A write time as epoch milliseconds: a number as it is, an ISO string parsed, anything unreadable null. */
+const millisOf = (at: number | string | undefined): number | null => {
+  if (at === undefined) return null
+  if (typeof at === 'number') return at
+  const parsed = Date.parse(at)
+  return Number.isNaN(parsed) ? null : parsed
+}
 
 export interface HookPayload {
   readonly session_id?: string
@@ -87,7 +96,7 @@ export function readStatusEvent(line: string): Decoded<StatusEvent | null> {
   }
 
   return {
-    value: { ticket, hook, session: sessionId, detail: hookDetail, at: at ?? null, payload },
+    value: { ticket, hook, session: sessionId, detail: hookDetail, at: millisOf(at), payload },
     warnings,
   }
 }

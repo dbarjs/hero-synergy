@@ -70,6 +70,20 @@ describe('the three hooks the plugin registers', () => {
     expect(read.value).toMatchObject({ session: 's', detail: 'logout', at: null })
   })
 
+  test('reads the ISO time the plugin writes as epoch milliseconds', () => {
+    const read = readStatusEvent(
+      '{"ticket":"46","hook":"SessionStart","session":"s","detail":"startup","at":"2026-10-02T20:09:52.163Z","payload":{}}',
+    )
+    expect(read.warnings).toEqual([])
+    expect(read.value?.at).toBe(Date.parse('2026-10-02T20:09:52.163Z'))
+  })
+
+  test('a time that is not a date reads as no time, not as a bad line', () => {
+    const read = readStatusEvent('{"ticket":"46","hook":"SessionStart","session":"s","at":"soon"}')
+    expect(read.warnings).toEqual([])
+    expect(read.value?.at).toBeNull()
+  })
+
   test('hooks of other kinds decode with no detail', () => {
     const read = readStatusEvent('{"ticket":"46","hook":"Stop","session":"s","detail":null,"at":1}')
     expect(read).toEqual({

@@ -26,14 +26,21 @@ export function createWorkspace(parent) {
 
 /**
  * A stub `claude` for the windows that launch a session. Asked for the plugin list it answers `[]`;
- * started as a session it records what it was given, then stays open like a live session:
+ * started as a session it records what it was given, plays the script it finds, then stays open
+ * like a live session:
  *
  * - `argv.txt`: one argument per line, after the program name;
  * - `env.txt`: `HERO_SYNERGY_TICKET`, then `HERO_SYNERGY_EVENTS`, one per line;
- * - `cwd.txt`: the directory it started in.
+ * - `cwd.txt`: the directory it started in;
+ * - `script.txt`, written by the test before the session starts: one status event per line,
+ *   `<delay in ms> <hook> [detail]`. The stub waits the delay, appends the line the status plugin
+ *   would (`ticket`, `hook`, `session`, `detail`, `at`, `payload`) to `HERO_SYNERGY_EVENTS`, and
+ *   notes `<hook> <epoch ms>` in `written.txt` so a test can time the Tree against the write.
+ *
+ * A node script, so the same stub runs wherever the tests do.
  *
  * @param {string} parent an existing or creatable directory the stub and its records go into
- * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string }}
+ * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string, scriptFile: string, writtenFile: string }}
  */
 export function createClaudeStub(parent) {
   const bin = path.join(parent, 'bin')
@@ -42,20 +49,45 @@ export function createClaudeStub(parent) {
   const argvFile = path.join(bin, 'argv.txt')
   const envFile = path.join(bin, 'env.txt')
   const cwdFile = path.join(bin, 'cwd.txt')
+  const scriptFile = path.join(bin, 'script.txt')
+  const writtenFile = path.join(bin, 'written.txt')
   writeFileSync(
     claude,
     [
-      '#!/bin/sh',
-      `if [ "$1" = plugin ]; then echo '[]'; exit 0; fi`,
-      `printf '%s\\n' "$@" > '${argvFile}'`,
-      `printf '%s\\n' "$HERO_SYNERGY_TICKET" "$HERO_SYNERGY_EVENTS" > '${envFile}'`,
-      `pwd > '${cwdFile}'`,
-      'exec sleep 3600',
+      `#!${process.execPath}`,
+      `const fs = require('node:fs')`,
+      `const args = process.argv.slice(2)`,
+      `if (args[0] === 'plugin') {`,
+      `  console.log('[]')`,
+      `  process.exit(0)`,
+      `}`,
+      `const ticket = process.env.HERO_SYNERGY_TICKET ?? ''`,
+      `const events = process.env.HERO_SYNERGY_EVENTS ?? ''`,
+      `fs.writeFileSync(${JSON.stringify(argvFile)}, args.join('\\n') + '\\n')`,
+      `fs.writeFileSync(${JSON.stringify(envFile)}, ticket + '\\n' + events + '\\n')`,
+      `fs.writeFileSync(${JSON.stringify(cwdFile)}, process.cwd() + '\\n')`,
+      `const script = fs.existsSync(${JSON.stringify(scriptFile)})`,
+      `  ? fs.readFileSync(${JSON.stringify(scriptFile)}, 'utf8').split('\\n').filter((line) => line.trim() !== '')`,
+      `  : []`,
+      `;(async () => {`,
+      `  for (const line of script) {`,
+      `    const [delay, hook, ...detail] = line.trim().split(/\\s+/)`,
+      `    await new Promise((resolve) => setTimeout(resolve, Number(delay)))`,
+      `    const now = new Date()`,
+      `    const text = detail.join(' ') || null`,
+      `    fs.appendFileSync(`,
+      `      events,`,
+      `      JSON.stringify({ ticket, hook, session: 'stub-session', detail: text, at: now.toISOString(), payload: {} }) + '\\n',`,
+      `    )`,
+      `    fs.appendFileSync(${JSON.stringify(writtenFile)}, hook + ' ' + now.getTime() + '\\n')`,
+      `  }`,
+      `})()`,
+      `setInterval(() => {}, 3_600_000)`,
       '',
     ].join('\n'),
     { mode: 0o755 },
   )
-  return { claude, argvFile, envFile, cwdFile }
+  return { claude, argvFile, envFile, cwdFile, scriptFile, writtenFile }
 }
 
 /**

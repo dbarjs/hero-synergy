@@ -15,16 +15,21 @@ import {
   readPluginList,
   type ScoutError,
   type Snapshot,
+  type StatusEvent,
 } from '@hero-synergy/core'
-import { Clock, Deferred, Effect, Fiber, Ref } from 'effect'
+import { Clock, Deferred, Effect, Fiber, Ref, Semaphore } from 'effect'
 
 import { type ClaudeResolution, resolveClaude } from './claude-path.ts'
 import {
+  EVENTS_POLL_MS,
+  EVENTS_SIZE_CAP,
+  type EventsReader,
+  makeEventsReader,
+} from './events-file.ts'
+import {
   canLaunchFrom,
-  describeExit,
   type Launching,
   NOT_LAUNCHING,
-  type SessionState,
   terminalIcon,
   workTicketLaunch,
 } from './launch.ts'
@@ -44,8 +49,18 @@ import {
   type Trigger,
 } from './refresh-policy.ts'
 import {
+  afterReload,
+  HINT_AFTER_MS,
+  isRunning,
+  needsYou,
+  reduceSession,
+  type SessionInput,
+  type SessionState,
+} from './session.ts'
+import {
   Clipboard,
   CollectProgress,
+  EventsWatcher,
   HostEnvironment,
   Opener,
   Storage,
@@ -60,6 +75,7 @@ import {
   firstFocusKey,
   revealKeys,
   selectionOf,
+  ticketKey,
   ticketOf,
 } from './view-model.ts'
 
@@ -75,6 +91,8 @@ export interface CockpitOptions {
   readonly publishDetail: (view: DetailView) => void
   /** Opens the Detail panel, or brings the open one forward; `focus` moves the keyboard into it. */
   readonly showDetail: (focus: boolean) => void
+  /** Sets the Tree container's badge to the number of sessions that need me; 0 clears it. */
+  readonly badge: (count: number) => void
   /** Writes a line to the Cockpit's output channel. */
   readonly log: (line: string) => void
 }
@@ -209,6 +227,7 @@ export const makeCockpit = (
   | Opener
   | CollectProgress
   | Terminals
+  | EventsWatcher
   | Clipboard
   | HostEnvironment
 > =>
@@ -221,12 +240,20 @@ export const makeCockpit = (
     // The last good snapshot of this window's repo is shown before anything spawns.
     const cached = readCache(yield* storage.get(CACHE_KEY), yield* workspace.paths)
     const terminals = yield* Terminals
+    const watcher = yield* EventsWatcher
     const clipboard = yield* Clipboard
     const environment = yield* HostEnvironment
     const fs = yield* FileSystem
     const runner = yield* ProcessRunner
     // Ticket row key to its session: absent is none.
     const sessions = yield* Ref.make<ReadonlyMap<string, SessionState>>(new Map())
+    // The events file being read, once the repo is known.
+    const events = yield* Ref.make<{ readonly file: string; readonly reader: EventsReader } | null>(
+      null,
+    )
+    // One read of the events file at a time, so the watcher and the poll never read the same bytes twice.
+    const reading = Semaphore.makeUnsafe(1)
+    const polling = yield* Ref.make(false)
     // What the last collect found: where `claude` is and the wayfinder command.
     const discovery = yield* Ref.make<{
       readonly claude: ClaudeResolution
@@ -265,6 +292,14 @@ export const makeCockpit = (
         : { kind: status.kind, until: new Date(status.until).toISOString() }
     })
 
+    /** The numbers of the tickets whose session needs me. */
+    const needing = (map: ReadonlyMap<string, SessionState>): ReadonlySet<number> =>
+      new Set(
+        [...map].flatMap(([key, session]) =>
+          needsYou(session) ? [Number(key.slice(key.lastIndexOf(':') + 1))] : [],
+        ),
+      )
+
     const launchingFor = (repoRoot: string): Effect.Effect<Launching> =>
       Effect.gen(function* () {
         const found = yield* Ref.get(discovery)
@@ -285,7 +320,7 @@ export const makeCockpit = (
         state.snapshot,
         open,
         yield* Ref.get(selected),
-        undefined,
+        { needsYou: needing(yield* Ref.get(sessions)) },
         state.notice,
         yield* budgetNote,
         yield* launchingFor(state.snapshot.repoRoot),
@@ -322,9 +357,12 @@ export const makeCockpit = (
           }${resolution.claude.shim ? ', an npm shim: best effort' : ''})`
         : `claude not resolved: ${resolution.reason}`
 
-    const activated: Effect.Effect<void> = resolveNow.pipe(
-      Effect.map((resolution) => options.log(describeResolution(resolution))),
-    )
+    const activated: Effect.Effect<void> = Effect.gen(function* () {
+      options.log(describeResolution(yield* resolveNow))
+      // The last good snapshot names the repo, so the events file is read without a collect.
+      // Nothing is published: the Tree is not registered yet.
+      if (cached !== null) yield* startEvents(cached.snapshot.repoRoot, false)
+    })
 
     /**
      * Skill discovery, on every refresh: `claude plugin list --json` for the plugins' install
@@ -357,10 +395,126 @@ export const makeCockpit = (
         yield* Ref.set(discovery, { claude, wayfinder: commandOf(inventory.skills, 'wayfinder') })
       })
 
-    const publish = Effect.gen(function* () {
+    /** Sets a ticket's session to what the reducer makes of the input. */
+    const dispatch = (key: string, input: SessionInput): Effect.Effect<void> =>
+      Ref.update(sessions, (map) => {
+        const next = reduceSession(map.get(key), input)
+        if (next === map.get(key)) return map
+        const updated = new Map(map)
+        if (next === undefined) updated.delete(key)
+        else updated.set(key, next)
+        return updated
+      })
+
+    /** Reads the events file while a session runs: the watcher can drop an event, the poll catches it. */
+    const pollLoop: Effect.Effect<void> = Effect.gen(function* () {
+      for (;;) {
+        yield* Effect.sleep(EVENTS_POLL_MS)
+        const running = [...(yield* Ref.get(sessions)).values()].some(isRunning)
+        if (!running) return yield* Ref.set(polling, false)
+        yield* drainEvents
+      }
+    })
+
+    const ensurePolling: Effect.Effect<void> = Effect.gen(function* () {
+      if (![...(yield* Ref.get(sessions)).values()].some(isRunning)) return
+      const claimed = yield* Ref.modify(polling, (already) => [!already, true] as const)
+      if (claimed) yield* Effect.forkDetach(pollLoop)
+    })
+
+    const publish: Effect.Effect<void> = Effect.gen(function* () {
+      options.badge([...(yield* Ref.get(sessions)).values()].filter(needsYou).length)
       options.publish(yield* current)
       options.publishDetail(yield* currentDetail)
+      yield* ensurePolling
     })
+
+    /** The row key a status event's ticket number names: the one with a session, else the one in view. */
+    const keyOfTicket = (ticket: string): Effect.Effect<string | null> =>
+      Effect.gen(function* () {
+        const suffix = `:ticket:${ticket}`
+        const known = [...(yield* Ref.get(sessions))].filter(([key]) => key.endsWith(suffix))
+        const running = known.find(([, session]) => isRunning(session))
+        if (running !== undefined) return running[0]
+        if (known.length > 0) return known[known.length - 1]![0]
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot') return null
+        const number = Number(ticket)
+        const map = state.snapshot.maps.find((candidate) =>
+          candidate.tickets.some((entry) => entry.number === number),
+        )
+        return map === undefined ? null : ticketKey(map, number)
+      })
+
+    /** Feeds status events to the tickets they name; true when any changed a session. */
+    const applyEvents = (read: ReadonlyArray<StatusEvent>): Effect.Effect<boolean> =>
+      Effect.gen(function* () {
+        const before = yield* Ref.get(sessions)
+        const now = yield* Clock.currentTimeMillis
+        for (const event of read) {
+          const key = yield* keyOfTicket(event.ticket)
+          if (key === null) {
+            options.log(`Status event ${event.hook} for #${event.ticket} matches no ticket in view`)
+            continue
+          }
+          yield* dispatch(key, { type: 'event', event, at: event.at ?? now })
+        }
+        return (yield* Ref.get(sessions)) !== before
+      })
+
+    /** Reads what the plugin appended since the last read and applies it. */
+    const drainEvents: Effect.Effect<void> = reading.withPermits(1)(
+      Effect.gen(function* () {
+        const current = yield* Ref.get(events)
+        if (current === null) return
+        const read = yield* current.reader.read
+        for (const problem of read.problems) options.log(problem)
+        if (read.events.length === 0) return
+        if (yield* applyEvents(read.events)) yield* publish
+      }),
+    )
+
+    /**
+     * Starts reading the events file of a repo, once its root is known: the file is created before
+     * it is watched, read in full once, compacted if it grew past the cap, then watched. What the
+     * file says is live is not confirmed by a terminal of this window (adopting the terminals that
+     * survived a reload comes with the registry), so it is shown as ended, "window closed".
+     */
+    const startEvents = (repoRoot: string, announce: boolean): Effect.Effect<void> =>
+      reading
+        .withPermits(1)(
+          Effect.gen(function* () {
+            const file = environment.eventsFile(repoRoot)
+            if ((yield* Ref.get(events))?.file === file) return
+            const created = yield* fs.exists(file).pipe(
+              Effect.flatMap((exists) => (exists ? Effect.void : fs.writeFile(file, ''))),
+              Effect.as(true),
+              Effect.catch((error) => {
+                options.log(`Could not create the events file: ${error.message}`)
+                return Effect.succeed(false)
+              }),
+            )
+            if (!created) return
+            const reader = yield* makeEventsReader(file).pipe(Effect.provideService(FileSystem, fs))
+            yield* Ref.set(events, { file, reader })
+            const first = yield* reader.read
+            for (const problem of first.problems) options.log(problem)
+            const prior = yield* Ref.get(sessions)
+            yield* applyEvents(first.events)
+            const at = yield* Clock.currentTimeMillis
+            // Only what the file put there: a terminal launched meanwhile is this window's own.
+            yield* Ref.update(sessions, (map) => {
+              const reloaded = new Map(map)
+              for (const [key, session] of map) {
+                if (session !== prior.get(key)) reloaded.set(key, afterReload(session, at))
+              }
+              return reloaded
+            })
+            if (yield* reader.compact(EVENTS_SIZE_CAP)) options.log(`Compacted ${file}`)
+            yield* watcher.watch(file, () => Effect.runFork(drainEvents))
+          }),
+        )
+        .pipe(Effect.andThen(announce ? publish : Effect.void))
 
     const budgetOf = (rateLimit: RateLimit | null): RateBudget | null =>
       rateLimit === null
@@ -408,6 +562,8 @@ export const makeCockpit = (
       // Skill discovery runs with every collect that read a snapshot, before it is shown.
       if (loaded.kind === 'snapshot') yield* discover(loaded.snapshot.repoRoot)
       yield* settle(loaded, yield* Clock.currentTimeMillis)
+      // The events file is read once the first snapshot names the repo, before the Tree shows it.
+      if (loaded.kind === 'snapshot') yield* startEvents(loaded.snapshot.repoRoot, false)
       yield* publish
     })
 
@@ -576,14 +732,22 @@ export const makeCockpit = (
           return
         }
         // One atomic claim, so two clicks in quick succession start one terminal.
+        const launchedAt = yield* Clock.currentTimeMillis
         const claimed = yield* Ref.modify(sessions, (map) =>
           canLaunchFrom(map.get(key))
-            ? ([true, new Map(map).set(key, { kind: 'starting', terminal: null })] as const)
+            ? ([
+                true,
+                new Map(map).set(
+                  key,
+                  reduceSession(map.get(key), { type: 'launched', at: launchedAt })!,
+                ),
+              ] as const)
             : ([false, map] as const),
         )
         if (!claimed) return
         yield* publish
-        // The events file exists before the plugin first appends to it.
+        // The events file exists before the plugin first appends to it (the reader made it already
+        // once the repo was known; this covers a launch that beat the first read).
         yield* fs.exists(facts.eventsFile).pipe(
           Effect.flatMap((exists) => (exists ? Effect.void : fs.writeFile(facts.eventsFile, ''))),
           Effect.catch((error) => {
@@ -600,18 +764,25 @@ export const makeCockpit = (
           icon: terminalIcon(found.ticket.type),
           location: yield* environment.terminalLocation,
         })
-        yield* Ref.update(sessions, (map) => {
-          const now = map.get(key)
-          // The terminal may already have closed while it was being created.
-          return now?.kind === 'starting' ? new Map(map).set(key, { ...now, terminal }) : map
-        })
+        // The terminal may already have closed while it was being created: the reducer then leaves it.
+        yield* dispatch(key, { type: 'terminal', terminal })
         yield* publish
+        // The only timer: 15 s after the terminal opens, a session with no status says so.
+        yield* Effect.forkDetach(
+          Effect.sleep(HINT_AFTER_MS).pipe(
+            Effect.andThen(dispatch(key, { type: 'quiet', terminal })),
+            Effect.andThen(publish),
+          ),
+        )
       })
 
     const focusTerminal = (key: string): Effect.Effect<void> =>
       Effect.gen(function* () {
         const session = (yield* Ref.get(sessions)).get(key)
-        if (session?.kind === 'starting' && session.terminal !== null) {
+        if (
+          (session?.kind === 'starting' || session?.kind === 'live') &&
+          session.terminal !== null
+        ) {
           yield* terminals.focus(session.terminal)
         }
       })
@@ -635,19 +806,12 @@ export const makeCockpit = (
     terminals.onClosed(({ id, exit }) => {
       Effect.runFork(
         Effect.gen(function* () {
-          const detail = describeExit(exit)
-          const ended = yield* Ref.modify(sessions, (map) => {
-            const next = new Map(map)
-            let changed = false
-            for (const [key, session] of map) {
-              if (session.kind === 'starting' && session.terminal === id) {
-                next.set(key, { kind: 'ended', detail })
-                changed = true
-              }
-            }
-            return [changed, changed ? next : map] as const
-          })
-          if (ended) yield* publish
+          const at = yield* Clock.currentTimeMillis
+          const before = yield* Ref.get(sessions)
+          for (const key of before.keys()) {
+            yield* dispatch(key, { type: 'closed', terminal: id, exit, at })
+          }
+          if ((yield* Ref.get(sessions)) !== before) yield* publish
         }),
       )
     })

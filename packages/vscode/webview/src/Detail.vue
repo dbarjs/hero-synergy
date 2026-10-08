@@ -4,6 +4,7 @@ import { nextTick, onMounted, watch } from 'vue'
 import type { DetailView, MapSection, NeighbourView } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
 import Markdown from './Markdown.vue'
+import SessionLine from './SessionLine.vue'
 
 /**
  * The Detail at the editor's width: the full issue of the selection. A ticket shows its
@@ -90,13 +91,10 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       <div v-if="view.detail.session.kind !== 'none'" class="fact session">
         <dt>Session</dt>
         <dd>
-          <template v-if="view.detail.session.kind === 'starting'">
-            starting
-            <button type="button" class="link" @click="emit('focusTerminal', view.detail.key)">
-              focus terminal
-            </button>
-          </template>
-          <template v-else>ended: {{ view.detail.session.detail }}</template>
+          <SessionLine
+            :session="view.detail.session"
+            @focus-terminal="emit('focusTerminal', view.detail.key)"
+          />
         </dd>
       </div>
     </dl>

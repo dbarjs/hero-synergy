@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Focus, MapNode, MapSection, TicketRow } from '../../src/protocol.ts'
+import { ageSince } from './age.ts'
 import FocusPane from './FocusPane.vue'
 import Row from './Row.vue'
 
@@ -113,7 +114,7 @@ const takeableText = (map: MapNode): string =>
           @keydown.space.stop
         />
         <button
-          v-if="ticket.session.kind === 'starting'"
+          v-if="ticket.session.kind === 'starting' || ticket.session.kind === 'live'"
           type="button"
           class="focus-terminal codicon codicon-terminal"
           title="Focus terminal"
@@ -122,9 +123,27 @@ const takeableText = (map: MapNode): string =>
           @keydown.enter.stop
           @keydown.space.stop
         />
-        <span v-if="ticket.session.kind === 'starting'" class="session">starting</span>
-        <span v-if="ticket.session.kind === 'ended'" class="session" :title="ticket.session.detail">
-          ended
+        <span
+          v-if="ticket.session.kind === 'starting'"
+          class="session"
+          :title="ticket.session.hint ?? undefined"
+        >
+          starting<template v-if="ticket.session.hint !== null"> · no status yet</template>
+        </span>
+        <span
+          v-if="ticket.session.kind === 'live'"
+          class="session live"
+          :class="{ needs: ticket.session.needsYou }"
+          :title="`last status event ${ageSince(ticket.session.since)} ago`"
+        >
+          {{ ticket.session.status ?? 'live' }} · {{ ageSince(ticket.session.since) }}
+        </span>
+        <span
+          v-if="ticket.session.kind === 'ended'"
+          class="session"
+          :title="`${ticket.session.detail}, ${ageSince(ticket.session.since)} ago`"
+        >
+          ended · {{ ticket.session.detail }}
         </span>
         <span v-if="ticket.place === 'blocked'" class="waits">
           waits on {{ ticket.waitsOn.map((blocker) => `#${blocker.number}`).join(' ') }}
@@ -251,6 +270,10 @@ const takeableText = (map: MapNode): string =>
 }
 .session {
   color: var(--vscode-descriptionForeground);
+}
+.session.needs {
+  color: var(--vscode-editorWarning-foreground);
+  font-weight: 600;
 }
 .next {
   padding: 0 4px;

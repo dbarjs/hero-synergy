@@ -14,6 +14,7 @@ import {
 import {
   clipboardLive,
   collectProgressLive,
+  eventsWatcherLive,
   hostEnvironmentLive,
   openerLive,
   storageLive,
@@ -37,6 +38,8 @@ export interface ExtensionApi {
     readonly detailOpen: boolean
     /** The last view sent to the Detail panel (sent even while no panel is open). */
     readonly detailView: DetailView | null
+    /** The Tree container's badge: how many sessions need me; 0 shows none. */
+    readonly badge: number
   }
   /** Delivers a message as if the webview had posted it; false when it was rejected. */
   readonly receive: (message: unknown) => Promise<boolean>
@@ -54,6 +57,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
   let spawnedProcesses = 0
   let viewModel: ViewModel | null = null
   let detailView: DetailView | null = null
+  let badge = 0
 
   const countedRunner = Layer.effect(
     ProcessRunner,
@@ -81,6 +85,10 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
         detail.post(next)
       },
       showDetail: (focus) => detail.show(focus),
+      badge: (count) => {
+        badge = count
+        tree.setBadge(count)
+      },
       log,
     }).pipe(
       Effect.provide(
@@ -90,6 +98,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
           openerLive,
           clipboardLive,
           terminalsLive(context),
+          eventsWatcherLive(context),
           hostEnvironmentLive(context),
           storageLive(context.workspaceState),
           FileSystem.live,
@@ -127,6 +136,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
       viewModel,
       detailOpen: detail.isOpen(),
       detailView,
+      badge,
     }),
     receive: (message) => Effect.runPromise(cockpit.receive(message)),
     restoreDetail: (panel) => {
