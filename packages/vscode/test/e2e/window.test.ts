@@ -36,6 +36,7 @@ let workspaceDir: string
 // What the stub `claude` named in the user settings records when a session starts, the script it
 // plays on start (one status event per line) and when it wrote each event.
 let argvFile: string
+let envFile: string
 let scriptFile: string
 let writtenFile: string
 // What the stub serves as `claude agents --json`, and the sessions directory whose changes tell the
@@ -50,6 +51,7 @@ beforeAll(async () => {
   const launchable = createLaunchableWorkspace(path.join(scratch, 'repo'))
   workspaceDir = launchable.workspace
   argvFile = launchable.argvFile
+  envFile = launchable.envFile
   scriptFile = launchable.scriptFile
   writtenFile = launchable.writtenFile
   registryFile = launchable.registryFile
@@ -401,6 +403,45 @@ it('shows a session live, then ended "exited", as its status events arrive', asy
     .poll(() => tree().locator('.pane .session dd').innerText(), { timeout: 15_000 })
     .toMatch(/^ended: exited · \d+[smhd] ago$/)
   await expect.poll(() => ticket.locator('.play').count(), { timeout: 15_000 }).toBe(1)
+})
+
+it('resumes the ended session by its id, in a new terminal named like the session', async () => {
+  onTestFailed(() => captureFailure('resume'))
+  // The stub records a fresh argv for this run, and plays nothing on start.
+  writeFileSync(scriptFile, '')
+  rmSync(argvFile, { force: true })
+  const ticket = row('#3 Contrast audit')
+  // The previous test left the pane open on this ticket; a second click would close it.
+  const pane = tree().locator('.pane').filter({ hasText: '#3 Contrast audit' })
+  if ((await pane.count()) === 0) await ticket.locator('.label').click()
+
+  // An ended session with a known id: Resume first, then Launch fresh.
+  await expect
+    .poll(async () => (await pane.locator('.run').allTextContents()).map((t) => t.trim()), {
+      timeout: 15_000,
+    })
+    .toEqual(['Resume', 'Launch fresh'])
+  const shown = (await pane.locator('.command').first().innerText()).trim()
+  expect(shown).toMatch(/^claude --resume stub-session -n '#3 Contrast audit' --plugin-dir /)
+  await pane.locator('.run').first().click()
+
+  await expect.poll(() => existsSync(argvFile), { timeout: 30_000, interval: 500 }).toBe(true)
+  const argv = readFileSync(argvFile, 'utf8').trimEnd().split('\n')
+  expect(argv.slice(0, 4)).toEqual(['--resume', 'stub-session', '-n', '#3 Contrast audit'])
+  expect(renderCommand(['claude', ...argv])).toBe(shown)
+  // The env is set again, as for any tracked session.
+  expect(readFileSync(envFile, 'utf8').split('\n')[0]).toBe('3')
+  // A fresh terminal beside the old one, both named like the session.
+  await expect
+    .poll(
+      () =>
+        page
+          .locator('.part.panel .terminal-tabs-entry')
+          .filter({ hasText: '#3 Contrast audit' })
+          .count(),
+      { timeout: 15_000 },
+    )
+    .toBe(2)
 })
 
 /** Serves these entries as the registry and touches the sessions directory, as Claude Code does. */

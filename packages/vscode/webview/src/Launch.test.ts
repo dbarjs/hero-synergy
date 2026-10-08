@@ -60,6 +60,7 @@ const launchable = (sessions: Record<string, SessionState> = {}): Launching => (
   pluginPath: '/ext/claude-plugin',
   eventsFile: '/storage/events/repo.jsonl',
   me: null,
+  worktrees: new Map(),
 })
 
 const render = (launching: Launching, selected: string | null = null): VueWrapper =>
@@ -227,17 +228,50 @@ describe('the command in the Focus pane', () => {
     expect(claimed.find('.pane .run').text()).toBe('Launch fresh')
   })
 
-  it('lists Launch fresh then Resume by name once the session ended, each posting its own id', async () => {
+  it('lists Resume by name then Launch fresh once an ended session has no known id', async () => {
     const wrapper = render(launchable({ [PALETTE]: ended('window closed') }), PALETTE)
     expect(wrapper.findAll('.pane .run').map((button) => button.text())).toEqual([
-      'Launch fresh',
       'Resume by name',
+      'Launch fresh',
     ])
-    await wrapper.findAll('.pane .run')[1]?.trigger('click')
-    await wrapper.findAll('.pane .copy')[1]?.trigger('click')
+    await wrapper.findAll('.pane .run')[0]?.trigger('click')
+    await wrapper.findAll('.pane .copy')[0]?.trigger('click')
     expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'resume-by-name']])
     expect(wrapper.emitted('copy')).toEqual([[PALETTE, 'resume-by-name']])
-    expect(wrapper.findAll('.pane .command')[1]?.text()).toBe("claude --resume '#1 Palette'")
+    expect(wrapper.findAll('.pane .command')[0]?.text()).toBe("claude --resume '#1 Palette'")
+  })
+
+  it('lists Resume with the session id then Launch fresh once an ended session has one', async () => {
+    const known: SessionState = { ...ended('window closed'), sessionId: 'abc-123' }
+    const wrapper = render(launchable({ [PALETTE]: known }), PALETTE)
+    expect(wrapper.findAll('.pane .run').map((button) => button.text())).toEqual([
+      'Resume',
+      'Launch fresh',
+    ])
+    await wrapper.findAll('.pane .run')[0]?.trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'resume']])
+    expect(wrapper.findAll('.pane .command')[0]?.text()).toBe(
+      "claude --resume abc-123 -n '#1 Palette' --plugin-dir /ext/claude-plugin",
+    )
+  })
+
+  it.each([
+    [{ uncommitted: 0, ahead: 0 }, 'worktree-1 · clean'],
+    [{ uncommitted: 3, ahead: 0 }, 'worktree-1 · 3 uncommitted files'],
+    [{ uncommitted: 1, ahead: 2 }, 'worktree-1 · 1 uncommitted file · 2 commits not on main'],
+    [{ uncommitted: 0, ahead: 1 }, 'worktree-1 · 1 commit not on main'],
+    [{ uncommitted: 0, ahead: null }, 'worktree-1 · clean'],
+  ])('shows the ticket’s worktree in the pane: %j', (state, text) => {
+    const launching: Launching = {
+      ...launchable(),
+      worktrees: new Map([[1, { path: '/r/.claude/worktrees/1', branch: 'worktree-1', ...state }]]),
+    }
+    const wrapper = render(launching, PALETTE)
+    expect(wrapper.find('.pane .worktree dd').text()).toBe(text)
+  })
+
+  it('shows no worktree line for a ticket without one', () => {
+    expect(render(launchable(), PALETTE).find('.pane .worktree').exists()).toBe(false)
   })
 
   it('swaps the command for the session state, with focus terminal, while starting', async () => {

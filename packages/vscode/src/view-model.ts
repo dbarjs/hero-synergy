@@ -45,6 +45,7 @@ import type {
   UnlistedRow,
   UnmappedRow,
   ViewModel,
+  WorktreeView,
 } from './protocol.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
@@ -174,6 +175,7 @@ export const selectionOf = (
         url: stray.ref.tracker === 'github' ? stray.ref.url : null,
         session: sessionView(undefined),
         disagreement: null,
+        worktree: worktreeView(launching, stray.number),
         actions: [],
         drift: summaryOf(ticketDrift(key, stray, dismissed), 0),
       },
@@ -214,6 +216,7 @@ export const selectionOf = (
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
           session: sessionView(launching.sessions.get(key)),
           disagreement,
+          worktree: worktreeView(launching, ticket.number),
           actions: actionsOf(snapshot, launching, map, ticket, key),
           drift: summaryOf(ticketDrift(key, ticket, dismissed), 0),
         },
@@ -221,6 +224,14 @@ export const selectionOf = (
     }
   }
   return null
+}
+
+/** The ticket's worktree as the panes show it; null when the last read found none. */
+const worktreeView = (launching: Launching, number: number): WorktreeView | null => {
+  const state = launching.worktrees.get(number)
+  return state === undefined
+    ? null
+    : { branch: state.branch, uncommitted: state.uncommitted, ahead: state.ahead }
 }
 
 const neighbour = (
@@ -269,6 +280,7 @@ export const detailOf = (
       clearsWayFor: [],
       session: sessionView(undefined),
       disagreement: null,
+      worktree: worktreeView(launching, stray.number),
       actions: [],
       drift: ownGroup(ticketDrift(key, stray, dismissed)),
     }
@@ -323,6 +335,7 @@ export const detailOf = (
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
         session: sessionView(launching.sessions.get(key)),
         disagreement,
+        worktree: worktreeView(launching, ticket.number),
         actions: actionsOf(snapshot, launching, map, ticket, key),
         drift: ownGroup(ticketDrift(key, ticket, dismissed)),
       }

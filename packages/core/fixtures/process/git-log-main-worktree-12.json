@@ -1,0 +1,13 @@
+{
+  "command": "git",
+  "args": [
+    "-C",
+    "/work/hero-synergy/.claude/worktrees/12",
+    "log",
+    "--format=%H",
+    "main..worktree-12"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exitCode": 0
+}

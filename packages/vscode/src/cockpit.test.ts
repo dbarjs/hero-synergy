@@ -63,10 +63,14 @@ const countingRunner = (recordings: ReadonlyArray<ProcessRecording>, delayMillis
       Effect.sleep(delayMillis).pipe(
         Effect.andThen(
           Effect.sync(() => {
-            runs += 1
             const recorded = recordings.find(
               (r) => r.command === request.command && r.args.join('\0') === request.args.join('\0'),
             )
+            // The worktree reads are not collects: a repo with no recorded worktrees has none, uncounted.
+            if (recorded === undefined && request.args.join(' ') === 'worktree list --porcelain') {
+              return { stdout: '', stderr: '', exitCode: 0, timedOut: false }
+            }
+            runs += 1
             if (recorded === undefined) throw new Error(`not recorded: ${request.args.join(' ')}`)
             return { ...recorded, timedOut: recorded.timedOut ?? false }
           }),
@@ -1310,36 +1314,38 @@ describe('the Cockpit controller launching a ticket', () => {
     ),
   )
 
-  it.effect('offers Launch fresh then Resume by name on an ended session, and resumes plain', () =>
-    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
-      Effect.gen(function* () {
-        yield* cockpit.show
-        yield* cockpit.receive({ type: 'launch', key: PALETTE })
-        terminals.close(1, { reason: 'user', code: null })
-        yield* Effect.yieldNow
-        yield* cockpit.receive({ type: 'select', key: PALETTE })
-        const shown = published.at(-1)
-        const selection = shown?.kind === 'maps' ? shown.selection : null
-        const actions = selection?.kind === 'ticket' ? selection.actions : []
-        expect(actions.map((action) => action.id)).toEqual(['launch-fresh', 'resume-by-name'])
-        expect(actions[1]).toMatchObject({
-          label: 'Resume by name',
-          command: "claude --resume '#1 Palette'",
-          envLine: null,
-          disabled: null,
-        })
-        yield* cockpit.receive({ type: 'launch', key: PALETTE, action: 'resume-by-name' })
-        expect(terminals.opened).toHaveLength(2)
-        // By name: the session name alone, no plugin and no env, and no tracked session.
-        expect(terminals.opened[1]).toMatchObject({
-          name: '#1 Palette',
-          shellPath: CLAUDE,
-          shellArgs: ['--resume', '#1 Palette'],
-          env: {},
-        })
-        expect(ticketRowOf(published.at(-1), PALETTE)?.session.kind).toBe('ended')
-      }),
-    ),
+  it.effect(
+    'offers Resume by name then Launch fresh on an ended session with no id, and resumes plain',
+    () =>
+      withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          terminals.close(1, { reason: 'user', code: null })
+          yield* Effect.yieldNow
+          yield* cockpit.receive({ type: 'select', key: PALETTE })
+          const shown = published.at(-1)
+          const selection = shown?.kind === 'maps' ? shown.selection : null
+          const actions = selection?.kind === 'ticket' ? selection.actions : []
+          expect(actions.map((action) => action.id)).toEqual(['resume-by-name', 'launch-fresh'])
+          expect(actions[0]).toMatchObject({
+            label: 'Resume by name',
+            command: "claude --resume '#1 Palette'",
+            envLine: null,
+            disabled: null,
+          })
+          yield* cockpit.receive({ type: 'launch', key: PALETTE, action: 'resume-by-name' })
+          expect(terminals.opened).toHaveLength(2)
+          // By name: the session name alone, no plugin and no env, and no tracked session.
+          expect(terminals.opened[1]).toMatchObject({
+            name: '#1 Palette',
+            shellPath: CLAUDE,
+            shellArgs: ['--resume', '#1 Palette'],
+            env: {},
+          })
+          expect(ticketRowOf(published.at(-1), PALETTE)?.session.kind).toBe('ended')
+        }),
+      ),
   )
 
   it.effect('copies the command the pane shows', () =>
@@ -2874,5 +2880,184 @@ describe('the Cockpit controller reading the tracker again for sessions', () => 
         expect(yield* run('dbarjs')).toBeNull()
       })
     },
+  )
+})
+
+describe('the Cockpit controller resuming, adopting terminals and showing worktrees', () => {
+  const FOURTH = 'map:3:ticket:4'
+
+  /** What the plugin does: append to the events file, then the disk tells the watcher. */
+  const appendEvents = (
+    fs: FileSystem['Service'],
+    watcher: { change: () => void },
+    text: string,
+  ): Effect.Effect<void> =>
+    Effect.gen(function* () {
+      const before = yield* fs.readFile(EVENTS).pipe(Effect.orElseSucceed(() => ''))
+      yield* fs.writeFile(EVENTS, before + text).pipe(Effect.orDie)
+      watcher.change()
+      for (let i = 0; i < 20; i++) yield* Effect.yieldNow
+    })
+
+  const sessionOf = (published: ViewModel[], key: string) =>
+    ticketRowOf(published.at(-1), key)?.session
+
+  it.effect('resumes an ended session by its id, with the plugin and the env set again', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'sess-1', 'startup'))
+        terminals.close(1, { reason: 'user', code: null })
+        yield* Effect.yieldNow
+        yield* cockpit.receive({ type: 'select', key: PALETTE })
+        const shown = published.at(-1)
+        const selection = shown?.kind === 'maps' ? shown.selection : null
+        const actions = selection?.kind === 'ticket' ? selection.actions : []
+        expect(actions.map((action) => action.id)).toEqual(['resume', 'launch-fresh'])
+        expect(actions[0]).toMatchObject({
+          label: 'Resume',
+          command: "claude --resume sess-1 -n '#1 Palette' --plugin-dir /ext/claude-plugin",
+          disabled: null,
+        })
+        expect(actions[0]?.envLine).toContain('HERO_SYNERGY_TICKET=1')
+
+        yield* cockpit.receive({ type: 'launch', key: PALETTE, action: 'resume' })
+        expect(terminals.opened).toHaveLength(2)
+        expect(terminals.opened[1]).toMatchObject({
+          name: '#1 Palette',
+          shellPath: CLAUDE,
+          shellArgs: [
+            '--resume',
+            'sess-1',
+            '-n',
+            '#1 Palette',
+            '--plugin-dir',
+            '/ext/claude-plugin',
+          ],
+          cwd: ROOT,
+          env: { HERO_SYNERGY_TICKET: '1', HERO_SYNERGY_EVENTS: EVENTS },
+        })
+        // A tracked session again: starting, with the same id remembered for the next resume.
+        expect(sessionOf(published, PALETTE)?.kind).toBe('starting')
+      }),
+    ),
+  )
+
+  it.effect('runs Launch fresh as the plain Work ticket command on an ended session', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        terminals.close(1, { reason: 'user', code: null })
+        yield* Effect.yieldNow
+        yield* cockpit.receive({ type: 'launch', key: PALETTE, action: 'launch-fresh' })
+        expect(terminals.opened).toHaveLength(2)
+        expect(terminals.opened[1]?.shellArgs).toEqual(terminals.opened[0]?.shellArgs)
+        expect(sessionOf(published, PALETTE)?.kind).toBe('starting')
+      }),
+    ),
+  )
+
+  it.effect(
+    'adopts a terminal named for a ticket after a reload, keeping what the file said of its session',
+    () => {
+      const setup = launchable()
+      const text = eventLine('4', 'SessionStart', 'A')
+      return withCockpit(
+        { ...setup, files: { ...setup.files, [EVENTS]: text } },
+        ({ cockpit, published, terminals }) =>
+          Effect.gen(function* () {
+            terminals.kept.push('zsh', '#4 Row density')
+            yield* cockpit.show
+            // #4 has a terminal named for it: its last event stands, and focus reaches the terminal.
+            expect(sessionOf(published, FOURTH)).toMatchObject({ kind: 'live', focusable: true })
+            yield* cockpit.receive({ type: 'focus-terminal', key: FOURTH })
+            expect(terminals.focused).toEqual([1000 + 1])
+            // The adopted terminal closing ends its ticket like any other.
+            terminals.close(1001, { reason: 'user', code: null })
+            yield* Effect.yieldNow
+            expect(sessionOf(published, FOURTH)).toMatchObject({
+              kind: 'ended',
+              detail: 'terminal closed',
+            })
+          }),
+      )
+    },
+  )
+
+  it.effect(
+    'adopts a named terminal the file knows nothing of as starting, for the registry to confirm',
+    () =>
+      withCockpit(launchable(), ({ cockpit, published, terminals }) =>
+        Effect.gen(function* () {
+          terminals.kept.push('#4 Row density', 'build', '#12abc')
+          yield* cockpit.show
+          expect(sessionOf(published, FOURTH)?.kind).toBe('starting')
+          // Only a name that starts with `#<number>` counts; the rest of the Tree is untouched.
+          expect(sessionOf(published, PALETTE)?.kind).toBe('none')
+        }),
+      ),
+  )
+
+  describe('on a GitHub tracker', () => {
+    const worktreeList = (number: number): ProcessRecording => ({
+      command: 'git',
+      args: ['worktree', 'list', '--porcelain'],
+      stdout: `worktree ${ROOT}\nHEAD 1111\nbranch refs/heads/main\n\nworktree ${ROOT}/.claude/worktrees/${number}\nHEAD 2222\nbranch refs/heads/worktree-${number}\n`,
+      stderr: '',
+      exitCode: 0,
+    })
+    const inWorktree = (number: number, args: string[], stdout: string): ProcessRecording => ({
+      command: 'git',
+      args: ['-C', `${ROOT}/.claude/worktrees/${number}`, ...args],
+      stdout,
+      stderr: '',
+      exitCode: 0,
+    })
+
+    it.effect('shows a ticket’s worktree in the Focus pane and the Detail, read-only', () => {
+      const recordings = onGitHub(...goodCollect())
+      return withCockpit({ files: GITHUB_DOC, recordings }, ({ cockpit, published, details }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const rows = mapsOf(published[0]).maps.flatMap((map) => map.tickets)
+          const [withTree, without] = rows
+          if (withTree === undefined || without === undefined) throw new Error('no tickets')
+          const n = withTree.number
+          recordings.push(
+            worktreeList(n),
+            inWorktree(n, ['--no-optional-locks', 'status', '--porcelain'], ' M a.ts\n?? b.ts\n'),
+            inWorktree(n, ['log', '--format=%H', `main..worktree-${n}`], 'c0ffee\n'),
+          )
+          yield* cockpit.refresh
+          yield* cockpit.receive({ type: 'select', key: withTree.key })
+          expect(mapsOf(published.at(-1)).selection).toMatchObject({
+            kind: 'ticket',
+            worktree: { branch: `worktree-${n}`, uncommitted: 2, ahead: 1 },
+          })
+          expect(details.at(-1)?.detail).toMatchObject({
+            kind: 'ticket',
+            worktree: { branch: `worktree-${n}`, uncommitted: 2, ahead: 1 },
+          })
+          // A ticket with no worktree shows none.
+          yield* cockpit.receive({ type: 'select', key: without.key })
+          expect(mapsOf(published.at(-1)).selection).toMatchObject({
+            kind: 'ticket',
+            worktree: null,
+          })
+        }),
+      )
+    })
+  })
+
+  it.effect('reads no worktree on a local tracker, which has none', () =>
+    withCockpit(launchable(), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'select', key: PALETTE })
+        expect(mapsOf(published.at(-1)).selection).toMatchObject({ worktree: null })
+      }),
+    ),
   )
 })

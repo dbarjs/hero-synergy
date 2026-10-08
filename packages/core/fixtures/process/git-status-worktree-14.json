@@ -1,0 +1,13 @@
+{
+  "command": "git",
+  "args": [
+    "-C",
+    "/work/hero-synergy/.claude/worktrees/14",
+    "--no-optional-locks",
+    "status",
+    "--porcelain"
+  ],
+  "stdout": "",
+  "stderr": "",
+  "exitCode": 0
+}

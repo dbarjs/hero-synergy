@@ -126,6 +126,8 @@ export type SessionInput =
       readonly exit: TerminalExit
       readonly at: number
     }
+  /** After a reload: a terminal of the window is named for this ticket, so it is the ticket's terminal. */
+  | { readonly type: 'adopt'; readonly terminal: number }
   /** The registry reports the session busy. */
   | { readonly type: 'busy' }
   /** A session with no ticket in view is no longer listed: it ends, and the record stays. */
@@ -352,6 +354,19 @@ export function reduceSession(
       return (state?.kind === 'starting' || state?.kind === 'live') && state.terminal === null
         ? { ...state, terminal: input.terminal }
         : state
+    case 'adopt':
+      // The events already say what the session was; a ticket they never named has a terminal and
+      // no word yet, which the registry then confirms.
+      if (state === undefined) {
+        return {
+          kind: 'starting',
+          terminal: input.terminal,
+          hint: false,
+          sessionId: null,
+          finished: NO_FINISHED,
+        }
+      }
+      return state.terminal === null ? { ...state, terminal: input.terminal } : state
     case 'quiet':
       return state?.kind === 'starting' && state.terminal === input.terminal
         ? { ...state, hint: true }
@@ -423,6 +438,11 @@ export const sessionLeft = (
     before.registry !== null &&
     after?.kind === 'live' &&
     after.registry === null)
+/** The ticket number a terminal's name starts with (`#12 Which database`), else null. */
+export function ticketOfTerminalName(name: string): number | null {
+  const match = /^#(\d+)(?!\d)/.exec(name)
+  return match === null ? null : Number(match[1])
+}
 
 /** Whether a terminal of the Cockpit is running on the ticket, so ▶ is not offered. */
 export const isRunning = (state: SessionState | undefined): boolean =>

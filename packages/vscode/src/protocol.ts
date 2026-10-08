@@ -17,10 +17,21 @@ export interface DisagreementView {
   readonly level: 'note' | 'warning'
 }
 
+/**
+ * A ticket's worktree as git reports it, read-only: it exists, how many files are uncommitted,
+ * how many commits it has that `main` lacks (null when git could not say).
+ */
+export interface WorktreeView {
+  readonly branch: string
+  readonly uncommitted: number
+  readonly ahead: number | null
+}
+
 /** Which Action a button runs; the host looks it up among the Actions of the row it was pressed on. */
 export type ActionId =
   | 'work-ticket'
   | 'launch-fresh'
+  | 'resume'
   | 'resume-by-name'
   | 'to-spec'
   | 'chart-map'
@@ -32,6 +43,7 @@ export type ActionId =
 export const ACTION_IDS: ReadonlyArray<ActionId> = [
   'work-ticket',
   'launch-fresh',
+  'resume',
   'resume-by-name',
   'to-spec',
   'chart-map',
@@ -53,6 +65,7 @@ export interface ActionView {
   readonly label:
     | 'Work ticket'
     | 'Launch fresh'
+    | 'Resume'
     | 'Resume by name'
     | 'To spec'
     | 'Chart a map'
@@ -231,6 +244,8 @@ export type Focus =
       readonly url: string | null
       readonly session: SessionView
       readonly disagreement: DisagreementView | null
+      /** The ticket's worktree; null when it has none. */
+      readonly worktree: WorktreeView | null
       /** The Actions of the ticket's context, first the one ▶ runs; empty when it offers none. */
       readonly actions: ReadonlyArray<ActionView>
       readonly drift: DriftSummary | null
@@ -351,6 +366,8 @@ export type Detail =
       readonly clearsWayFor: ReadonlyArray<NeighbourView>
       readonly session: SessionView
       readonly disagreement: DisagreementView | null
+      /** The ticket's worktree; null when it has none. */
+      readonly worktree: WorktreeView | null
       /** The Actions of the ticket's context, first the one ▶ runs. */
       readonly actions: ReadonlyArray<ActionView>
       /** The Drift section; empty hides it. */

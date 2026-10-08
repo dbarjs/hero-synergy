@@ -62,6 +62,9 @@ describe('hero-synergy in the extension host', () => {
   })
 
   it('resolves the view when it is shown and collects once', async () => {
+    // A terminal a reload kept: named for a ticket and open before the Cockpit has read anything.
+    // The window reloads by restarting this host, which leaves the terminals as they were.
+    vscode.window.createTerminal({ name: '#4 Row density' })
     await vscode.commands.executeCommand('workbench.view.extension.heroSynergy')
     await until('the view to resolve', () => api().state().viewResolved)
     await until('the view model to go out', () => api().state().viewModel?.kind === 'maps')
@@ -85,6 +88,15 @@ describe('hero-synergy in the extension host', () => {
     // discovery, then the stub `claude agents --json` for the registry; the remote is not needed
     // on a local tracker.
     assert.equal(spawnedProcesses, 3)
+  })
+
+  it('adopts the terminal named `#4 …` as that ticket’s, which the first collect finds already open', async () => {
+    const key = 'map:3:ticket:4'
+    await until('the row to be adopted', () => rowOf(key)?.session.kind === 'starting')
+    // No terminal of ours opened it, and ▶ is not offered over it; focus reaches it.
+    assert.equal(rowOf(key)?.action, null)
+    assert.equal(vscode.window.terminals.length, 1)
+    assert.equal(await api().receive({ type: 'focus-terminal', key }), true)
   })
 
   it('collects again on the Refresh command', async () => {
