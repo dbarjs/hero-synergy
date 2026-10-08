@@ -116,9 +116,18 @@ export interface TerminalClosed {
   readonly exit: TerminalExit
 }
 
+/** A terminal the window already had when the Cockpit looked, such as one a reload kept. */
+export interface ExistingTerminal {
+  /** The Cockpit's own id for it, valid until it closes. */
+  readonly id: number
+  readonly name: string
+}
+
 export interface TerminalsShape {
   /** Creates and shows a terminal; its id is the Cockpit's own, valid until it closes. */
   readonly open: (spec: TerminalSpec) => Effect.Effect<number>
+  /** The terminals the window has that this service did not open, each given an id so it can be focused. */
+  readonly existing: Effect.Effect<ReadonlyArray<ExistingTerminal>>
   readonly focus: (id: number) => Effect.Effect<void>
   /** Calls the listener each time a terminal this service opened closes. */
   readonly onClosed: (listener: (closed: TerminalClosed) => void) => void
@@ -127,6 +136,8 @@ export interface TerminalsShape {
 /** What a test holds to see the terminals the Cockpit opens and to play one closing. */
 export interface TerminalRecorder {
   readonly opened: TerminalSpec[]
+  /** Names of terminals the window already had, as a reload leaves them; ids follow the opened ones. */
+  readonly kept: string[]
   readonly focused: number[]
   readonly close: (id: number, exit: TerminalExit) => void
 }
@@ -140,6 +151,7 @@ export class Terminals extends Context.Service<Terminals, TerminalsShape>()(
     const listeners: Array<(closed: TerminalClosed) => void> = []
     const recorder: TerminalRecorder = {
       opened: [],
+      kept: [],
       focused: [],
       close: (id, exit) => listeners.forEach((listener) => listener({ id, exit })),
     }
@@ -151,6 +163,9 @@ export class Terminals extends Context.Service<Terminals, TerminalsShape>()(
             recorder.opened.push(spec)
             return recorder.opened.length
           }),
+        existing: Effect.sync(() =>
+          recorder.kept.map((name, index) => ({ id: 1000 + index, name })),
+        ),
         focus: (id) =>
           Effect.sync(() => {
             recorder.focused.push(id)

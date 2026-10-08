@@ -1,0 +1,7 @@
+{
+  "command": "git",
+  "args": ["worktree", "list", "--porcelain"],
+  "stdout": "worktree /work/hero-synergy\nHEAD 1111111111111111111111111111111111111111\nbranch refs/heads/main\n\nworktree /work/hero-synergy/.claude/worktrees/12\nHEAD 2222222222222222222222222222222222222222\nbranch refs/heads/worktree-12\n\nworktree /work/hero-synergy/.claude/worktrees/13\nHEAD 3333333333333333333333333333333333333333\nbranch refs/heads/worktree-13\n\nworktree /work/hero-synergy/.claude/worktrees/14\nHEAD 4444444444444444444444444444444444444444\nbranch refs/heads/worktree-14\n\nworktree /work/scratch\nHEAD 5555555555555555555555555555555555555555\ndetached\n",
+  "stderr": "",
+  "exitCode": 0
+}

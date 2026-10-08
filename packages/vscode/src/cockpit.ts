@@ -10,6 +10,7 @@ import {
   groupByTicket,
   HINT_AFTER_MS,
   isRunning,
+  isFinished,
   type Launch,
   needsYou,
   type ProcessError,
@@ -22,12 +23,15 @@ import {
   reduceSession,
   sessionLeft,
   type RepoTracker,
+  readWorktrees,
   type ScoutError,
   type SessionInput,
   type SessionState,
   type Snapshot,
   type StatusEvent,
+  ticketOfTerminalName,
   userInvokedSkills,
+  type WorktreeState,
 } from '@hero-synergy/core'
 import { Clock, Deferred, Effect, Fiber, Ref, Semaphore } from 'effect'
 
@@ -328,6 +332,9 @@ export const makeCockpit = (
       asked: false,
       login: null,
     })
+    // The worktrees of the tickets in view, by ticket number, as the last read found them.
+    const worktrees = yield* Ref.make<ReadonlyMap<number, WorktreeState>>(new Map())
+    const readingWorktrees = Semaphore.makeUnsafe(1)
     // A read that found no snapshot to match tickets against waits for the first one.
     const registryPending = yield* Ref.make(false)
     // What the last discovery found: where `claude` is and the skills; null skills until it has run.
@@ -394,6 +401,7 @@ export const makeCockpit = (
           pluginPath: environment.pluginPath,
           eventsFile: environment.eventsFile(repoRoot),
           me: (yield* Ref.get(me)).login,
+          worktrees: yield* Ref.get(worktrees),
         }
       })
 
@@ -670,6 +678,18 @@ export const makeCockpit = (
       }),
     )
 
+    /** The row key of each ticket a terminal the window already had is named for, with that terminal. */
+    const adoptable: Effect.Effect<ReadonlyMap<string, number>> = Effect.gen(function* () {
+      const found = new Map<string, number>()
+      for (const terminal of yield* terminals.existing) {
+        const number = ticketOfTerminalName(terminal.name)
+        if (number === null) continue
+        const key = yield* keyOfTicket(String(number))
+        if (key !== null && !found.has(key)) found.set(key, terminal.id)
+      }
+      return found
+    })
+
     /**
      * Starts reading the events file of a repo, once its root is known: the file is created before
      * it is watched, read in full once, compacted if it grew past the cap, then watched. What the
@@ -698,14 +718,20 @@ export const makeCockpit = (
             const prior = yield* Ref.get(sessions)
             yield* applyEvents(first.events)
             const at = yield* Clock.currentTimeMillis
+            // A terminal the window kept across the reload, named for a ticket, is that ticket's
+            // terminal: what the file says about it stays, for the registry to confirm.
+            const adopted = yield* adoptable
             // Only what the file put there: a terminal launched meanwhile is this window's own.
             yield* Ref.update(sessions, (map) => {
               const reloaded = new Map(map)
               for (const [key, session] of map) {
-                if (session !== prior.get(key)) reloaded.set(key, afterReload(session, at))
+                if (session !== prior.get(key) && !adopted.has(key)) {
+                  reloaded.set(key, afterReload(session, at))
+                }
               }
               return reloaded
             })
+            for (const [key, terminal] of adopted) yield* dispatch(key, { type: 'adopt', terminal })
             if (yield* reader.compact(EVENTS_SIZE_CAP)) options.log(`Compacted ${file}`)
             yield* watcher.watch(file, () => forkHere(drainEvents))
           }),
@@ -774,6 +800,36 @@ export const makeCockpit = (
       }),
     )
 
+    /**
+     * Reads the worktrees of the tickets in the unfinished maps, read-only through git. A GitHub
+     * tracker only: a local tracker has no worktrees.
+     */
+    const refreshWorktrees: Effect.Effect<void> = readingWorktrees.withPermits(1)(
+      Effect.gen(function* () {
+        const state = yield* Ref.get(base)
+        if (state.kind !== 'snapshot' || state.snapshot.tracker.kind !== 'github') return
+        const wanted = state.snapshot.maps
+          .filter((map) => !isFinished(map))
+          .flatMap((map) => map.tickets.map((ticket) => ticket.number))
+        const read = yield* readWorktrees(runner, state.snapshot.repoRoot, wanted)
+        const before = yield* Ref.get(worktrees)
+        const same =
+          read.size === before.size &&
+          [...read].every(([number, now]) => {
+            const was = before.get(number)
+            return (
+              was !== undefined &&
+              was.path === now.path &&
+              was.uncommitted === now.uncommitted &&
+              was.ahead === now.ahead
+            )
+          })
+        if (same) return
+        yield* Ref.set(worktrees, read)
+        yield* publish
+      }),
+    )
+
     /** Something changed under the sessions directory: read the registry once it has been quiet. */
     const registryChanged: Effect.Effect<void> = Effect.gen(function* () {
       if (!(yield* Ref.get(onScreen))) return
@@ -800,6 +856,7 @@ export const makeCockpit = (
         if ((yield* Ref.getAndSet(onScreen, shown)) === shown) return
         if (shown) {
           yield* ensureRegistryWatch
+          yield* refreshWorktrees
           yield* refreshRegistry
           return
         }
@@ -873,6 +930,8 @@ export const makeCockpit = (
       // A registry read that waited for this snapshot runs beside the collect, not inside it: a
       // slow `claude` must not keep the collect "running" and swallow the next Refresh press.
       if (yield* Ref.get(registryPending)) yield* Effect.forkDetach(refreshRegistry)
+      // Reading the worktrees is quick and local: inside the collect, one spawn each, then the panes update.
+      yield* refreshWorktrees
     })
 
     /** Runs the collect this call was admitted for, then the one queued behind it, one at a time. */

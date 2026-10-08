@@ -5,6 +5,7 @@ import type { ActionId, DetailView, MapSection, NeighbourView } from '../../src/
 import ActionBlock from './ActionBlock.vue'
 import Markdown from './Markdown.vue'
 import SessionLine from './SessionLine.vue'
+import WorktreeLine from './WorktreeLine.vue'
 
 /**
  * The Detail at the editor's width: the full issue of the selection. A ticket shows its
@@ -130,6 +131,10 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
             @focus-terminal="emit('focusTerminal', view.detail.key)"
           />
         </dd>
+      </div>
+      <div v-if="view.detail.worktree !== null" class="fact worktree">
+        <dt>Worktree</dt>
+        <dd><WorktreeLine :worktree="view.detail.worktree" /></dd>
       </div>
     </dl>
 

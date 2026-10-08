@@ -2,6 +2,7 @@
 import type { ActionId, Focus } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
 import SessionLine from './SessionLine.vue'
+import WorktreeLine from './WorktreeLine.vue'
 
 /**
  * The Focus pane, open inline under the selected row. It is a stack of labelled
@@ -61,6 +62,10 @@ const emit = defineEmits<{
               @focus-terminal="emit('focusTerminal', focus.key)"
             />
           </dd>
+        </div>
+        <div v-if="focus.worktree !== null" class="fact worktree">
+          <dt>Worktree</dt>
+          <dd><WorktreeLine :worktree="focus.worktree" /></dd>
         </div>
       </template>
       <template v-else>

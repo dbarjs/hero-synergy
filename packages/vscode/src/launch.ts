@@ -14,10 +14,12 @@ import {
   setup,
   type Snapshot,
   type Ticket,
+  resumeById,
   type TicketType,
   toSpec,
   type WayfinderMap,
   workTicket,
+  type WorktreeState,
 } from '@hero-synergy/core'
 
 import type { ClaudeResolution } from './claude-path.ts'
@@ -45,6 +47,8 @@ export interface Launching {
   readonly eventsFile: string
   /** The GitHub login of the person at this machine, to tell their claim from someone else's; null when not known. */
   readonly me: string | null
+  /** The worktrees the last read found, by ticket number; a ticket with none is absent. */
+  readonly worktrees: ReadonlyMap<number, WorktreeState>
 }
 
 /** Nothing resolved and nothing running: what a Tree shows before the first collect finds out. */
@@ -58,6 +62,7 @@ export const NOT_LAUNCHING: Launching = {
   pluginPath: '',
   eventsFile: '',
   me: null,
+  worktrees: new Map(),
 }
 
 const INSTALL_HINT =
@@ -179,7 +184,7 @@ const contextOf = (
 
 /**
  * The Actions of a ticket's context, first the one ▶ runs. A frontier ticket offers Work ticket;
- * one claimed elsewhere, Launch fresh; an ended session, Launch fresh then Resume by name; a
+ * one claimed elsewhere, Launch fresh; an ended session, Resume (by name with no known id) then Launch fresh; a
  * blocked or closed ticket and a starting session offer none (focus terminal is a button).
  */
 export function ticketActions(
@@ -215,14 +220,22 @@ export function ticketActions(
   }
 
   if (session?.kind === 'ended') {
-    return [
-      ticketSession('launch-fresh', 'Launch fresh'),
-      plan(launching, 'resume-by-name', 'Resume by name', {
-        launch: resumeByName(context, ticket),
-        name,
-        icon,
-      }),
-    ]
+    // Resume is by session id, the plugin and env set again; with no id it is by name, a plain terminal.
+    const resume =
+      session.sessionId === null
+        ? plan(launching, 'resume-by-name', 'Resume by name', {
+            launch: resumeByName(context, ticket),
+            name,
+            icon,
+          })
+        : plan(launching, 'resume', 'Resume', {
+            launch: resumeById(context, ticket, session.sessionId),
+            tracked: true,
+            note,
+            name,
+            icon,
+          })
+    return [resume, ticketSession('launch-fresh', 'Launch fresh')]
   }
   return place === 'frontier'
     ? [ticketSession('work-ticket', 'Work ticket')]

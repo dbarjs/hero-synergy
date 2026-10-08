@@ -189,4 +189,12 @@ export {
   shownStatus,
   STATUS_WORDS,
   type TerminalExit,
+  ticketOfTerminalName,
 } from './session/session.ts'
+export {
+  type ListedWorktree,
+  parseWorktreeList,
+  readWorktrees,
+  ticketOfBranch,
+  type WorktreeState,
+} from './worktree/worktrees.ts'

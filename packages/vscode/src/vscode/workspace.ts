@@ -126,6 +126,17 @@ export const terminalsLive = (context: vscode.ExtensionContext): Layer.Layer<Ter
           if (spec.sendText !== null) terminal.sendText(spec.sendText)
           return id
         }),
+      existing: Effect.sync(() =>
+        vscode.window.terminals
+          .filter((terminal) => !idOf.has(terminal))
+          .map((terminal) => {
+            // Known from now on, so focus and the close listener reach it like any other.
+            const id = nextId++
+            byId.set(id, terminal)
+            idOf.set(terminal, id)
+            return { id, name: terminal.name }
+          }),
+      ),
       focus: (id) =>
         Effect.sync(() => {
           byId.get(id)?.show()

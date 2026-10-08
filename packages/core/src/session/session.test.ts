@@ -13,6 +13,7 @@ import {
   type SessionInput,
   type SessionState,
   sessionView,
+  ticketOfTerminalName,
 } from './session.ts'
 
 const event = (
@@ -481,6 +482,41 @@ describe('the registry as the first source of liveness', () => {
       ),
     ).toMatchObject({ warning: '2 other live sessions have this ticket’s number' })
     expect(sessionView(reduceSession(state, unlisted()))).toMatchObject({ warning: null })
+  })
+
+  it('adopts a terminal for a ticket the events never named, starting until the registry confirms', () => {
+    const adopted = reduceSession(undefined, { type: 'adopt', terminal: 7 })
+    expect(adopted).toMatchObject({ kind: 'starting', terminal: 7, sessionId: null })
+    const confirmed = reduceSession(adopted, {
+      type: 'registry',
+      listed: [{ sessionId: 'R', name: '#57 Ticket', status: 'working' }],
+      at: 500,
+    })
+    expect(confirmed).toMatchObject({ kind: 'live', terminal: 7, adopted: false })
+  })
+
+  it('gives a live ticket the adopted terminal without changing what the events said', () => {
+    const live = reduceSession(undefined, start('A'))
+    expect(reduceSession(live, { type: 'adopt', terminal: 7 })).toMatchObject({
+      kind: 'live',
+      terminal: 7,
+      sessionId: 'A',
+    })
+    // A terminal the ticket already has is not replaced.
+    const held = reduceSession(reduceSession(undefined, { type: 'launched', at: 1 }), {
+      type: 'terminal',
+      terminal: 3,
+    })
+    expect(reduceSession(held, { type: 'adopt', terminal: 7 })).toMatchObject({ terminal: 3 })
+  })
+
+  it('names the ticket a terminal belongs to only when its name starts with #<number>', () => {
+    expect(ticketOfTerminalName('#12 Which database')).toBe(12)
+    expect(ticketOfTerminalName('#12')).toBe(12)
+    expect(ticketOfTerminalName('#12abc')).toBe(12)
+    expect(ticketOfTerminalName('zsh')).toBeNull()
+    expect(ticketOfTerminalName('build #12')).toBeNull()
+    expect(ticketOfTerminalName('#x')).toBeNull()
   })
 
   it('counts a session the registry says needs me in the badge', () => {
