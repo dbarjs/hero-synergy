@@ -205,7 +205,8 @@ describe('hero-synergy launching a ticket', () => {
     assert.ok(!options.shellArgs?.includes('-w'), 'no worktree on a local tracker')
     const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
     assert.ok(folder)
-    assert.equal(String(options.cwd), folder)
+    // macOS temp folders sit behind the /var symlink; VS Code 1.141 hands back the resolved path.
+    assert.equal(realpathSync(String(options.cwd)), realpathSync(folder))
     assert.equal(options.env?.HERO_SYNERGY_TICKET, '1')
     assert.match(String(options.env?.HERO_SYNERGY_EVENTS), /events[\\/][0-9a-f]{16}\.jsonl$/)
     assert.equal((options.iconPath as vscode.ThemeIcon).id, 'beaker')
