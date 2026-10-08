@@ -7,6 +7,7 @@ import type { DetailView, ViewModel } from './protocol.ts'
 import { registerDetailPanel } from './vscode/detail-panel.ts'
 import {
   createLog,
+  registerActionCommands,
   registerRefreshCommand,
   registerRefreshTriggers,
   registerTreeView,
@@ -17,6 +18,7 @@ import {
   eventsWatcherLive,
   hostEnvironmentLive,
   openerLive,
+  paletteLive,
   storageLive,
   terminalsLive,
   workspaceFoldersLive,
@@ -97,6 +99,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
           collectProgressLive,
           openerLive,
           clipboardLive,
+          paletteLive,
           terminalsLive(context),
           eventsWatcherLive(context),
           hostEnvironmentLive(context),
@@ -124,6 +127,10 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     onCommand: () => run(cockpit.openDetail),
   })
   registerRefreshCommand(context, () => run(cockpit.refresh))
+  registerActionCommands(context, {
+    chartMap: () => run(cockpit.chartMap),
+    runSkill: () => run(cockpit.runSkill),
+  })
   registerRefreshTriggers(context, {
     onFocus: () => run(cockpit.focus),
     onScratchChange: () => run(cockpit.scratchChanged),

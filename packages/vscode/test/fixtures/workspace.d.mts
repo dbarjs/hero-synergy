@@ -22,3 +22,7 @@ export function createGitHubWorkspace(
   recording: string,
 ): { workspace: string; bin: string }
 export function createBareWorkspace(parent: string): string
+export function createEmptyWorkspace(
+  parent: string,
+  options: { trackerDoc: boolean; skills: string[] },
+): string

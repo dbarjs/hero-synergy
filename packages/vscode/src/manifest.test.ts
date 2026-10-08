@@ -91,7 +91,19 @@ describe('the manifest the registries show', () => {
     }
   })
 
-  it('declares the three commands under the Hero Synergy category', () => {
+  it('puts Chart a map, Run skill… and Refresh in the Tree title bar, in that order', () => {
+    const items = manifest.contributes.menus['view/title'].toSorted(
+      (a: { group: string }, b: { group: string }) => a.group.localeCompare(b.group),
+    )
+    expect(items.map((item: { command: string }) => item.command)).toEqual([
+      'heroSynergy.chartMap',
+      'heroSynergy.runSkill',
+      'heroSynergy.refresh',
+    ])
+    for (const item of items) expect(item.when).toBe('view == heroSynergy.tree')
+  })
+
+  it('declares the four commands under the Hero Synergy category', () => {
     const commands = manifest.contributes.commands.map(
       (command: { command: string; title: string; category: string }) => [
         command.command,
@@ -101,6 +113,7 @@ describe('the manifest the registries show', () => {
     )
     expect(commands).toEqual([
       ['heroSynergy.openDetail', 'Hero Synergy', 'Open Cockpit Detail'],
+      ['heroSynergy.chartMap', 'Hero Synergy', 'Chart a map'],
       ['heroSynergy.runSkill', 'Hero Synergy', 'Run skill…'],
       ['heroSynergy.refresh', 'Hero Synergy', 'Refresh'],
     ])

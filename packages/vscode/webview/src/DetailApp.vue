@@ -26,9 +26,9 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     @reveal="(key) => post({ type: 'reveal', key })"
     @open="(key) => post({ type: 'open', key })"
     @link="(url) => post({ type: 'open-link', url })"
-    @launch="(key) => post({ type: 'launch', key })"
+    @launch="(key, action) => post({ type: 'launch', key, action })"
     @focus-terminal="(key) => post({ type: 'focus-terminal', key })"
-    @copy="(key) => post({ type: 'copy', key })"
+    @copy="(key, action) => post({ type: 'copy', key, action })"
     @dismiss="(dismissKey) => post({ type: 'dismiss-drift', dismissKey })"
   />
 </template>

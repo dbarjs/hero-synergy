@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 import type { HostMessage, MapNode } from '../../src/protocol.ts'
 import App from './App.vue'
 
+const NO_START = { key: 'repo', actions: [], note: null }
 const postMessage = vi.fn()
 // The webview host hands out its API once per page; the stub stands in for it.
 vi.stubGlobal('acquireVsCodeApi', () => ({ postMessage }))
@@ -18,6 +19,7 @@ const map: MapNode = {
   decided: 0,
   total: 2,
   destination: null,
+  action: null,
   tickets: [],
   fog: { key: 'map:1:fog', expanded: false, entries: [] },
   decisions: { key: 'map:1:decisions', expanded: false, entries: [] },
@@ -45,6 +47,7 @@ describe('the Cockpit app', () => {
         maps: [map],
         finished: null,
         unmapped: null,
+        start: NO_START,
         selection: null,
       },
     })
@@ -67,6 +70,7 @@ describe('the Cockpit app', () => {
         maps: [map, { ...map, key: 'map:2', number: 2, expanded: true }],
         finished: null,
         unmapped: null,
+        start: NO_START,
         selection: null,
       },
     })
@@ -85,7 +89,10 @@ describe('the Cockpit app', () => {
   it('stops listening to the host once it is gone', async () => {
     const wrapper = mount(App)
     wrapper.unmount()
-    fromHost({ type: 'view-model', viewModel: { kind: 'message', message: 'late', detail: null } })
+    fromHost({
+      type: 'view-model',
+      viewModel: { kind: 'message', message: 'late', detail: null, start: NO_START },
+    })
     await flushPromises()
     expect(wrapper.html()).not.toContain('late')
   })

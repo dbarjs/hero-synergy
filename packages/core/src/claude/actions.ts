@@ -36,6 +36,8 @@ export interface LaunchContext {
 export interface SkillCommands {
   readonly wayfinder: string
   readonly toSpec: string
+  /** `/setup-matt-pocock-skills`, which writes the tracker doc. */
+  readonly setup: string
 }
 
 export interface TicketTarget {
@@ -159,4 +161,21 @@ export function chartMap(
 /** Run skill…: any discovered command by itself. Plain terminal. */
 export function runSkill(context: Pick<LaunchContext, 'repoRoot'>, command: string): Launch {
   return launch(['claude', command], context.repoRoot)
+}
+
+/** Setup: the setup skill's command by itself, for a repo with no tracker doc. Plain terminal. */
+export function setup(
+  context: Pick<LaunchContext, 'repoRoot'>,
+  commands: Pick<SkillCommands, 'setup'>,
+): Launch {
+  return launch(['claude', commands.setup], context.repoRoot)
+}
+
+/** The two ways to install the skills; the empty state offers both and says to pick one. */
+export function installPlugin(context: Pick<LaunchContext, 'repoRoot'>): Launch {
+  return launch(['claude', 'plugins', 'install', 'mattpocock-skills'], context.repoRoot)
+}
+
+export function installWithNpx(context: Pick<LaunchContext, 'repoRoot'>): Launch {
+  return launch(['npx', 'skills@latest', 'add', 'mattpocock/skills'], context.repoRoot)
 }

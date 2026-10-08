@@ -1,6 +1,8 @@
 import { Option, Schema } from 'effect'
 
-import type { WebviewMessage } from './protocol.ts'
+import { ACTION_IDS, type WebviewMessage } from './protocol.ts'
+
+const ActionIdSchema = Schema.Literals(ACTION_IDS)
 
 /**
  * The messages the webview may send, validated by the host. Anything else is
@@ -23,9 +25,17 @@ const WebviewMessageSchema = Schema.Union([
   }),
   Schema.Struct({ type: Schema.Literal('reveal'), key: Schema.String }),
   Schema.Struct({ type: Schema.Literal('open-link'), url: Schema.String }),
-  Schema.Struct({ type: Schema.Literal('launch'), key: Schema.String }),
+  Schema.Struct({
+    type: Schema.Literal('launch'),
+    key: Schema.String,
+    action: Schema.optionalKey(ActionIdSchema),
+  }),
   Schema.Struct({ type: Schema.Literal('focus-terminal'), key: Schema.String }),
-  Schema.Struct({ type: Schema.Literal('copy'), key: Schema.String }),
+  Schema.Struct({
+    type: Schema.Literal('copy'),
+    key: Schema.String,
+    action: Schema.optionalKey(ActionIdSchema),
+  }),
   Schema.Struct({ type: Schema.Literal('dismiss-drift'), dismissKey: Schema.String }),
 ])
 

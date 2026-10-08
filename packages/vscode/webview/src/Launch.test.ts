@@ -44,6 +44,9 @@ const launchable = (sessions: Record<string, SessionState> = {}): Launching => (
   sessions: new Map(Object.entries(sessions)),
   claude: { kind: 'found', claude: { path: '/opt/claude', source: 'setting', shim: false } },
   wayfinder: '/wayfinder',
+  toSpec: '/to-spec',
+  setup: '/setup-matt-pocock-skills',
+  userInvoked: 3,
   pluginPath: '/ext/claude-plugin',
   eventsFile: '/storage/events/repo.jsonl',
 })
@@ -59,15 +62,28 @@ const rowOf = (wrapper: VueWrapper, label: string) =>
   wrapper.findAll('[role="treeitem"]').find((row) => row.find('.label').text().includes(label))
 
 describe('▶ on the Tree rows', () => {
-  it('shows on frontier rows only, never on claimed, blocked, maps or folds', () => {
+  it('shows on frontier and claimed rows, never on blocked rows, an unfinished ⚑ Map or folds', () => {
     const wrapper = render(launchable())
     const withPlay = wrapper
       .findAll('[role="treeitem"]')
       .filter((row) => row.find('.play').exists())
       .map((row) => row.find('.label').text())
-    expect(withPlay).toEqual(['#1 Palette', '#3 Contrast audit'])
-    expect(rowOf(wrapper, '#4 Row density')?.find('.play').exists()).toBe(false)
+    expect(withPlay).toEqual(
+      expect.arrayContaining(['#1 Palette', '#3 Contrast audit', '#4 Row density']),
+    )
+    expect(withPlay).not.toContain('#2 Dark mode')
+    expect(withPlay.every((label) => /^#\d+ /.test(label))).toBe(true)
     expect(rowOf(wrapper, '#2 Dark mode')?.find('.play').exists()).toBe(false)
+  })
+
+  it('is Work ticket on a frontier row and Launch fresh on a claimed one', () => {
+    const wrapper = render(launchable())
+    expect(rowOf(wrapper, '#1 Palette')?.find('.play').attributes('aria-label')).toBe(
+      'Work ticket #1',
+    )
+    expect(rowOf(wrapper, '#4 Row density')?.find('.play').attributes('aria-label')).toBe(
+      'Launch fresh #4',
+    )
   })
 
   it('carries the exact command in its tooltip', () => {
@@ -80,7 +96,7 @@ describe('▶ on the Tree rows', () => {
   it('launches the ticket on click without selecting the row', async () => {
     const wrapper = render(launchable())
     await rowOf(wrapper, '#1 Palette')?.find('.play').trigger('click')
-    expect(wrapper.emitted('launch')).toEqual([[PALETTE]])
+    expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'work-ticket']])
     expect(wrapper.emitted('select')).toBeUndefined()
   })
 
@@ -154,8 +170,8 @@ describe('the command in the Focus pane', () => {
     const wrapper = render(launchable(), PALETTE)
     await wrapper.find('.pane .run').trigger('click')
     await wrapper.find('.pane .copy').trigger('click')
-    expect(wrapper.emitted('launch')).toEqual([[PALETTE]])
-    expect(wrapper.emitted('copy')).toEqual([[PALETTE]])
+    expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'work-ticket']])
+    expect(wrapper.emitted('copy')).toEqual([[PALETTE, 'work-ticket']])
   })
 
   it('greys the button with the reason and keeps the command when claude is missing', async () => {
@@ -174,9 +190,24 @@ describe('the command in the Focus pane', () => {
     expect(wrapper.find('.pane .reason').text()).toContain('wayfinder skill was not found')
   })
 
-  it('shows no command for a ticket that is claimed or blocked', () => {
-    expect(render(launchable(), 'map:3:ticket:4').find('.pane .action').exists()).toBe(false)
+  it('shows no command for a blocked ticket, and Launch fresh for one claimed elsewhere', () => {
     expect(render(launchable(), 'map:3:ticket:2').find('.pane .action').exists()).toBe(false)
+    const claimed = render(launchable(), 'map:3:ticket:4')
+    expect(claimed.findAll('.pane .action')).toHaveLength(1)
+    expect(claimed.find('.pane .run').text()).toBe('Launch fresh')
+  })
+
+  it('lists Launch fresh then Resume by name once the session ended, each posting its own id', async () => {
+    const wrapper = render(launchable({ [PALETTE]: ended('window closed') }), PALETTE)
+    expect(wrapper.findAll('.pane .run').map((button) => button.text())).toEqual([
+      'Launch fresh',
+      'Resume by name',
+    ])
+    await wrapper.findAll('.pane .run')[1]?.trigger('click')
+    await wrapper.findAll('.pane .copy')[1]?.trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'resume-by-name']])
+    expect(wrapper.emitted('copy')).toEqual([[PALETTE, 'resume-by-name']])
+    expect(wrapper.findAll('.pane .command')[1]?.text()).toBe("claude --resume '#1 Palette'")
   })
 
   it('swaps the command for the session state, with focus terminal, while starting', async () => {
@@ -208,6 +239,60 @@ describe('the command in the Focus pane', () => {
   })
 })
 
+describe('To spec on a finished map', () => {
+  const FINISHED = new Set(['map:2', 'map:3', 'finished', 'map:1'])
+  const renderFinished = (launching: Launching, selected: string | null = null): VueWrapper =>
+    mount(Tree, {
+      props: {
+        viewModel: buildViewModel(snapshot, FINISHED, selected, undefined, null, null, launching),
+      },
+    })
+  const mapRow = (wrapper: VueWrapper, selector: string) =>
+    wrapper.findAll('[role="treeitem"]').filter((row) => row.find(selector).exists())
+
+  it('puts ▶ on the ⚑ Map row of the finished map only, with the command in its tooltip', async () => {
+    const wrapper = renderFinished(launchable())
+    const rows = mapRow(wrapper, '.play').filter((row) =>
+      row.find('.label').text().startsWith('Map'),
+    )
+    expect(rows).toHaveLength(1)
+    const play = rows[0]?.find('.play')
+    expect(play?.attributes('aria-label')).toBe('To spec #1')
+    expect(play?.attributes('title')).toBe("claude '/to-spec .scratch/archive-search/map.md'")
+    await play?.trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([['map:1:map', 'to-spec']])
+    expect(wrapper.emitted('select')).toBeUndefined()
+  })
+
+  it('shows To spec with its command in the pane, and nothing in an unfinished map pane', () => {
+    const finished = renderFinished(launchable(), 'map:1:map')
+    expect(finished.find('.pane .run').text()).toBe('To spec')
+    expect(finished.find('.pane .command').text()).toBe(
+      "claude '/to-spec .scratch/archive-search/map.md'",
+    )
+    expect(renderFinished(launchable(), 'map:3:map').find('.pane .action').exists()).toBe(false)
+  })
+
+  it('greys it with the reason when the to-spec skill is not found', async () => {
+    const wrapper = renderFinished({ ...launchable(), toSpec: null }, 'map:1:map')
+    expect(wrapper.find('.pane .run').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('.pane .reason').text()).toContain('to-spec skill was not found')
+    await wrapper.find('.pane .run').trigger('click')
+    expect(wrapper.emitted('launch')).toBeUndefined()
+  })
+
+  it('shows it in the Detail of the finished map', async () => {
+    const wrapper = mount(Detail, {
+      props: {
+        view: { detail: detailOf(snapshot, 'map:1:map', launchable()), section: null, scroll: 0 },
+      },
+    })
+    expect(wrapper.find('.run').text()).toBe('To spec')
+    await wrapper.find('.run').trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([['map:1:map', 'to-spec']])
+  })
+})
+
 describe('the command in the Detail', () => {
   const renderDetail = (launching: Launching): VueWrapper =>
     mount(Detail, {
@@ -223,8 +308,8 @@ describe('the command in the Detail', () => {
     expect(wrapper.find('.env').text()).toContain('HERO_SYNERGY_TICKET=1')
     await wrapper.find('.run').trigger('click')
     await wrapper.find('.copy').trigger('click')
-    expect(wrapper.emitted('launch')).toEqual([[PALETTE]])
-    expect(wrapper.emitted('copy')).toEqual([[PALETTE]])
+    expect(wrapper.emitted('launch')).toEqual([[PALETTE, 'work-ticket']])
+    expect(wrapper.emitted('copy')).toEqual([[PALETTE, 'work-ticket']])
   })
 
   it('offers focus terminal while starting, and no command', async () => {

@@ -2,7 +2,10 @@ import { describe, expect, test } from 'vite-plus/test'
 
 import {
   chartMap,
+  installPlugin,
+  installWithNpx,
   launchFresh,
+  setup,
   renderCommand,
   resumeById,
   resumeByName,
@@ -163,6 +166,23 @@ describe('ticketless Actions', () => {
     const launch = runSkill(context('github'), '/mattpocock-skills:grill-me')
     expect(launch.command).toBe('claude /mattpocock-skills:grill-me')
     expect(launch.envLine).toBeNull()
+  })
+
+  test('Setup passes the setup command by itself, in a plain terminal', () => {
+    const launch = setup(context('local'), { setup: '/setup-matt-pocock-skills' })
+    expect(launch.command).toBe('claude /setup-matt-pocock-skills')
+    expect(launch.env).toEqual({})
+    expect(launch.cwd).toBe('/work/billing')
+  })
+
+  test('the installs are the plugin command and the npx command, in the repo', () => {
+    expect(installPlugin(context('github')).command).toBe(
+      'claude plugins install mattpocock-skills',
+    )
+    const npx = installWithNpx(context('github'))
+    expect(npx.command).toBe('npx skills@latest add mattpocock/skills')
+    expect(npx.cwd).toBe('/work/billing')
+    expect(npx.envLine).toBeNull()
   })
 
   test('commands without the plugin namespace pass through as they are', () => {

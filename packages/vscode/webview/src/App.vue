@@ -29,8 +29,8 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     @open="(key) => post({ type: 'open', key })"
     @refresh="post({ type: 'refresh' })"
     @open-detail="(key, section) => post({ type: 'open-detail', key, section })"
-    @launch="(key) => post({ type: 'launch', key })"
+    @launch="(key, action) => post({ type: 'launch', key, action })"
     @focus-terminal="(key) => post({ type: 'focus-terminal', key })"
-    @copy="(key) => post({ type: 'copy', key })"
+    @copy="(key, action) => post({ type: 'copy', key, action })"
   />
 </template>

@@ -23,7 +23,8 @@ Hero Synergy is a personal project and is not affiliated with or endorsed by Mat
 ## Commands
 
 - **Hero Synergy: Open Cockpit Detail** opens the Detail for the selected map or ticket, or for the first map when nothing is selected. Enter or a double-click on a Tree row opens it too, and Enter on a map's Fog or Decisions row opens it scrolled to that section.
-- **Hero Synergy: Run skill…** lists every user-invoked skill and runs the one you pick in a new terminal.
+- **Hero Synergy: Chart a map** runs the wayfinder skill with no input in a new terminal; the session asks you for the loose idea. It is also a button in the Tree's title bar.
+- **Hero Synergy: Run skill…** lists every user-invoked skill (the command, where it was found, and what it does) and runs the one you pick as `claude "<skill>"` in a new terminal. It is also a button in the Tree's title bar. Chart a map and Run skill… open plain terminals: no ticket, no status plugin, no badge. When a skill they need isn't installed they tell you instead of doing nothing.
 - **Hero Synergy: Refresh** reads the tracker and the sessions again, whatever the 60 second gap between automatic reads; it only declines when GitHub's rate limit is spent.
 
 ## Conventions

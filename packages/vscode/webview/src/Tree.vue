@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-import type { MapSection, ViewModel } from '../../src/protocol.ts'
+import type { ActionId, MapSection, ViewModel } from '../../src/protocol.ts'
 import FocusPane from './FocusPane.vue'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
+import StartActions from './StartActions.vue'
 
 /** The Tree: the maps in the order the host sent them, the finished ones folded at the bottom. */
 const props = defineProps<{ viewModel: ViewModel }>()
@@ -18,9 +19,9 @@ const emit = defineEmits<{
   refresh: []
   /** Select the row and open the Detail on it, scrolled to a section of a map. */
   openDetail: [key: string, section: MapSection | null]
-  launch: [key: string]
+  launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
-  copy: [key: string]
+  copy: [key: string, action: ActionId]
 }>()
 
 // The repo row's age is read against the clock, so tick to keep "tracker read 2 min ago" honest.
@@ -83,6 +84,11 @@ const toggle = (key: string, expanded: boolean): void => {
   <div v-else-if="viewModel.kind === 'message'" class="note">
     <p class="message">{{ viewModel.message }}</p>
     <p v-if="viewModel.detail" class="detail">{{ viewModel.detail }}</p>
+    <StartActions
+      :start="viewModel.start"
+      @launch="(key, action) => emit('launch', key, action)"
+      @copy="(key, action) => emit('copy', key, action)"
+    />
   </div>
 
   <div v-else role="tree" aria-label="Maps">
@@ -103,9 +109,14 @@ const toggle = (key: string, expanded: boolean): void => {
       <p v-if="viewModel.notice.fix" class="detail">{{ viewModel.notice.fix }}</p>
       <p class="detail">Showing the maps from the last read.</p>
     </div>
-    <p v-if="viewModel.maps.length === 0 && viewModel.finished === null" class="note">
-      No maps yet.
-    </p>
+    <div v-if="viewModel.maps.length === 0 && viewModel.finished === null" class="note">
+      <p class="message">No maps yet.</p>
+      <StartActions
+        :start="viewModel.start"
+        @launch="(key, action) => emit('launch', key, action)"
+        @copy="(key, action) => emit('copy', key, action)"
+      />
+    </div>
     <MapBranch
       v-for="map in viewModel.maps"
       :key="map.key"
@@ -116,9 +127,9 @@ const toggle = (key: string, expanded: boolean): void => {
       @close="emit('select', null)"
       @open="(key) => emit('open', key)"
       @open-detail="(key, section) => emit('openDetail', key, section)"
-      @launch="(key) => emit('launch', key)"
+      @launch="(key, action) => emit('launch', key, action)"
       @focus-terminal="(key) => emit('focusTerminal', key)"
-      @copy="(key) => emit('copy', key)"
+      @copy="(key, action) => emit('copy', key, action)"
     />
     <template v-if="viewModel.unmapped">
       <Row
@@ -183,9 +194,9 @@ const toggle = (key: string, expanded: boolean): void => {
           @close="emit('select', null)"
           @open="(key) => emit('open', key)"
           @open-detail="(key, section) => emit('openDetail', key, section)"
-          @launch="(key) => emit('launch', key)"
+          @launch="(key, action) => emit('launch', key, action)"
           @focus-terminal="(key) => emit('focusTerminal', key)"
-          @copy="(key) => emit('copy', key)"
+          @copy="(key, action) => emit('copy', key, action)"
         />
       </template>
     </template>

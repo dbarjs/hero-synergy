@@ -4,11 +4,12 @@ import { Effect } from 'effect'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import { workspaceFiles } from '../../test/fixtures/workspace-files.ts'
-import type { MapNode, ViewModel } from '../../src/protocol.ts'
+import type { ActionView, MapNode, ViewModel } from '../../src/protocol.ts'
 import { buildViewModel } from '../../src/view-model.ts'
 import Tree from './Tree.vue'
 
 const ROOT = '/home/ana/billing'
+const NO_START = { key: 'repo', actions: [], note: null }
 
 /** Every node of the fixture workspace open, so all of its rows render. */
 const ALL_OPEN = new Set([
@@ -158,6 +159,7 @@ describe('the Tree states with no maps', () => {
       kind: 'message',
       message: 'This repo has no issue tracker set up.',
       detail: 'Run /setup-matt-pocock-skills in Claude Code.',
+      start: NO_START,
     }).text()
     expect(text).toContain('This repo has no issue tracker set up.')
     expect(text).toContain('Run /setup-matt-pocock-skills in Claude Code.')
@@ -173,9 +175,104 @@ describe('the Tree states with no maps', () => {
       maps: [],
       finished: null,
       unmapped: null,
+      start: NO_START,
       selection: null,
     })
     expect(wrapper.text()).toBe('No maps yet.')
+  })
+
+  const action = (id: ActionView['id'], label: ActionView['label'], command: string | null) =>
+    ({ id, label, command, envLine: null, disabled: null, note: null }) satisfies ActionView
+
+  it('leads with both install commands and the pick-one line, each command with ▶ and copy', async () => {
+    const wrapper = render({
+      kind: 'message',
+      message: 'This repo has no issue tracker set up.',
+      detail: null,
+      start: {
+        key: 'repo',
+        note: 'Pick one, never both.',
+        actions: [
+          action(
+            'install-plugin',
+            'Install the plugin',
+            'claude plugins install mattpocock-skills',
+          ),
+          action('install-npx', 'Install with npx', 'npx skills@latest add mattpocock/skills'),
+        ],
+      },
+    })
+    expect(wrapper.findAll('.command').map((command) => command.text())).toEqual([
+      'claude plugins install mattpocock-skills',
+      'npx skills@latest add mattpocock/skills',
+    ])
+    expect(wrapper.find('.pick').text()).toBe('Pick one, never both.')
+    await wrapper.findAll('.run')[1]?.trigger('click')
+    await wrapper.findAll('.copy')[0]?.trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([['repo', 'install-npx']])
+    expect(wrapper.emitted('copy')).toEqual([['repo', 'install-plugin']])
+  })
+
+  it('leads with Setup under the message when the repo has no tracker doc', () => {
+    const wrapper = render({
+      kind: 'message',
+      message: 'This repo has no issue tracker set up.',
+      detail: null,
+      start: {
+        key: 'repo',
+        note: null,
+        actions: [action('setup', 'Setup', 'claude /setup-matt-pocock-skills')],
+      },
+    })
+    expect(wrapper.find('.run').text()).toBe('Setup')
+    expect(wrapper.find('.command').text()).toBe('claude /setup-matt-pocock-skills')
+    expect(wrapper.find('.pick').exists()).toBe(false)
+  })
+
+  it('leads with Chart a map when the tracker holds no map', async () => {
+    const wrapper = render({
+      kind: 'maps',
+      collectedAt: '2026-10-07T00:00:00.000Z',
+      repo: null,
+      notice: null,
+      budget: null,
+      start: {
+        key: 'repo',
+        note: null,
+        actions: [action('chart-map', 'Chart a map', "claude -n 'Chart a map' /wayfinder")],
+      },
+      maps: [],
+      finished: null,
+      unmapped: null,
+      selection: null,
+    })
+    expect(wrapper.text()).toContain('No maps yet.')
+    expect(wrapper.find('.command').text()).toBe("claude -n 'Chart a map' /wayfinder")
+    await wrapper.find('.run').trigger('click')
+    expect(wrapper.emitted('launch')).toEqual([['repo', 'chart-map']])
+  })
+
+  it('greys an Action whose skill is missing, with the reason, and posts nothing', async () => {
+    const wrapper = render({
+      kind: 'message',
+      message: 'This repo has no issue tracker set up.',
+      detail: null,
+      start: {
+        key: 'repo',
+        note: null,
+        actions: [
+          {
+            ...action('setup', 'Setup', null),
+            disabled: 'The setup-matt-pocock-skills skill was not found.',
+          },
+        ],
+      },
+    })
+    expect(wrapper.find('.run').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('.reason').text()).toContain('setup-matt-pocock-skills skill was not found')
+    expect(wrapper.find('.command').exists()).toBe(false)
+    await wrapper.find('.run').trigger('click')
+    expect(wrapper.emitted('launch')).toBeUndefined()
   })
 })
 
@@ -189,6 +286,7 @@ const node = (number: number, overrides: Partial<MapNode> = {}): MapNode => ({
   decided: 0,
   total: 0,
   destination: null,
+  action: null,
   tickets: [],
   fog: { key: `map:${number}:fog`, expanded: false, entries: [] },
   decisions: { key: `map:${number}:decisions`, expanded: false, entries: [] },
@@ -217,6 +315,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
     maps: active,
     finished: { key: 'finished', expanded: finishedOpen, maps: finishedMaps },
     unmapped: null,
+    start: NO_START,
     selection: null,
   })
 
@@ -247,6 +346,7 @@ describe('what the Tree asks for', () => {
       maps: [node(1), node(2, { expanded: true })],
       finished: null,
       unmapped: null,
+      start: NO_START,
       selection: null,
     })
     const [first, second] = wrapper.findAll('[role="treeitem"]')
@@ -266,6 +366,7 @@ describe('what the Tree asks for', () => {
       maps: [],
       finished: { key: 'finished', expanded: false, maps: [node(1, { decided: 1, total: 1 })] },
       unmapped: null,
+      start: NO_START,
       selection: null,
     })
     await wrapper.find('[role="treeitem"]').trigger('keydown', { key: 'Enter' })

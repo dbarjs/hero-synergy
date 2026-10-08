@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Focus, MapNode, MapSection, TicketRow } from '../../src/protocol.ts'
+import type { ActionId, Focus, MapNode, MapSection, TicketRow } from '../../src/protocol.ts'
 import { ageSince } from './age.ts'
 import FocusPane from './FocusPane.vue'
 import Row from './Row.vue'
@@ -21,14 +21,14 @@ const emit = defineEmits<{
   close: []
   open: [key: string]
   openDetail: [key: string, section: MapSection | null]
-  launch: [key: string]
+  launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
-  copy: [key: string]
+  copy: [key: string, action: ActionId]
 }>()
 
 /** ▶'s tooltip: the exact command it runs, or why it cannot run. */
 const playTitle = (ticket: TicketRow): string =>
-  ticket.action?.disabled ?? ticket.action?.command ?? 'Work ticket'
+  ticket.action?.disabled ?? ticket.action?.command ?? ticket.action?.label ?? ''
 
 const isSelected = (key: string | null): boolean => key !== null && props.selection?.key === key
 
@@ -76,7 +76,19 @@ const takeableText = (map: MapNode): string =>
       opens-detail
       @activate="emit('select', map.focusKey)"
       @open-detail="emit('openDetail', map.focusKey, null)"
-    />
+    >
+      <button
+        v-if="map.action"
+        type="button"
+        class="play codicon codicon-play"
+        :aria-disabled="map.action.disabled !== null"
+        :title="map.action.disabled ?? map.action.command ?? map.action.label"
+        :aria-label="`${map.action.label} #${map.number}`"
+        @click.stop="map.action.disabled === null && emit('launch', map.focusKey, map.action.id)"
+        @keydown.enter.stop
+        @keydown.space.stop
+      />
+    </Row>
     <FocusPane
       v-if="selection && isSelected(map.focusKey)"
       :focus="selection"
@@ -85,9 +97,9 @@ const takeableText = (map: MapNode): string =>
       @open="(key) => emit('open', key)"
       @detail="(key) => emit('openDetail', key, null)"
       @drift="(key) => emit('openDetail', key, 'drift')"
-      @launch="(key) => emit('launch', key)"
+      @launch="(key, action) => emit('launch', key, action)"
       @focus-terminal="(key) => emit('focusTerminal', key)"
-      @copy="(key) => emit('copy', key)"
+      @copy="(key, action) => emit('copy', key, action)"
     />
 
     <template v-for="ticket in map.tickets" :key="ticket.number">
@@ -111,8 +123,10 @@ const takeableText = (map: MapNode): string =>
           class="play codicon codicon-play"
           :aria-disabled="ticket.action.disabled !== null"
           :title="playTitle(ticket)"
-          :aria-label="`Work ticket #${ticket.number}`"
-          @click.stop="ticket.action.disabled === null && emit('launch', ticket.key)"
+          :aria-label="`${ticket.action.label} #${ticket.number}`"
+          @click.stop="
+            ticket.action.disabled === null && emit('launch', ticket.key, ticket.action.id)
+          "
           @keydown.enter.stop
           @keydown.space.stop
         />
@@ -163,9 +177,9 @@ const takeableText = (map: MapNode): string =>
         @open="(key) => emit('open', key)"
         @detail="(key) => emit('openDetail', key, null)"
         @drift="(key) => emit('openDetail', key, 'drift')"
-        @launch="(key) => emit('launch', key)"
+        @launch="(key, action) => emit('launch', key, action)"
         @focus-terminal="(key) => emit('focusTerminal', key)"
-        @copy="(key) => emit('copy', key)"
+        @copy="(key, action) => emit('copy', key, action)"
       />
     </template>
 
@@ -230,9 +244,9 @@ const takeableText = (map: MapNode): string =>
             @open="(key) => emit('open', key)"
             @detail="(key) => emit('openDetail', key, null)"
             @drift="(key) => emit('openDetail', key, 'drift')"
-            @launch="(key) => emit('launch', key)"
+            @launch="(key, action) => emit('launch', key, action)"
             @focus-terminal="(key) => emit('focusTerminal', key)"
-            @copy="(key) => emit('copy', key)"
+            @copy="(key, action) => emit('copy', key, action)"
           />
         </template>
       </template>

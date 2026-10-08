@@ -1,5 +1,7 @@
 export {
   chartMap,
+  installPlugin,
+  installWithNpx,
   launchFresh,
   type Launch,
   type LaunchContext,
@@ -8,6 +10,7 @@ export {
   resumeById,
   resumeByName,
   runSkill,
+  setup,
   shellQuote,
   type SkillCommands,
   type TicketTarget,

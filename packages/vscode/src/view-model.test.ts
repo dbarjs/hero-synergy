@@ -190,6 +190,7 @@ describe('the Detail of the fixture workspace', () => {
       outOfScope: [{ text: 'Custom user themes, which belong to a later release.' }],
       freeForm: null,
       drift: [],
+      actions: [],
     })
   })
 
