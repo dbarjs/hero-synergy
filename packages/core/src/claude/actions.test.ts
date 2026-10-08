@@ -9,6 +9,7 @@ import {
   renderCommand,
   resumeById,
   resumeByName,
+  resumeEnded,
   runSkill,
   shellQuote,
   toSpec,
@@ -139,6 +140,16 @@ describe('Resume', () => {
     expect(launch.command).toBe("claude --resume '#12 Discover skills'")
     expect(launch.env).toEqual({})
     expect(launch.envLine).toBeNull()
+  })
+
+  test('an ended session is resumed by id when one is known, else by name', () => {
+    const known = resumeEnded(context('github'), github.ticket, 'a1b2-c3')
+    expect(known.by).toBe('id')
+    expect(known.launch).toEqual(resumeById(context('github'), github.ticket, 'a1b2-c3'))
+
+    const unknown = resumeEnded(context('github'), github.ticket, null)
+    expect(unknown.by).toBe('name')
+    expect(unknown.launch).toEqual(resumeByName(context('github'), github.ticket))
   })
 })
 

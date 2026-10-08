@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 
-import type { ProcessRunnerShape } from '../process-runner.ts'
+import { ProcessRunner, type ProcessRunnerShape } from '../process-runner.ts'
 
 /**
  * A ticket's worktree, read through three read-only git commands: `git worktree list --porcelain`,
@@ -98,3 +98,39 @@ export const readWorktrees = (
     )
     return new Map(states.flatMap((entry) => (entry === null ? [] : [entry])))
   })
+
+/**
+ * {@link readWorktrees} with real `git` processes, settled as a Promise, for a caller that does not
+ * run Effect programs itself.
+ */
+export const readWorktreesPromise = (
+  repoRoot: string,
+  wanted: ReadonlyArray<number>,
+): Promise<ReadonlyMap<number, WorktreeState>> =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const runner = yield* ProcessRunner
+      return yield* readWorktrees(runner, repoRoot, wanted)
+    }).pipe(Effect.provide(ProcessRunner.live)),
+  )
+
+const plural = (count: number, one: string, many: string): string =>
+  `${count} ${count === 1 ? one : many}`
+
+/**
+ * A worktree in the words of the Focus pane's worktree line: its branch, then what it holds that
+ * is not yet on `main` (uncommitted files, commits not on main), or `clean` when it holds neither.
+ * The webview keeps its own copy of the phrasing (it bundles no core code); this one serves
+ * readers outside it.
+ */
+export function worktreeText({
+  branch,
+  uncommitted,
+  ahead,
+}: Pick<WorktreeState, 'branch' | 'uncommitted' | 'ahead'>): string {
+  const holds: string[] = []
+  if (uncommitted > 0) holds.push(plural(uncommitted, 'uncommitted file', 'uncommitted files'))
+  if (ahead !== null && ahead > 0)
+    holds.push(plural(ahead, 'commit not on main', 'commits not on main'))
+  return `${branch} · ${holds.length === 0 ? 'clean' : holds.join(' · ')}`
+}

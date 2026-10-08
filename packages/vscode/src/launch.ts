@@ -8,13 +8,12 @@ import {
   type LaunchContext,
   launchFresh,
   placeOf,
-  resumeByName,
+  resumeEnded,
   runSkill,
   type SessionState,
   setup,
   type Snapshot,
   type Ticket,
-  resumeById,
   type TicketType,
   toSpec,
   type WayfinderMap,
@@ -224,15 +223,16 @@ export function ticketActions(
 
   if (session?.kind === 'ended') {
     // Resume is by session id, the plugin and env set again; with no id it is by name, a plain terminal.
+    const resuming = resumeEnded(context, ticket, session.sessionId)
     const resume =
-      session.sessionId === null
+      resuming.by === 'name'
         ? plan(launching, 'resume-by-name', 'Resume by name', {
-            launch: resumeByName(context, ticket),
+            launch: resuming.launch,
             name,
             icon,
           })
         : plan(launching, 'resume', 'Resume', {
-            launch: resumeById(context, ticket, session.sessionId),
+            launch: resuming.launch,
             tracked: true,
             note,
             name,

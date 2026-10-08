@@ -141,6 +141,27 @@ export function resumeByName(
   return launch(['claude', '--resume', sessionName(ticket)], context.repoRoot)
 }
 
+/** How an ended session is picked up again: by the id the Cockpit knows, else by the ticket's name. */
+export interface Resume {
+  /** By id the plugin and env are set again (a ticket session); by name it is a plain terminal. */
+  readonly by: 'id' | 'name'
+  readonly launch: Launch
+}
+
+/**
+ * The Resume an ended ticket offers: by session id when one is known, else by name, for a session
+ * started by hand. One decision for every reader of the Ended context, the Cockpit and `next`.
+ */
+export function resumeEnded(
+  context: LaunchContext,
+  ticket: Pick<Ticket, 'number' | 'title'>,
+  sessionId: string | null,
+): Resume {
+  return sessionId === null
+    ? { by: 'name', launch: resumeByName(context, ticket) }
+    : { by: 'id', launch: resumeById(context, ticket, sessionId) }
+}
+
 /** To spec, from a finished map: the to-spec command with the map's URL or path. Plain terminal. */
 export function toSpec(
   context: Pick<LaunchContext, 'repoRoot'>,
