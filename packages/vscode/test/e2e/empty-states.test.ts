@@ -64,12 +64,14 @@ function cleanEnv(home: string): Record<string, string> {
   for (const [name, value] of Object.entries(process.env)) {
     if (value !== undefined && !name.startsWith('HERO_SYNERGY_')) env[name] = value
   }
-  return { ...env, HOME: home }
+  // On macOS a window with a HOME of its own never shows the Activity Bar item (seen on CI), so it
+  // keeps the real one there; the machines that run it have no personal skills to find.
+  return process.platform === 'darwin' ? env : { ...env, HOME: home }
 }
 
 /**
- * Opens a window on a fresh workspace with the Tree showing. HOME is a folder of its own, so the
- * machine running the test has no personal skills to find.
+ * Opens a window on a fresh workspace with the Tree showing. HOME is a folder of its own (but on
+ * macOS, see {@link cleanEnv}), so the machine running the test has no personal skills to find.
  */
 async function openWindow(options: { trackerDoc: boolean; skills: string[] }): Promise<Window> {
   // A retry gets a window of its own: a user data dir that remembers the side bar open would make
