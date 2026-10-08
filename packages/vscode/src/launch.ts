@@ -3,12 +3,14 @@ import {
   installPlugin,
   installWithNpx,
   isFinished,
+  isRunning,
   type Launch,
   type LaunchContext,
   launchFresh,
   placeOf,
   resumeByName,
   runSkill,
+  type SessionState,
   setup,
   type Snapshot,
   type Ticket,
@@ -20,7 +22,6 @@ import {
 
 import type { ClaudeResolution } from './claude-path.ts'
 import { type ActionId, type ActionView, REPO_KEY, type Start } from './protocol.ts'
-import { isRunning, type SessionState } from './session.ts'
 
 /**
  * Launching: every Action built from what the window knows. A ticket's session

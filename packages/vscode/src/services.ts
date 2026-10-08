@@ -1,3 +1,4 @@
+import type { TerminalExit } from '@hero-synergy/core'
 import { Context, Effect, Layer } from 'effect'
 
 import type { OpenTarget } from './view-model.ts'
@@ -108,11 +109,7 @@ export interface TerminalSpec {
   readonly location: TerminalLocation
 }
 
-/** How a terminal ended, from VS Code's exit status. */
-export interface TerminalExit {
-  readonly reason: 'user' | 'shutdown' | 'process' | 'extension' | 'unknown'
-  readonly code: number | null
-}
+export type { TerminalExit }
 
 export interface TerminalClosed {
   readonly id: number

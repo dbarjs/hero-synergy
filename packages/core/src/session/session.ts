@@ -1,7 +1,34 @@
-import { type RegistryEntry, registryStatusWord, type StatusEvent } from '@hero-synergy/core'
+import { type RegistryEntry, registryStatusWord } from '../claude/registry.ts'
+import type { StatusEvent } from '../claude/status-event.ts'
 
-import type { SessionView } from './protocol.ts'
-import type { TerminalExit } from './services.ts'
+/** How a terminal ended, from VS Code's exit status. */
+export interface TerminalExit {
+  readonly reason: 'user' | 'shutdown' | 'process' | 'extension' | 'unknown'
+  readonly code: number | null
+}
+
+/**
+ * A ticket's session as the Tree and `next` show it: none, starting while its terminal has reported
+ * nothing, live once it has, ended once it is over. `since` is the epoch milliseconds of the status
+ * shown: the registry's last change, else the last status event. A reader shows the time since, so
+ * the age is never a timer of the host's.
+ */
+export type SessionView =
+  | { readonly kind: 'none' }
+  /** `hint` is the line shown once the terminal has been quiet for 15 s; null before. */
+  | { readonly kind: 'starting'; readonly hint: string | null }
+  /** `status` is the word (working, waiting for you, needs approval, failed), null when none is known. */
+  | {
+      readonly kind: 'live'
+      readonly status: string | null
+      readonly needsYou: boolean
+      readonly since: number
+      /** Whether a terminal of the Cockpit runs it, so focus terminal has somewhere to go. */
+      readonly focusable: boolean
+      /** The warning for a second live session with the same ticket number; null when there is none. */
+      readonly warning: string | null
+    }
+  | { readonly kind: 'ended'; readonly detail: string; readonly since: number }
 
 /**
  * A ticket's session state machine: a pure reducer from what the Cockpit sees (a launch, a
@@ -401,5 +428,76 @@ export function sessionView(state: SessionState | undefined): SessionView {
     }
     case 'ended':
       return { kind: 'ended', detail: state.detail, since: state.since }
+  }
+}
+
+/**
+ * The sessions a reader that owns no terminal sees: the events file replayed in line order, each
+ * ticket's session then shown as ended, "window closed", for what the file says is live and no
+ * terminal confirms, then one read of the registry on top, which brings a listed session back to
+ * live. This is the Cockpit's activation path, as one pure function. Keyed by ticket number; a
+ * ticket no event or registry entry names has no entry.
+ */
+export function sessionsOf(
+  events: ReadonlyArray<StatusEvent>,
+  listed: ReadonlyMap<number, ReadonlyArray<Listed>>,
+  at: number,
+): ReadonlyMap<number, SessionState> {
+  const replayed = new Map<number, SessionState>()
+  for (const event of events) {
+    const number = Number(event.ticket)
+    if (!Number.isInteger(number)) continue
+    const next = reduceSession(replayed.get(number), {
+      type: 'event',
+      event,
+      at: event.at ?? at,
+    })
+    if (next === undefined) replayed.delete(number)
+    else replayed.set(number, next)
+  }
+  const sessions = new Map<number, SessionState>()
+  for (const [number, state] of replayed) sessions.set(number, afterReload(state, at))
+  for (const number of new Set([...sessions.keys(), ...listed.keys()])) {
+    const next = reduceSession(sessions.get(number), {
+      type: 'registry',
+      listed: listed.get(number) ?? [],
+      at,
+    })
+    if (next === undefined) sessions.delete(number)
+    else sessions.set(number, next)
+  }
+  return sessions
+}
+
+/**
+ * How long ago an epoch-millisecond time was, as the Tree words it: `12s`, `3m`, `2h`, `4d`. The
+ * webview keeps its own copy (it bundles no core code); this one serves readers outside it.
+ */
+export function ageSince(since: number, now: number): string {
+  const seconds = Math.max(0, Math.floor((now - since) / 1000))
+  if (seconds < 60) return `${seconds}s`
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  return `${Math.floor(hours / 24)}d`
+}
+
+/**
+ * A session in the words of the Focus pane's session line: the state, the status word, the time
+ * since, any warning; null for none. Starting carries its hint, ended its reason.
+ */
+export function sessionText(view: SessionView, now: number): string | null {
+  switch (view.kind) {
+    case 'none':
+      return null
+    case 'starting':
+      return view.hint === null ? 'starting' : `starting, ${view.hint}`
+    case 'live': {
+      const base = `${view.status ?? 'live'} · ${ageSince(view.since, now)} ago`
+      return view.warning === null ? base : `${base}, ${view.warning}`
+    }
+    case 'ended':
+      return `ended: ${view.detail} · ${ageSince(view.since, now)} ago`
   }
 }

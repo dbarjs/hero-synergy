@@ -9,8 +9,9 @@ import {
   orderMaps,
   orderTickets,
   placeOf,
-  type SessionFacts,
   type Ref,
+  type SessionFacts,
+  sessionView,
   type Snapshot,
   type Ticket,
   type WayfinderMap,
@@ -41,7 +42,6 @@ import type {
   UnmappedRow,
   ViewModel,
 } from './protocol.ts'
-import { sessionView } from './session.ts'
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }

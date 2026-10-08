@@ -1,32 +1,10 @@
-import type { Mode, TicketType } from '@hero-synergy/core'
+import type { Mode, SessionView, TicketType } from '@hero-synergy/core'
 
 /**
  * The messages between the extension host and the Tree's webview. The webview
  * imports this module for its types only and validates nothing (ADR 0002); the
  * host validates what arrives from the webview in `messages.ts`.
  */
-
-/**
- * A ticket's session: none, starting while its terminal has reported nothing, live once it has,
- * ended once it is over. `since` is the epoch milliseconds of the status shown: the registry's last change, else the last status event. The webview
- * shows the time since, so the age is never a timer of the host's.
- */
-export type SessionView =
-  | { readonly kind: 'none' }
-  /** `hint` is the line shown once the terminal has been quiet for 15 s; null before. */
-  | { readonly kind: 'starting'; readonly hint: string | null }
-  /** `status` is the word (working, waiting for you, needs approval, failed), null when none is known. */
-  | {
-      readonly kind: 'live'
-      readonly status: string | null
-      readonly needsYou: boolean
-      readonly since: number
-      /** Whether a terminal of the Cockpit runs it, so focus terminal has somewhere to go. */
-      readonly focusable: boolean
-      /** The warning for a second live session with the same ticket number; null when there is none. */
-      readonly warning: string | null
-    }
-  | { readonly kind: 'ended'; readonly detail: string; readonly since: number }
 
 /** Which Action a button runs; the host looks it up among the Actions of the row it was pressed on. */
 export type ActionId =

@@ -1,11 +1,16 @@
-import { FileSystem, readLocalTracker, type Snapshot } from '@hero-synergy/core'
+import {
+  FileSystem,
+  readLocalTracker,
+  type SessionState,
+  type SessionStatus,
+  type Snapshot,
+} from '@hero-synergy/core'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { Effect } from 'effect'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
 import { workspaceFiles } from '../../test/fixtures/workspace-files.ts'
 import { type Launching, NOT_LAUNCHING } from '../../src/launch.ts'
-import type { SessionState, SessionStatus } from '../../src/session.ts'
 import { buildViewModel, detailOf } from '../../src/view-model.ts'
 import Detail from './Detail.vue'
 import Tree from './Tree.vue'

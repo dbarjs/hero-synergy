@@ -1,4 +1,5 @@
 import {
+  afterReload,
   commandOf,
   type DiscoveredSkill,
   discoverSkills,
@@ -6,16 +7,23 @@ import {
   type FileSystemError,
   findRepo,
   type GitHubCollectFailed,
+  groupByTicket,
+  HINT_AFTER_MS,
+  isRunning,
   type Launch,
+  needsYou,
   type ProcessError,
   ProcessRunner,
   type RateLimit,
   readGitHubTracker,
   readLocalTracker,
-  type RepoTracker,
   readPluginList,
   readRegistry,
+  reduceSession,
+  type RepoTracker,
   type ScoutError,
+  type SessionInput,
+  type SessionState,
   type Snapshot,
   type StatusEvent,
   userInvokedSkills,
@@ -44,7 +52,6 @@ import {
   ticketActions,
 } from './launch.ts'
 import { decodeWebviewMessage } from './messages.ts'
-import { groupByTicket } from './registry-sessions.ts'
 import { describeCollectFailure } from './notices.ts'
 import {
   type ActionId,
@@ -67,15 +74,6 @@ import {
   type TrackerKind,
   type Trigger,
 } from './refresh-policy.ts'
-import {
-  afterReload,
-  HINT_AFTER_MS,
-  isRunning,
-  needsYou,
-  reduceSession,
-  type SessionInput,
-  type SessionState,
-} from './session.ts'
 import {
   Clipboard,
   CollectProgress,

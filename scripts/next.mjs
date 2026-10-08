@@ -8,6 +8,10 @@
 //   node scripts/next.mjs             print the launch command, then launch the first takeable ticket
 //   node scripts/next.mjs <number>    launch that ticket
 //
+// --list shows each ticket's session as the Focus pane does (starting, working, waiting for you,
+// needs approval, failed, ended with its reason), derived by core from the status events and the
+// registry; a ticket whose session is ended is takeable again.
+//
 // Add --implement to a launch to start the session on /implement <ticket URL> instead of the
 // wayfinder form; everything else on the command stays core's Work ticket command.
 //
@@ -21,6 +25,7 @@
 // job. Spawned from node, VS Code's tab keeps saying `node` and `/rename` changes nothing.
 
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -29,13 +34,19 @@ import {
   collectGitHubPromise,
   commandOf,
   discoverSkillsPromise,
+  groupByTicket,
   isClaimed,
+  isRunning,
   openBlockers,
   placeOf,
   readPluginList,
   readRegistry,
   readSnapshot,
+  readStatusEvents,
   renderCommand,
+  sessionsOf,
+  sessionText,
+  sessionView,
   workTicket,
 } from '../packages/core/dist/index.mjs'
 
@@ -205,28 +216,37 @@ function readTicket(number) {
   return issue
 }
 
-// The Cockpit's own rule: a session named `#<number> …` in Claude Code's registry owns that ticket.
-// Core's decoder reads the registry; what it cannot read comes back as coded warnings.
-function liveSessionTickets() {
+// One run, one read of what the Focus pane reads: the events file the status plugin's hooks append
+// to (start, failure, end; a missing file is an empty one), then the registry, `claude agents
+// --json`, whose entries belong to the ticket their name starts with. Core derives each ticket's
+// session from the two, the Cockpit's own derivation; what cannot be read comes back as coded
+// warnings.
+function readSessions() {
+  let text = ''
+  try {
+    text = readFileSync(EVENTS_FILE, 'utf8')
+  } catch (error) {
+    if (error?.code !== 'ENOENT')
+      console.error(`warning: could not read ${EVENTS_FILE}: ${error.message}`)
+  }
+  // A line still being appended is not read yet.
+  const events = readStatusEvents(text.slice(0, text.lastIndexOf('\n') + 1))
+  for (const warning of events.warnings) warnLine(warning)
   const result = run('claude', ['agents', '--json'])
-  const { value: entries, warnings } = readRegistry(result.stdout)
-  for (const warning of warnings) {
+  const registry = readRegistry(result.stdout)
+  for (const warning of registry.warnings) {
     const detail = warning.detail ? `: ${warning.detail}` : ''
     console.error(
       `warning: ${warning.code}${detail} (claude agents --json exited ${result.status})`,
     )
   }
-  const live = new Set()
-  for (const entry of entries) {
-    const match = /^#(\d+)(\s|$)/.exec(entry.name)
-    if (match) live.add(Number(match[1]))
-  }
-  return live
+  return sessionsOf(events.value, groupByTicket(registry.value), Date.now())
 }
 
 // The open tickets of every parent with their notes; `next` marks the first takeable one across all
 // parents in parent order.
-function annotate(parents, live) {
+function annotate(parents, sessions) {
+  const now = Date.now()
   let nextSeen = false
   return parents.map((parent) => ({
     ...parent,
@@ -240,8 +260,10 @@ function annotate(parents, live) {
           notes.push(
             ticket.claimedBy.length ? `claimed by ${ticket.claimedBy.join(', ')}` : 'claimed',
           )
-        if (live.has(ticket.number)) notes.push('live session')
-        const takeable = ticket.takeable && !live.has(ticket.number)
+        const session = sessionText(sessionView(sessions.get(ticket.number)), now)
+        if (session !== null) notes.push(session)
+        // As in the Cockpit: a ticket is takeable again once its session is ended or gone.
+        const takeable = ticket.takeable && !isRunning(sessions.get(ticket.number))
         if (takeable && !nextSeen) {
           notes.push('next')
           nextSeen = true
@@ -322,7 +344,7 @@ async function launch(ticket, { implement }) {
 }
 
 async function list() {
-  const parents = annotate(await readParents(), liveSessionTickets())
+  const parents = annotate(await readParents(), readSessions())
   parents.forEach((parent, i) => {
     if (i > 0) console.log()
     console.log(`#${parent.number} ${parent.title}`)
@@ -334,7 +356,7 @@ async function list() {
 }
 
 function launchNumber(number, options) {
-  if (liveSessionTickets().has(number)) {
+  if (isRunning(readSessions().get(number))) {
     console.error(
       `#${number} already has a live session; resume it with: claude --resume '#${number} …'`,
     )
@@ -351,7 +373,7 @@ function launchNumber(number, options) {
 }
 
 async function launchNext(options) {
-  const parents = annotate(await readParents(), liveSessionTickets())
+  const parents = annotate(await readParents(), readSessions())
   const next = parents.flatMap((p) => p.tickets).find((t) => t.takeable)
   if (!next) {
     const names = parents.map((p) => `#${p.number} ${p.title}`).join(' or ')
