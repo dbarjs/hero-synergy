@@ -14,6 +14,8 @@ const emit = defineEmits<{
   close: []
   open: [key: string]
   detail: [key: string]
+  /** A drift line was clicked: open the Detail at its Drift section. */
+  drift: [key: string]
   launch: [key: string]
   focusTerminal: [key: string]
   copy: [key: string]
@@ -71,6 +73,34 @@ const emit = defineEmits<{
         </div>
       </template>
     </dl>
+
+    <div v-if="focus.drift" class="drift">
+      <button
+        v-for="(message, index) in focus.drift.loud"
+        :key="index"
+        type="button"
+        class="drift-line loud"
+        @click="emit('drift', focus.key)"
+      >
+        <span class="codicon codicon-warning" /> {{ message }}
+      </button>
+      <button
+        v-if="focus.drift.quiet > 0"
+        type="button"
+        class="drift-line quiet"
+        @click="emit('drift', focus.key)"
+      >
+        {{ focus.drift.quiet }} old {{ focus.drift.quiet === 1 ? 'form' : 'forms' }}
+      </button>
+      <button
+        v-if="focus.drift.tickets > 0"
+        type="button"
+        class="drift-line quiet tickets"
+        @click="emit('drift', focus.key)"
+      >
+        {{ focus.drift.tickets }} {{ focus.drift.tickets === 1 ? 'ticket' : 'tickets' }} with drift
+      </button>
+    </div>
 
     <ActionBlock
       v-if="focus.kind === 'ticket' && focus.action"
@@ -136,6 +166,27 @@ const emit = defineEmits<{
 .fact {
   display: flex;
   gap: 8px;
+}
+.drift {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 4px;
+}
+.drift-line {
+  max-width: 100%;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.drift-line.loud .codicon {
+  color: var(--vscode-editorWarning-foreground);
+}
+.drift-line.quiet {
+  color: var(--vscode-descriptionForeground);
 }
 .link {
   border: 0;

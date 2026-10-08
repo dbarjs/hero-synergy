@@ -16,16 +16,22 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
+import { driftingTickets, isLoud, mapDrift, ticketDrift } from './drift.ts'
 import { canLaunchFrom, type Launching, NOT_LAUNCHING, workTicketAction } from './launch.ts'
 import type {
   ActionView,
   BudgetNote,
   Detail,
+  DriftEntry,
+  DriftGroup,
+  DriftSummary,
   Focus,
+  Fold,
   MapNode,
   NeighbourView,
   Notice,
   TicketRow,
+  UnmappedRow,
   ViewModel,
 } from './protocol.ts'
 import { sessionView } from './session.ts'
@@ -39,6 +45,67 @@ export const ticketKey = (map: WayfinderMap, number: number): string =>
   `${mapKey(map)}:ticket:${number}`
 /** The ⚑ Map row under a map. */
 export const focusKeyOf = (map: WayfinderMap): string => `${mapKey(map)}:map`
+/** The synthetic node that holds the tickets of no map. */
+export const UNMAPPED_KEY = 'unmapped'
+export const unmappedKey = (number: number): string => `${UNMAPPED_KEY}:ticket:${number}`
+
+/** The drift entries the person dismissed, by dismissal key; a dismissal hides exactly one entry. */
+export type Dismissed = ReadonlySet<string>
+const NO_DISMISSED: Dismissed = new Set()
+
+const loudOf = (entries: ReadonlyArray<DriftEntry>): string[] =>
+  entries.filter(isLoud).map(({ message }) => message)
+
+/** What a pane says about drift; null when there is none, so nothing appears. */
+const summaryOf = (entries: ReadonlyArray<DriftEntry>, tickets: number): DriftSummary | null =>
+  entries.length === 0 && tickets === 0
+    ? null
+    : { loud: loudOf(entries), quiet: entries.filter((entry) => !isLoud(entry)).length, tickets }
+
+const plural = (count: number, one: string, many: string): string =>
+  `${count} ${count === 1 ? one : many}`
+
+const ticketSubject =
+  (map: WayfinderMap) =>
+  (ticket: Ticket): string =>
+    ticketKey(map, ticket.number)
+
+/** The ⚠ tooltip of a map row: loud warnings on the map and on its tickets, open or closed. */
+const mapLoudTitle = (map: WayfinderMap, dismissed: Dismissed): string | null => {
+  const own = mapDrift(map, dismissed).filter(isLoud).length
+  const loudTickets = driftingTickets(map, ticketSubject(map), dismissed).filter(({ entries }) =>
+    entries.some(isLoud),
+  )
+  const onTickets = loudTickets.reduce((sum, { entries }) => sum + entries.filter(isLoud).length, 0)
+  if (own === 0 && onTickets === 0) return null
+  const loud = (count: number): string => plural(count, 'loud warning', 'loud warnings')
+  return [
+    own > 0 ? `${loud(own)} on the map` : null,
+    onTickets > 0
+      ? `${loud(onTickets)} on ${plural(loudTickets.length, 'ticket', 'tickets')}`
+      : null,
+  ]
+    .filter((part) => part !== null)
+    .join(', ')
+}
+
+const mapSummary = (map: WayfinderMap, dismissed: Dismissed): DriftSummary | null =>
+  summaryOf(mapDrift(map, dismissed), driftingTickets(map, ticketSubject(map), dismissed).length)
+
+/** A Detail's Drift section for one subject; empty when it has no drift. */
+const ownGroup = (entries: ReadonlyArray<DriftEntry>): DriftGroup[] =>
+  entries.length === 0 ? [] : [{ key: null, number: null, title: null, entries }]
+
+/** The map's own drift first, then each drifting ticket's under its `#n title`, closed ones included. */
+const mapGroups = (map: WayfinderMap, dismissed: Dismissed): DriftGroup[] => [
+  ...ownGroup(mapDrift(map, dismissed)),
+  ...driftingTickets(map, ticketSubject(map), dismissed).map(({ ticket, entries }) => ({
+    key: ticketKey(map, ticket.number),
+    number: ticket.number,
+    title: ticket.title,
+    entries,
+  })),
+]
 
 /** Where ↗ Open goes: an issue URL on GitHub, an absolute file path on a local tracker. */
 export type OpenTarget =
@@ -72,8 +139,27 @@ export const selectionOf = (
   snapshot: Snapshot,
   key: string | null,
   launching: Launching = NOT_LAUNCHING,
+  dismissed: Dismissed = NO_DISMISSED,
 ): Selected | null => {
   if (key === null) return null
+  const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
+  if (stray !== undefined) {
+    return {
+      target: targetOf(snapshot.repoRoot, stray.ref),
+      focus: {
+        kind: 'ticket',
+        key,
+        number: stray.number,
+        title: stray.title,
+        state: stray.state,
+        claim: stray.claim === null ? null : stray.claim.by,
+        url: stray.ref.tracker === 'github' ? stray.ref.url : null,
+        session: sessionView(undefined),
+        action: null,
+        drift: summaryOf(ticketDrift(key, stray, dismissed), 0),
+      },
+    }
+  }
   for (const map of snapshot.maps) {
     const target = (ref: Ref): OpenTarget => targetOf(snapshot.repoRoot, ref)
     if (key === focusKeyOf(map)) {
@@ -89,6 +175,7 @@ export const selectionOf = (
           decided,
           total,
           destination: map.destination,
+          drift: mapSummary(map, dismissed),
         },
       }
     }
@@ -106,6 +193,7 @@ export const selectionOf = (
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
           session: sessionView(launching.sessions.get(key)),
           action: actionOf(snapshot, launching, map, ticket, key),
+          drift: summaryOf(ticketDrift(key, ticket, dismissed), 0),
         },
       }
     }
@@ -129,9 +217,38 @@ export const detailOf = (
   snapshot: Snapshot,
   key: string | null,
   launching: Launching = NOT_LAUNCHING,
+  dismissed: Dismissed = NO_DISMISSED,
 ): Detail | null => {
   if (key === null) return null
   const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
+  const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
+  if (stray !== undefined) {
+    return {
+      kind: 'ticket',
+      key,
+      number: stray.number,
+      title: stray.title,
+      state: stray.state,
+      place: placeOf(stray),
+      type: stray.type,
+      mode: modeOf(stray.type),
+      claim: stray.claim === null ? null : stray.claim.by,
+      url: openUrl(stray.ref),
+      body: stray.body,
+      resolution: stray.resolution,
+      // A ticket of no map has no map to select a neighbour in.
+      waitsOn: stray.blockedBy.map(({ number, title, state }) => ({
+        number,
+        title,
+        state,
+        key: null,
+      })),
+      clearsWayFor: [],
+      session: sessionView(undefined),
+      action: null,
+      drift: ownGroup(ticketDrift(key, stray, dismissed)),
+    }
+  }
   for (const map of snapshot.maps) {
     if (key === focusKeyOf(map)) {
       const { decided, total } = decidedOfTotal(map)
@@ -156,6 +273,8 @@ export const detailOf = (
         })),
         fog: map.notYetSpecified.map(({ text }) => ({ text })),
         outOfScope: map.outOfScope.map(({ text }) => ({ text })),
+        freeForm: map.warnings.some(({ code }) => code === 'map-body-free-form') ? map.body : null,
+        drift: mapGroups(map, dismissed),
       }
     }
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
@@ -178,6 +297,7 @@ export const detailOf = (
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
         session: sessionView(launching.sessions.get(key)),
         action: actionOf(snapshot, launching, map, ticket, key),
+        drift: ownGroup(ticketDrift(key, ticket, dismissed)),
       }
     }
   }
@@ -189,6 +309,7 @@ export const detailOf = (
  * finished, and the Decisions fold when the row is a decision. Empty when the key names nothing.
  */
 export const revealKeys = (snapshot: Snapshot, key: string): ReadonlyArray<string> => {
+  if (snapshot.unmapped.some((ticket) => unmappedKey(ticket.number) === key)) return [UNMAPPED_KEY]
   for (const map of snapshot.maps) {
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
     if (key !== focusKeyOf(map) && ticket === undefined) continue
@@ -233,6 +354,7 @@ const ticketRow = (
   map: WayfinderMap,
   ticket: Ticket,
   next: Ticket | null,
+  dismissed: Dismissed,
 ): TicketRow => {
   const place = placeOf(ticket)
   if (place === 'closed') throw new Error(`#${ticket.number} is closed and has no row`)
@@ -247,6 +369,7 @@ const ticketRow = (
     type: ticket.type,
     mode: modeOf(ticket.type),
     next: ticket === next,
+    loud: loudOf(ticketDrift(key, ticket, dismissed)),
     waitsOn:
       place === 'blocked'
         ? openBlockers(ticket).map(({ number, title }) => ({ number, title }))
@@ -259,6 +382,7 @@ const mapNode = (
   launching: Launching,
   map: WayfinderMap,
   expanded: ReadonlySet<string>,
+  dismissed: Dismissed,
 ): MapNode => {
   const key = mapKey(map)
   const next = nextOf(map)
@@ -273,7 +397,10 @@ const mapNode = (
     decided,
     total,
     destination: map.destination,
-    tickets: orderTickets(map).map((ticket) => ticketRow(snapshot, launching, map, ticket, next)),
+    tickets: orderTickets(map).map((ticket) =>
+      ticketRow(snapshot, launching, map, ticket, next, dismissed),
+    ),
+    loud: mapLoudTitle(map, dismissed),
     fog: {
       key: `${key}:fog`,
       expanded: expanded.has(`${key}:fog`),
@@ -296,6 +423,25 @@ const mapNode = (
   }
 }
 
+/** The Unmapped node: the tickets of no map, shown only when there are some. */
+const unmappedFold = (
+  snapshot: Snapshot,
+  expanded: ReadonlySet<string>,
+  dismissed: Dismissed,
+): Fold<UnmappedRow> | null =>
+  snapshot.unmapped.length === 0
+    ? null
+    : {
+        key: UNMAPPED_KEY,
+        expanded: expanded.has(UNMAPPED_KEY),
+        entries: snapshot.unmapped.map((ticket) => ({
+          key: unmappedKey(ticket.number),
+          number: ticket.number,
+          title: ticket.title,
+          loud: loudOf(ticketDrift(unmappedKey(ticket.number), ticket, dismissed)),
+        })),
+      }
+
 /**
  * The Tree's view model from a snapshot: the open maps by urgency, the finished
  * ones folded into one node at the bottom. Everything the Tree draws is derived
@@ -309,6 +455,7 @@ export const buildViewModel = (
   notice: Notice | null = null,
   budget: BudgetNote | null = null,
   launching: Launching = NOT_LAUNCHING,
+  dismissed: Dismissed = NO_DISMISSED,
 ): ViewModel => {
   const ordered = orderMaps(snapshot.maps, facts)
   const active = ordered.filter((map) => !isFinished(map))
@@ -322,15 +469,16 @@ export const buildViewModel = (
         : null,
     notice,
     budget,
-    selection: selectionOf(snapshot, selected, launching)?.focus ?? null,
-    maps: active.map((map) => mapNode(snapshot, launching, map, expanded)),
+    selection: selectionOf(snapshot, selected, launching, dismissed)?.focus ?? null,
+    maps: active.map((map) => mapNode(snapshot, launching, map, expanded, dismissed)),
+    unmapped: unmappedFold(snapshot, expanded, dismissed),
     finished:
       finished.length === 0
         ? null
         : {
             key: FINISHED_KEY,
             expanded: expanded.has(FINISHED_KEY),
-            maps: finished.map((map) => mapNode(snapshot, launching, map, expanded)),
+            maps: finished.map((map) => mapNode(snapshot, launching, map, expanded, dismissed)),
           },
   }
 }

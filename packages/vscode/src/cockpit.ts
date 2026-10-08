@@ -83,6 +83,8 @@ import {
 export const EXPANDED_KEY = 'expanded'
 /** The key the selected row is stored under: a row key, or nothing selected. */
 export const SELECTED_KEY = 'selected'
+/** The key the dismissed drift entries are stored under: their dismissal keys, each at its exact detail. */
+export const DISMISSED_KEY = 'dismissedDrift'
 
 export interface CockpitOptions {
   /** Sends a view model to the Tree's webview. */
@@ -213,6 +215,9 @@ const storedExpanded = (value: unknown): ReadonlySet<string> | null =>
     ? new Set(value)
     : null
 
+const storedDismissed = (value: unknown): ReadonlySet<string> =>
+  new Set(Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [])
+
 const storedSelected = (value: unknown): string | null => (typeof value === 'string' ? value : null)
 
 export const makeCockpit = (
@@ -280,6 +285,10 @@ export const makeCockpit = (
     const expanded = yield* Ref.make<ReadonlySet<string> | null>(
       storedExpanded(yield* storage.get(EXPANDED_KEY)),
     )
+    // Drift entries hidden by the person; a changed detail has a new key, so it shows again.
+    const dismissed = yield* Ref.make<ReadonlySet<string>>(
+      storedDismissed(yield* storage.get(DISMISSED_KEY)),
+    )
     // Which section the Detail was asked to scroll to, and how many times it has been asked.
     const section = yield* Ref.make<MapSection | null>(null)
     const scroll = yield* Ref.make(0)
@@ -324,6 +333,7 @@ export const makeCockpit = (
         state.notice,
         yield* budgetNote,
         yield* launchingFor(state.snapshot.repoRoot),
+        yield* Ref.get(dismissed),
       )
     })
 
@@ -333,7 +343,12 @@ export const makeCockpit = (
       return {
         detail:
           state.kind === 'snapshot'
-            ? detailOf(state.snapshot, key, yield* launchingFor(state.snapshot.repoRoot))
+            ? detailOf(
+                state.snapshot,
+                key,
+                yield* launchingFor(state.snapshot.repoRoot),
+                yield* Ref.get(dismissed),
+              )
             : null,
         section: yield* Ref.get(section),
         scroll: yield* Ref.get(scroll),
@@ -641,6 +656,16 @@ export const makeCockpit = (
         yield* publish
       })
 
+    const dismissDrift = (dismissKey: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const after = yield* Ref.modify(dismissed, (current) => {
+          const next = new Set(current).add(dismissKey)
+          return [next, next] as const
+        })
+        yield* storage.set(DISMISSED_KEY, [...after])
+        yield* publish
+      })
+
     const select = (key: string | null): Effect.Effect<void> =>
       Effect.gen(function* () {
         yield* Ref.set(selected, key)
@@ -876,6 +901,9 @@ export const makeCockpit = (
               break
             case 'copy':
               yield* copyCommand(message.key)
+              break
+            case 'dismiss-drift':
+              yield* dismissDrift(message.dismissKey)
               break
           }
           return true

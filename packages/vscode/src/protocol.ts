@@ -46,6 +46,31 @@ export interface BlockerView {
   readonly title: string
 }
 
+/** One drift warning, with the copy the drift table gives its code. */
+export interface DriftEntry {
+  readonly code: string
+  readonly level: 'loud' | 'quiet'
+  /** What was found. */
+  readonly message: string
+  /** The specifics the scout recorded; null when there are none. */
+  readonly detail: string | null
+  /** One line on the current convention. */
+  readonly hint: string
+  /** What dismissing the entry sends: the subject, the code and the exact detail. */
+  readonly dismissKey: string
+}
+
+/**
+ * The drift a Focus pane summarises: one line per loud warning, one count for all the quiet
+ * ones, and for a map how many of its tickets drift. Null when there is none to show.
+ */
+export interface DriftSummary {
+  readonly loud: ReadonlyArray<string>
+  readonly quiet: number
+  /** Tickets of the map with any drift; zero on a ticket. */
+  readonly tickets: number
+}
+
 /** An open ticket of a map, in the place the Tree lists it. */
 export interface TicketRow {
   /** What the webview sends to select the row. */
@@ -63,6 +88,16 @@ export interface TicketRow {
   readonly session: SessionView
   /** The Action ▶ runs; null for every row but a frontier row. */
   readonly action: ActionView | null
+  /** The loud messages the ⚠ shows on hover; empty when the row is unmarked. */
+  readonly loud: ReadonlyArray<string>
+}
+
+/** A ticket that belongs to no map, in the Unmapped node. */
+export interface UnmappedRow {
+  readonly key: string
+  readonly number: number
+  readonly title: string
+  readonly loud: ReadonlyArray<string>
 }
 
 /** A closed ticket in the Decisions fold, with the gist the map recorded. */
@@ -116,6 +151,8 @@ export interface MapNode {
   readonly tickets: ReadonlyArray<TicketRow>
   readonly fog: Fold<FogRow>
   readonly decisions: Fold<DecisionRow>
+  /** The ⚠ tooltip when the map or any of its tickets has a loud warning, with counts; else null. */
+  readonly loud: string | null
 }
 
 /** The finished maps, folded into one node at the bottom. */
@@ -143,6 +180,7 @@ export type Focus =
       readonly session: SessionView
       /** The Work ticket Action; null unless the ticket is on the frontier. */
       readonly action: ActionView | null
+      readonly drift: DriftSummary | null
     }
   | {
       readonly kind: 'map'
@@ -153,6 +191,7 @@ export type Focus =
       readonly decided: number
       readonly total: number
       readonly destination: string | null
+      readonly drift: DriftSummary | null
     }
 
 /** What the Tree draws: a wait, one plain message, or the maps. */
@@ -170,6 +209,8 @@ export type ViewModel =
       readonly budget: BudgetNote | null
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
+      /** The tickets that belong to no map, folded above Finished; null when there are none. */
+      readonly unmapped: Fold<UnmappedRow> | null
       readonly finished: FinishedFold | null
       /** The one selected row's pane; null when nothing is selected. */
       readonly selection: Focus | null
@@ -183,8 +224,8 @@ export interface NeighbourView {
   readonly key: string | null
 }
 
-/** A section of a map's Detail, which the Fog and Decisions rows open it scrolled to. */
-export type MapSection = 'destination' | 'decisions' | 'fog' | 'out-of-scope'
+/** A section of a Detail, which the Fog and Decisions rows and the drift lines open it scrolled to. */
+export type MapSection = 'destination' | 'decisions' | 'fog' | 'out-of-scope' | 'drift'
 
 /** A closed ticket's answer. */
 export interface ResolutionView {
@@ -199,6 +240,15 @@ export interface DecisionLine {
   readonly number: number | null
   readonly title: string
   readonly gist: string
+}
+
+/** The drift of one subject in a Detail's Drift section: a map's own, or one of its tickets. */
+export interface DriftGroup {
+  /** The ticket's key, so the heading can reveal it; null for the map itself. */
+  readonly key: string | null
+  readonly number: number | null
+  readonly title: string | null
+  readonly entries: ReadonlyArray<DriftEntry>
 }
 
 /** What the Detail shows for the selection: the full issue, not the Focus pane's summary. */
@@ -225,6 +275,8 @@ export type Detail =
       readonly session: SessionView
       /** The Work ticket Action; null unless the ticket is on the frontier with no terminal on it. */
       readonly action: ActionView | null
+      /** The Drift section; empty hides it. */
+      readonly drift: ReadonlyArray<DriftGroup>
     }
   | {
       readonly kind: 'map'
@@ -239,6 +291,10 @@ export type Detail =
       readonly decisions: ReadonlyArray<DecisionLine>
       readonly fog: ReadonlyArray<FogRow>
       readonly outOfScope: ReadonlyArray<FogRow>
+      /** The body as written, shown after the sections that were read when the map is free-form. */
+      readonly freeForm: string | null
+      /** The map's own drift first, then its tickets' under their `#n title`, closed ones included. */
+      readonly drift: ReadonlyArray<DriftGroup>
     }
 
 /**
@@ -278,3 +334,5 @@ export type WebviewMessage =
   | { readonly type: 'focus-terminal'; readonly key: string }
   /** The copy button: put the ticket's command on the clipboard. */
   | { readonly type: 'copy'; readonly key: string }
+  /** Hide a drift entry until its detail changes. */
+  | { readonly type: 'dismiss-drift'; readonly dismissKey: string }

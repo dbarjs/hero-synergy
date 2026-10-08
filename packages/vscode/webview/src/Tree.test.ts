@@ -172,6 +172,7 @@ describe('the Tree states with no maps', () => {
       budget: null,
       maps: [],
       finished: null,
+      unmapped: null,
       selection: null,
     })
     expect(wrapper.text()).toBe('No maps yet.')
@@ -191,6 +192,7 @@ const node = (number: number, overrides: Partial<MapNode> = {}): MapNode => ({
   tickets: [],
   fog: { key: `map:${number}:fog`, expanded: false, entries: [] },
   decisions: { key: `map:${number}:decisions`, expanded: false, entries: [] },
+  loud: null,
   ...overrides,
 })
 
@@ -203,6 +205,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
       decided: 5,
       total: 5,
       decisions: { key: `map:${i + 8}:decisions`, expanded: false, entries: [] },
+      loud: null,
     }),
   )
   const model = (finishedOpen: boolean): ViewModel => ({
@@ -213,6 +216,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
     budget: null,
     maps: active,
     finished: { key: 'finished', expanded: finishedOpen, maps: finishedMaps },
+    unmapped: null,
     selection: null,
   })
 
@@ -242,6 +246,7 @@ describe('what the Tree asks for', () => {
       budget: null,
       maps: [node(1), node(2, { expanded: true })],
       finished: null,
+      unmapped: null,
       selection: null,
     })
     const [first, second] = wrapper.findAll('[role="treeitem"]')
@@ -260,6 +265,7 @@ describe('what the Tree asks for', () => {
       budget: null,
       maps: [],
       finished: { key: 'finished', expanded: false, maps: [node(1, { decided: 1, total: 1 })] },
+      unmapped: null,
       selection: null,
     })
     await wrapper.find('[role="treeitem"]').trigger('keydown', { key: 'Enter' })
