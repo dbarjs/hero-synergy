@@ -15,7 +15,7 @@ import { Effect, Fiber, Layer } from 'effect'
 import { TestClock } from 'effect/testing'
 
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
-import { type Cockpit, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
+import { type Cockpit, DISMISSED_KEY, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
 import type { DetailView, MapNode, ViewModel } from './protocol.ts'
 import {
   Clipboard,
@@ -331,6 +331,58 @@ describe('the Cockpit controller', () => {
           })
         }),
     ),
+  )
+
+  it.effect(
+    'keeps a dismissed drift entry hidden after a reload, and shows it again when its detail changes',
+    () => {
+      // Dark mode waits on a name, not a number: a loud `blockers-as-slugs` whose detail is the name.
+      const filesWith = (slug: string): Record<string, string> => ({
+        ...workspaceFiles(ROOT),
+        [`${ROOT}/.scratch/cockpit-colors/issues/02-dark-mode.md`]: `# Dark mode\n\nType: research\nBlocked by: 01, ${slug}\n\n## Question\n\nDoes it?\n`,
+      })
+      const loudOfMap3 = (viewModel: ViewModel | undefined): string | null | undefined =>
+        maps(viewModel).find((map) => map.number === 3)?.loud
+      return Effect.gen(function* () {
+        const stored = yield* withCockpit(
+          { files: filesWith('palette-colors') },
+          ({ cockpit, published, details }) =>
+            Effect.gen(function* () {
+              yield* cockpit.show
+              expect(loudOfMap3(published.at(-1))).toBe('1 loud warning on 1 ticket')
+              yield* cockpit.receive({ type: 'select', key: 'map:3:ticket:2' })
+              const shown = details.at(-1)?.detail
+              const entry = shown?.kind === 'ticket' ? shown.drift[0]?.entries[0] : undefined
+              expect(entry).toMatchObject({ code: 'blockers-as-slugs', detail: 'palette-colors' })
+              expect(
+                yield* cockpit.receive({ type: 'dismiss-drift', dismissKey: entry?.dismissKey }),
+              ).toBe(true)
+              expect(loudOfMap3(published.at(-1))).toBeNull()
+              const saved = yield* (yield* Storage).get(DISMISSED_KEY)
+              expect(saved).toEqual([entry?.dismissKey])
+              return { [DISMISSED_KEY]: saved }
+            }),
+        )
+
+        // After a reload the dismissal comes back from the workspace state.
+        yield* withCockpit(
+          { files: filesWith('palette-colors'), stored },
+          ({ cockpit, published }) =>
+            Effect.gen(function* () {
+              yield* cockpit.show
+              expect(loudOfMap3(published.at(-1))).toBeNull()
+            }),
+        )
+
+        // The ticket now waits on another name: a new detail, so the entry shows again.
+        yield* withCockpit({ files: filesWith('dark-palette'), stored }, ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            expect(loudOfMap3(published.at(-1))).toBe('1 loud warning on 1 ticket')
+          }),
+        )
+      })
+    },
   )
 
   it.effect('shows no pane for a stored selection that no longer exists', () =>

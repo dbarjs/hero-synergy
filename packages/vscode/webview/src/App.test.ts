@@ -21,6 +21,7 @@ const map: MapNode = {
   tickets: [],
   fog: { key: 'map:1:fog', expanded: false, entries: [] },
   decisions: { key: 'map:1:decisions', expanded: false, entries: [] },
+  loud: null,
 }
 
 const fromHost = (message: HostMessage): void => {
@@ -43,6 +44,7 @@ describe('the Cockpit app', () => {
         budget: null,
         maps: [map],
         finished: null,
+        unmapped: null,
         selection: null,
       },
     })
@@ -64,6 +66,7 @@ describe('the Cockpit app', () => {
         budget: null,
         maps: [map, { ...map, key: 'map:2', number: 2, expanded: true }],
         finished: null,
+        unmapped: null,
         selection: null,
       },
     })

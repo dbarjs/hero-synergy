@@ -405,3 +405,66 @@ it('reopens the Detail on the last selection after the window reloads', async ()
   await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor({ timeout: 60_000 })
   await expect.poll(() => page.locator('.part.editor .tabs-container .tab').count()).toBe(1)
 })
+
+/** The title bar's Refresh, by its exact label: the Explorer has a hidden "Refresh Explorer". */
+const refresh = () =>
+  page.locator('.part.sidebar .action-label[aria-label="Refresh"]:visible').click()
+
+it('marks a legacy map for its loud ticket and ends its Detail with the Drift section', async () => {
+  onTestFailed(() => captureFailure('drift-legacy-map'))
+  // A map in the Fog form an older mattpocock-skills wrote (quiet), with a ticket that waits on a
+  // name instead of a number (loud).
+  const mapDir = path.join(workspaceDir, '.scratch/legacy-notes')
+  mkdirSync(path.join(mapDir, 'issues'), { recursive: true })
+  writeFileSync(
+    path.join(mapDir, 'map.md'),
+    '# Legacy notes\n\n## Destination\n\nName the thing.\n\n## Notes\n\nThe old form.\n\n## Decisions so far\n\n## Fog\n\n- Later.\n',
+  )
+  writeFileSync(path.join(mapDir, 'issues/01-pick-a-name.md'), pickAName('naming-convention'))
+  await refresh()
+
+  await expect
+    .poll(() => row('#4 Legacy notes').locator('.warn').count(), { timeout: 30_000, interval: 500 })
+    .toBe(1)
+  // A map with no drift beside it stays unmarked. (Cockpit colors is marked since the refresh test
+  // resolved #1 without recording it in the map: a real `closed-unrecorded`.)
+  expect(await row('#2 Billing rewrite').locator('.warn').count()).toBe(0)
+
+  await row('#4 Legacy notes').click()
+  await row('Map Name the thing.').press('Enter')
+  await detail().locator('h1').filter({ hasText: '#4 Legacy notes' }).waitFor({ timeout: 30_000 })
+  await textsOf(detail().locator('.section h2')).toEqual([
+    'Destination',
+    'Decisions so far',
+    'Not yet specified',
+    'Out of scope',
+    'Drift',
+  ])
+  await textOf(detail().locator('#section-drift')).toContain('naming-convention')
+  expect(await detail().locator('.chip').count()).toBe(1)
+})
+
+it('keeps a dismissed drift entry hidden after the window reloads, until its detail changes', async () => {
+  onTestFailed(() => captureFailure('drift-dismiss'))
+  await row('#1 Pick a name').click()
+  await detail().locator('h1').filter({ hasText: '#1 Pick a name' }).waitFor({ timeout: 30_000 })
+  await detail().locator('#section-drift .dismiss').first().click()
+  await expect.poll(() => detail().locator('#section-drift').count(), { timeout: 30_000 }).toBe(0)
+
+  await runCommand('Developer: Reload Window')
+  await detailTab('#1 Pick a name').waitFor({ timeout: 60_000 })
+  await detail().locator('h1').filter({ hasText: '#1 Pick a name' }).waitFor({ timeout: 60_000 })
+  expect(await detail().locator('#section-drift').count()).toBe(0)
+
+  // The ticket now waits on another name: the same code at a new detail shows again.
+  writeFileSync(
+    path.join(workspaceDir, '.scratch/legacy-notes/issues/01-pick-a-name.md'),
+    pickAName('naming-rules'),
+  )
+  await refresh()
+  await textOf(detail().locator('#section-drift')).toContain('naming-rules')
+})
+
+function pickAName(slug: string): string {
+  return `# Pick a name\n\nType: grilling\nBlocked by: ${slug}\n\n## Question\n\nWhat is it called?\n`
+}

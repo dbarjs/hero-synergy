@@ -2,6 +2,7 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { MapSection, ViewModel } from '../../src/protocol.ts'
+import FocusPane from './FocusPane.vue'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
 
@@ -119,6 +120,45 @@ const toggle = (key: string, expanded: boolean): void => {
       @focus-terminal="(key) => emit('focusTerminal', key)"
       @copy="(key) => emit('copy', key)"
     />
+    <template v-if="viewModel.unmapped">
+      <Row
+        :depth="0"
+        :expanded="viewModel.unmapped.expanded"
+        icon="warning"
+        label="Unmapped"
+        muted
+        @activate="toggle(viewModel.unmapped.key, !viewModel.unmapped.expanded)"
+      >
+        <span class="count">{{ viewModel.unmapped.entries.length }}</span>
+      </Row>
+      <template v-if="viewModel.unmapped.expanded">
+        <template v-for="ticket in viewModel.unmapped.entries" :key="ticket.key">
+          <Row
+            class="ticket unmapped"
+            :depth="1"
+            :number="ticket.number"
+            :label="ticket.title"
+            :warn="ticket.loud.length > 0 ? ticket.loud.join('\n') : undefined"
+            :selected="viewModel.selection?.key === ticket.key"
+            opens-detail
+            @activate="select(ticket.key)"
+            @open-detail="emit('openDetail', ticket.key, null)"
+          />
+          <FocusPane
+            v-if="viewModel.selection && viewModel.selection.key === ticket.key"
+            :focus="viewModel.selection"
+            :depth="1"
+            @close="emit('select', null)"
+            @open="(key) => emit('open', key)"
+            @detail="(key) => emit('openDetail', key, null)"
+            @drift="(key) => emit('openDetail', key, 'drift')"
+            @launch="(key) => emit('launch', key)"
+            @focus-terminal="(key) => emit('focusTerminal', key)"
+            @copy="(key) => emit('copy', key)"
+          />
+        </template>
+      </template>
+    </template>
     <template v-if="viewModel.finished">
       <Row
         :depth="0"

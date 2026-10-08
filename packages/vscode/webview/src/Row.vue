@@ -23,6 +23,8 @@ const props = withDefaults(
     selected?: boolean
     /** The tooltip, for text the row has to cut. */
     title?: string
+    /** Loud drift: a ⚠ after the label, with this text on hover. Absent leaves the row unmarked. */
+    warn?: string
     /** Enter and a double-click open the Detail on the row; a click or Space still activates it. */
     opensDetail?: boolean
   }>(),
@@ -70,6 +72,13 @@ watch(
     <span class="label">
       <span v-if="number != null" class="num">#{{ number }}</span>
       {{ label }}
+      <span
+        v-if="warn"
+        class="codicon codicon-warning warn"
+        role="img"
+        aria-label="Warning"
+        :title="warn"
+      />
       <span v-if="description" class="description">{{ description }}</span>
     </span>
     <span class="trail"><slot /></span>
@@ -127,6 +136,11 @@ watch(
   font-family: var(--vscode-editor-font-family, monospace);
   font-size: 0.9em;
   color: var(--vscode-descriptionForeground);
+}
+.warn {
+  margin-left: 4px;
+  vertical-align: middle;
+  color: var(--vscode-editorWarning-foreground);
 }
 .description {
   margin-left: 6px;

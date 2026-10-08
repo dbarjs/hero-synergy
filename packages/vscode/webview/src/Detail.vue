@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 
 import type { DetailView, MapSection, NeighbourView } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
@@ -23,6 +23,8 @@ const emit = defineEmits<{
   launch: [key: string]
   focusTerminal: [key: string]
   copy: [key: string]
+  /** Hide a drift entry until its detail changes. */
+  dismiss: [dismissKey: string]
 }>()
 
 const SECTIONS: ReadonlyArray<{ section: MapSection; heading: string }> = [
@@ -44,6 +46,31 @@ onMounted(scrollToSection)
 watch(() => props.view.scroll, scrollToSection)
 watch(() => props.view.detail?.key, scrollToSection)
 
+/** The Drift section of the selection, empty when there is none to show. */
+const drift = computed(() => props.view.detail?.drift ?? [])
+
+/** Whether anything in the Drift section is loud, which puts the ⚠ chip in the header. */
+const loud = computed(() =>
+  drift.value.some((group) => group.entries.some((entry) => entry.level === 'loud')),
+)
+
+const scrollToDrift = (): void =>
+  document.getElementById('section-drift')?.scrollIntoView?.({ block: 'start' })
+
+/** A free-form map shows only the sections that were read, then its body as written. */
+const sections = computed(() => {
+  const detail = props.view.detail
+  if (detail?.kind !== 'map' || detail.freeForm === null) return SECTIONS
+  const filled = {
+    destination: detail.destination !== null,
+    decisions: detail.decisions.length > 0,
+    fog: detail.fog.length > 0,
+    'out-of-scope': detail.outOfScope.length > 0,
+    drift: false,
+  }
+  return SECTIONS.filter(({ section }) => filled[section])
+})
+
 /** The entries of the fog or the out-of-scope section of a map's Detail. */
 const listOf = (section: MapSection): ReadonlyArray<{ readonly text: string }> => {
   const detail = props.view.detail
@@ -63,6 +90,9 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       <h1>
         <span class="num">#{{ view.detail.number }}</span> {{ view.detail.title }}
       </h1>
+      <button v-if="loud" type="button" class="chip" @click="scrollToDrift">
+        <span class="codicon codicon-warning" /> Drift
+      </button>
       <button type="button" class="open" @click="emit('open', view.detail.key)">
         ↗ Open issue
       </button>
@@ -160,6 +190,46 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       </p>
       <Markdown :source="view.detail.resolution.body" @link="emit('link', $event)" />
     </section>
+
+    <section
+      v-if="drift.length > 0"
+      id="section-drift"
+      class="section drift"
+      :class="{ targeted: view.section === 'drift' }"
+      aria-label="Drift"
+    >
+      <h2>Drift</h2>
+      <div v-for="(group, index) in drift" :key="index" class="group">
+        <h3 v-if="group.number !== null">
+          <button
+            v-if="group.key !== null"
+            type="button"
+            class="neighbour"
+            @click="emit('reveal', group.key)"
+          >
+            <span class="num">#{{ group.number }}</span> {{ group.title }}
+          </button>
+        </h3>
+        <ul>
+          <li
+            v-for="entry in group.entries"
+            :key="entry.dismissKey"
+            class="drift-entry"
+            :class="entry.level"
+          >
+            <p class="message">
+              <span v-if="entry.level === 'loud'" class="codicon codicon-warning" />
+              {{ entry.message }}
+              <button type="button" class="link dismiss" @click="emit('dismiss', entry.dismissKey)">
+                Dismiss
+              </button>
+            </p>
+            <p v-if="entry.detail" class="detail">{{ entry.detail }}</p>
+            <p class="hint">{{ entry.hint }}</p>
+          </li>
+        </ul>
+      </div>
+    </section>
   </article>
 
   <article v-else class="detail map">
@@ -167,6 +237,9 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       <h1>
         <span class="num">#{{ view.detail.number }}</span> {{ view.detail.title }}
       </h1>
+      <button v-if="loud" type="button" class="chip" @click="scrollToDrift">
+        <span class="codicon codicon-warning" /> Drift
+      </button>
       <button type="button" class="open" @click="emit('open', view.detail.key)">
         ↗ Open issue
       </button>
@@ -177,7 +250,7 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
     </p>
 
     <section
-      v-for="{ section, heading } in SECTIONS"
+      v-for="{ section, heading } in sections"
       :id="`section-${section}`"
       :key="section"
       class="section"
@@ -225,6 +298,51 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
           </li>
         </ul>
       </template>
+    </section>
+
+    <section v-if="view.detail.freeForm !== null" class="section free-form" aria-label="As written">
+      <p class="none">This map's body isn't in the current form; shown as written.</p>
+      <pre class="raw">{{ view.detail.freeForm }}</pre>
+    </section>
+
+    <section
+      v-if="drift.length > 0"
+      id="section-drift"
+      class="section drift"
+      :class="{ targeted: view.section === 'drift' }"
+      aria-label="Drift"
+    >
+      <h2>Drift</h2>
+      <div v-for="(group, index) in drift" :key="index" class="group">
+        <h3 v-if="group.number !== null">
+          <button
+            v-if="group.key !== null"
+            type="button"
+            class="neighbour"
+            @click="emit('reveal', group.key)"
+          >
+            <span class="num">#{{ group.number }}</span> {{ group.title }}
+          </button>
+        </h3>
+        <ul>
+          <li
+            v-for="entry in group.entries"
+            :key="entry.dismissKey"
+            class="drift-entry"
+            :class="entry.level"
+          >
+            <p class="message">
+              <span v-if="entry.level === 'loud'" class="codicon codicon-warning" />
+              {{ entry.message }}
+              <button type="button" class="link dismiss" @click="emit('dismiss', entry.dismissKey)">
+                Dismiss
+              </button>
+            </p>
+            <p v-if="entry.detail" class="detail">{{ entry.detail }}</p>
+            <p class="hint">{{ entry.hint }}</p>
+          </li>
+        </ul>
+      </div>
     </section>
   </article>
 </template>
@@ -356,6 +474,43 @@ li {
 }
 .entry {
   margin: 4px 0;
+}
+.chip {
+  flex: none;
+  border: 1px solid var(--vscode-editorWarning-foreground);
+  border-radius: 10px;
+  padding: 0 8px;
+  color: var(--vscode-editorWarning-foreground);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+.raw {
+  margin: 0;
+  white-space: pre-wrap;
+  font-family: var(--vscode-editor-font-family, monospace);
+}
+h3 {
+  margin: 8px 0 2px;
+  font-size: 1em;
+  font-weight: 600;
+}
+.drift-entry {
+  margin: 6px 0 10px;
+}
+.drift-entry p {
+  margin: 0;
+}
+.drift-entry .codicon {
+  color: var(--vscode-editorWarning-foreground);
+}
+.drift-entry.quiet .message,
+.drift-entry .detail,
+.drift-entry .hint {
+  color: var(--vscode-descriptionForeground);
+}
+.dismiss {
+  margin-left: 8px;
 }
 @media (max-width: 560px) {
   .neighbourhood {

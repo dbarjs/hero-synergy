@@ -55,6 +55,7 @@ const takeableText = (map: MapNode): string =>
     :number="map.number"
     :label="map.title"
     :muted="finished"
+    :warn="map.loud ?? undefined"
     @activate="emit('toggle', map.key, !map.expanded)"
   >
     <span v-if="!finished" class="takeable" :class="{ none: map.takeable === 0 }">
@@ -83,6 +84,7 @@ const takeableText = (map: MapNode): string =>
       @close="emit('close')"
       @open="(key) => emit('open', key)"
       @detail="(key) => emit('openDetail', key, null)"
+      @drift="(key) => emit('openDetail', key, 'drift')"
       @launch="(key) => emit('launch', key)"
       @focus-terminal="(key) => emit('focusTerminal', key)"
       @copy="(key) => emit('copy', key)"
@@ -97,6 +99,7 @@ const takeableText = (map: MapNode): string =>
         :number="ticket.number"
         :label="ticket.title"
         :muted="ticket.place === 'blocked'"
+        :warn="ticket.loud.length > 0 ? ticket.loud.join('\n') : undefined"
         :selected="isSelected(ticket.key)"
         opens-detail
         @activate="emit('select', ticket.key)"
@@ -159,6 +162,7 @@ const takeableText = (map: MapNode): string =>
         @close="emit('close')"
         @open="(key) => emit('open', key)"
         @detail="(key) => emit('openDetail', key, null)"
+        @drift="(key) => emit('openDetail', key, 'drift')"
         @launch="(key) => emit('launch', key)"
         @focus-terminal="(key) => emit('focusTerminal', key)"
         @copy="(key) => emit('copy', key)"
@@ -225,6 +229,7 @@ const takeableText = (map: MapNode): string =>
             @close="emit('close')"
             @open="(key) => emit('open', key)"
             @detail="(key) => emit('openDetail', key, null)"
+            @drift="(key) => emit('openDetail', key, 'drift')"
             @launch="(key) => emit('launch', key)"
             @focus-terminal="(key) => emit('focusTerminal', key)"
             @copy="(key) => emit('copy', key)"

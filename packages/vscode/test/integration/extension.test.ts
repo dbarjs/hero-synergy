@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { existsSync, readFileSync, realpathSync } from 'node:fs'
+import { existsSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import * as vscode from 'vscode'
 
@@ -270,5 +270,58 @@ describe('hero-synergy launching a ticket', () => {
       )
       vscode.window.terminals.forEach((terminal) => terminal.dispose())
     }
+  })
+})
+
+describe('hero-synergy dismissing drift', () => {
+  const DARK_MODE = 'map:3:ticket:2'
+  let file = ''
+  let original = ''
+
+  /** Dark mode waits on a name as well as on #1: a loud `blockers-as-slugs`, detail the name. */
+  const waitOn = async (slug: string): Promise<void> => {
+    writeFileSync(file, original.replace('Blocked by: 01', `Blocked by: 01, ${slug}`))
+    const before = api().state().spawnedProcesses
+    await vscode.commands.executeCommand('heroSynergy.refresh')
+    await until('the refresh to collect', () => api().state().spawnedProcesses > before)
+  }
+
+  before(() => {
+    const folder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
+    assert.ok(folder)
+    file = path.join(folder, '.scratch/cockpit-colors/issues/02-dark-mode.md')
+    original = readFileSync(file, 'utf8')
+    assert.match(original, /Blocked by: 01/)
+  })
+
+  after(async () => {
+    writeFileSync(file, original)
+    await vscode.commands.executeCommand('heroSynergy.refresh')
+  })
+
+  it('marks a ticket that waits on a name, and hides the entry once dismissed', async () => {
+    await waitOn('palette-colors')
+    await until('the row to be loud', () => (rowOf(DARK_MODE)?.loud.length ?? 0) === 1)
+
+    assert.equal(await api().receive({ type: 'select', key: DARK_MODE }), true)
+    await until(
+      'the Detail of Dark mode',
+      () => api().state().detailView?.detail?.key === DARK_MODE,
+    )
+    const shown = api().state().detailView?.detail
+    const entry = shown?.kind === 'ticket' ? shown.drift[0]?.entries[0] : undefined
+    assert.equal(entry?.code, 'blockers-as-slugs')
+    assert.equal(entry?.detail, 'palette-colors')
+
+    assert.equal(
+      await api().receive({ type: 'dismiss-drift', dismissKey: entry?.dismissKey }),
+      true,
+    )
+    await until('the row to be unmarked', () => rowOf(DARK_MODE)?.loud.length === 0)
+  })
+
+  it('shows the entry again when its detail changes', async () => {
+    await waitOn('dark-palette')
+    await until('the row to be loud again', () => (rowOf(DARK_MODE)?.loud.length ?? 0) === 1)
   })
 })

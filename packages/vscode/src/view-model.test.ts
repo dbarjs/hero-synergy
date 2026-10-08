@@ -188,6 +188,8 @@ describe('the Detail of the fixture workspace', () => {
       ],
       fog: [{ text: 'Spacing, once the palette is fixed.' }],
       outOfScope: [{ text: 'Custom user themes, which belong to a later release.' }],
+      freeForm: null,
+      drift: [],
     })
   })
 
