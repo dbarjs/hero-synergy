@@ -4,6 +4,8 @@ export function createClaudeStub(parent: string): {
   argvFile: string
   envFile: string
   cwdFile: string
+  scriptFile: string
+  writtenFile: string
 }
 export function createLaunchableWorkspace(parent: string): {
   workspace: string
@@ -11,6 +13,8 @@ export function createLaunchableWorkspace(parent: string): {
   argvFile: string
   envFile: string
   cwdFile: string
+  scriptFile: string
+  writtenFile: string
 }
 export function writeUserSettings(userDataDir: string, settings: Record<string, unknown>): void
 export function createGitHubWorkspace(

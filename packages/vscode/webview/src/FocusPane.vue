@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Focus } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
+import SessionLine from './SessionLine.vue'
 
 /**
  * The Focus pane, open inline under the selected row. It is a stack of labelled
@@ -49,13 +50,10 @@ const emit = defineEmits<{
         <div v-if="focus.session.kind !== 'none'" class="fact session">
           <dt>Session</dt>
           <dd>
-            <template v-if="focus.session.kind === 'starting'">
-              starting
-              <button type="button" class="link" @click="emit('focusTerminal', focus.key)">
-                focus terminal
-              </button>
-            </template>
-            <template v-else>ended: {{ focus.session.detail }}</template>
+            <SessionLine
+              :session="focus.session"
+              @focus-terminal="emit('focusTerminal', focus.key)"
+            />
           </dd>
         </div>
       </template>

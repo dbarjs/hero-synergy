@@ -20,6 +20,8 @@ import type { DetailView, MapNode, ViewModel } from './protocol.ts'
 import {
   Clipboard,
   CollectProgress,
+  type EventsWatcherRecorder,
+  EventsWatcher,
   HostEnvironment,
   type HostEnvironmentShape,
   Opener,
@@ -98,6 +100,9 @@ const withCockpit = <A>(
     fs: FileSystem['Service']
     terminals: TerminalRecorder
     copied: string[]
+    /** The badge each time the Cockpit set it. */
+    badges: number[]
+    watcher: EventsWatcherRecorder
   }) => Effect.Effect<
     A,
     never,
@@ -105,6 +110,7 @@ const withCockpit = <A>(
   >,
 ) => {
   const terminals = Terminals.inMemory()
+  const watcher = EventsWatcher.inMemory()
   const copied: string[] = []
   const runner = countingRunner(setup.recordings ?? [inRepo(ROOT, ROOT)], setup.delay)
   const opened: OpenTarget[] = []
@@ -117,6 +123,7 @@ const withCockpit = <A>(
     FileSystem.inMemory(setup.files ?? workspaceFiles(ROOT)),
     runner.layer,
     terminals.layer,
+    watcher.layer,
     Clipboard.inMemory(copied),
     HostEnvironment.inMemory(setup.environment),
   )
@@ -125,10 +132,12 @@ const withCockpit = <A>(
     const logged: string[] = []
     const details: DetailView[] = []
     const shown: boolean[] = []
+    const badges: number[] = []
     const cockpit = yield* makeCockpit({
       publish: (viewModel) => published.push(viewModel),
       publishDetail: (view) => details.push(view),
       showDetail: (focus) => shown.push(focus),
+      badge: (count) => badges.push(count),
       log: (line) => logged.push(line),
     })
     const fs = yield* FileSystem
@@ -144,6 +153,8 @@ const withCockpit = <A>(
       fs,
       terminals: terminals.recorder,
       copied,
+      badges,
+      watcher: watcher.recorder,
     })
   }).pipe(Effect.provide(layer))
 }
@@ -1122,7 +1133,7 @@ describe('the Cockpit controller launching a ticket', () => {
         yield* cockpit.receive({ type: 'launch', key: PALETTE })
         expect(terminals.opened).toHaveLength(1)
         const row = ticketRowOf(published.at(-1), PALETTE)
-        expect(row?.session).toEqual({ kind: 'starting' })
+        expect(row?.session).toEqual({ kind: 'starting', hint: null })
         expect(row?.action).toBeNull()
       }),
     ),
@@ -1154,7 +1165,7 @@ describe('the Cockpit controller launching a ticket', () => {
         terminals.close(1, exit)
         yield* Effect.yieldNow
         const row = ticketRowOf(published.at(-1), PALETTE)
-        expect(row?.session).toEqual({ kind: 'ended', detail })
+        expect(row?.session).toMatchObject({ kind: 'ended', detail })
         // Ended is not live: the ticket can be taken again.
         expect(row?.action?.disabled).toBeNull()
       }),
@@ -1350,6 +1361,316 @@ describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
           yield* cockpit.receive({ type: 'copy', key: PALETTE })
           expect(terminals.opened).toEqual([])
         }),
+    ),
+  )
+})
+
+const EVENTS = '/storage/events/repo.jsonl'
+
+const eventLine = (
+  ticket: string,
+  hook: string,
+  session: string,
+  detail: string | null = null,
+  at = '2026-10-08T10:00:00.000Z',
+) => `${JSON.stringify({ ticket, hook, session, detail, at, payload: {} })}\n`
+
+describe('the Cockpit controller driving a session from status events', () => {
+  /** What the plugin does: append to the events file, then the disk tells the watcher. */
+  const appendEvents = (
+    fs: FileSystem['Service'],
+    watcher: { change: () => void },
+    text: string,
+  ): Effect.Effect<void> =>
+    Effect.gen(function* () {
+      const before = yield* fs.readFile(EVENTS).pipe(Effect.orElseSucceed(() => ''))
+      yield* fs.writeFile(EVENTS, before + text).pipe(Effect.orDie)
+      watcher.change()
+      // The read runs on its own fiber, then the view model goes out.
+      for (let i = 0; i < 20; i++) yield* Effect.yieldNow
+    })
+
+  const sessionOf = (published: ViewModel[]) => ticketRowOf(published.at(-1), PALETTE)?.session
+  const rowSession = (published: ViewModel[], key: string) =>
+    ticketRowOf(published.at(-1), key)?.session
+
+  it.effect('creates the events file and watches it once the repo is known', () =>
+    withCockpit(launchable(), ({ cockpit, fs, watcher }) =>
+      Effect.gen(function* () {
+        expect(yield* fs.exists(EVENTS).pipe(Effect.orDie)).toBe(false)
+        yield* cockpit.show
+        expect(yield* fs.exists(EVENTS).pipe(Effect.orDie)).toBe(true)
+        expect(watcher.watched).toEqual([EVENTS])
+      }),
+    ),
+  )
+
+  it.effect('shows live on SessionStart and ended "exited" on SessionEnd', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(terminals.opened).toHaveLength(1)
+
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        expect(sessionOf(published)).toMatchObject({ kind: 'live', status: null, needsYou: false })
+        // The row keeps its terminal: focusing still reaches it.
+        yield* cockpit.receive({ type: 'focus-terminal', key: PALETTE })
+        expect(terminals.focused).toEqual([1])
+
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionEnd', 'A', 'prompt_input_exit'))
+        expect(sessionOf(published)).toMatchObject({ kind: 'ended', detail: 'exited' })
+        // Ended is not running: the ticket can be taken again.
+        expect(ticketRowOf(published.at(-1), PALETTE)?.action?.disabled).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('takes the time of the status event, not the time it was read', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        const at = '2026-10-08T09:59:00.000Z'
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup', at))
+        expect(sessionOf(published)).toMatchObject({ kind: 'live', since: Date.parse(at) })
+      }),
+    ),
+  )
+
+  it.effect('treats a SessionEnd read before its SessionStart as final', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionEnd', 'A', 'prompt_input_exit'))
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        expect(sessionOf(published)).toMatchObject({ kind: 'ended', detail: 'exited' })
+      }),
+    ),
+  )
+
+  it.effect('keeps the ticket going through /clear and takes the new session id', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(
+          fs,
+          watcher,
+          eventLine('1', 'SessionStart', 'A', 'startup') +
+            eventLine('1', 'SessionEnd', 'A', 'clear') +
+            eventLine('1', 'SessionStart', 'B', 'clear'),
+        )
+        expect(sessionOf(published)).toMatchObject({ kind: 'live' })
+      }),
+    ),
+  )
+
+  it.effect('counts a failed session in the badge, and nothing else', () =>
+    withCockpit(launchable(), ({ cockpit, published, badges, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        expect(badges.at(-1)).toBe(0)
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(badges.at(-1)).toBe(0) // starting
+
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        expect(badges.at(-1)).toBe(0) // live, no status
+
+        yield* appendEvents(fs, watcher, eventLine('1', 'StopFailure', 'A', 'rate_limit'))
+        expect(sessionOf(published)).toMatchObject({
+          kind: 'live',
+          status: 'failed',
+          needsYou: true,
+        })
+        expect(badges.at(-1)).toBe(1)
+
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionEnd', 'A', 'other'))
+        expect(sessionOf(published)).toMatchObject({ kind: 'ended', detail: 'other' })
+        expect(badges.at(-1)).toBe(0) // ended
+      }),
+    ),
+  )
+
+  it.effect('shows the hint once the terminal has been quiet for 15 s, and not before', () =>
+    withCockpit(launchable(), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        expect(sessionOf(published)).toEqual({ kind: 'starting', hint: null })
+        yield* TestClock.adjust('14 seconds')
+        expect(sessionOf(published)).toEqual({ kind: 'starting', hint: null })
+        yield* TestClock.adjust('1 second')
+        expect(sessionOf(published)).toEqual({
+          kind: 'starting',
+          hint: 'no status yet, the session may be waiting at the trust dialog, open the terminal',
+        })
+      }),
+    ),
+  )
+
+  it.effect('shows no hint to a session that reported in time', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        yield* TestClock.adjust('15 seconds')
+        expect(sessionOf(published)).toMatchObject({ kind: 'live' })
+      }),
+    ),
+  )
+
+  it.effect('reads an event the watcher dropped on the slow poll while a session runs', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        // The disk changed but the watcher said nothing.
+        yield* fs
+          .writeFile(EVENTS, eventLine('1', 'SessionStart', 'A', 'startup'))
+          .pipe(Effect.orDie)
+        expect(sessionOf(published)).toEqual({ kind: 'starting', hint: null })
+        yield* TestClock.adjust('5 seconds')
+        expect(sessionOf(published)).toMatchObject({ kind: 'live' })
+      }),
+    ),
+  )
+
+  it.effect('does not poll while no session runs', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        const before = published.length
+        yield* fs
+          .writeFile(EVENTS, eventLine('1', 'SessionStart', 'A', 'startup'))
+          .pipe(Effect.orDie)
+        yield* TestClock.adjust('1 minute')
+        expect(published).toHaveLength(before)
+      }),
+    ),
+  )
+
+  it.effect('ends a live session when its terminal closes with no SessionEnd', () =>
+    withCockpit(launchable(), ({ cockpit, published, terminals, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        terminals.close(1, { reason: 'process', code: 137 })
+        yield* Effect.yieldNow
+        expect(sessionOf(published)).toMatchObject({
+          kind: 'ended',
+          detail: 'exited with code 137',
+        })
+      }),
+    ),
+  )
+
+  it.effect(
+    'shows a session the file says was live as ended, window closed, after a reload',
+    () => {
+      const setup = launchable()
+      return withCockpit(
+        { ...setup, files: { ...setup.files, [EVENTS]: eventLine('4', 'SessionStart', 'A') } },
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            expect(rowSession(published, 'map:3:ticket:4')).toMatchObject({
+              kind: 'ended',
+              detail: 'window closed',
+            })
+          }),
+      )
+    },
+  )
+
+  it.effect('shows a session the file says ended with its reason after a reload', () => {
+    const setup = launchable()
+    const text = eventLine('4', 'SessionStart', 'A') + eventLine('4', 'SessionEnd', 'A', 'logout')
+    return withCockpit(
+      { ...setup, files: { ...setup.files, [EVENTS]: text } },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          expect(rowSession(published, 'map:3:ticket:4')).toMatchObject({
+            kind: 'ended',
+            detail: 'logout',
+          })
+        }),
+    )
+  })
+
+  it.effect('spawns nothing and reads nothing at activation with no snapshot cached', () =>
+    withCockpit(launchable(), ({ cockpit, watcher, runs }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        expect(watcher.watched).toEqual([])
+        expect(runs()).toBe(0)
+      }),
+    ),
+  )
+
+  it.effect(
+    'reads and watches the file at activation when the last snapshot names the repo',
+    () => {
+      const setup = launchable()
+      return withCockpit(
+        {
+          ...setup,
+          files: { ...setup.files, [EVENTS]: eventLine('4', 'SessionEnd', 'A', 'logout') },
+        },
+        ({ cockpit, watcher, runs, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            // Seeding the cache through a first window, then a second one over the same storage, is
+            // the extension host tier's job; here the first collect is the one that names the repo.
+            expect(watcher.watched).toEqual([EVENTS])
+            expect(runs()).toBeGreaterThan(0)
+            expect(rowSession(published, 'map:3:ticket:4')).toMatchObject({
+              kind: 'ended',
+              detail: 'logout',
+            })
+          }),
+      )
+    },
+  )
+
+  it.effect('compacts a file above the size cap, keeping each ticket’s last event', () => {
+    const setup = launchable()
+    const lines = Array.from({ length: 4_000 }, (_, i) =>
+      eventLine(String(1 + (i % 2)), 'StopFailure', 'A', `error-${i}`),
+    ).join('')
+    return withCockpit(
+      { ...setup, files: { ...setup.files, [EVENTS]: lines } },
+      ({ cockpit, fs, logged }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const kept = (yield* fs.readFile(EVENTS).pipe(Effect.orDie)).trim().split('\n')
+          expect(kept.map((line) => (JSON.parse(line) as { detail: string }).detail)).toEqual([
+            'error-3998',
+            'error-3999',
+          ])
+          expect(logged.some((line) => line.startsWith('Compacted '))).toBe(true)
+        }),
+    )
+  })
+
+  it.effect('logs a status event for a ticket that is not in view and goes on', () =>
+    withCockpit(launchable(), ({ cockpit, published, logged, fs, watcher }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(
+          fs,
+          watcher,
+          eventLine('999', 'SessionStart', 'Z', 'startup') +
+            eventLine('1', 'SessionStart', 'A', 'startup'),
+        )
+        expect(logged).toContain('Status event SessionStart for #999 matches no ticket in view')
+        expect(sessionOf(published)).toMatchObject({ kind: 'live' })
+      }),
     ),
   )
 })

@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto'
+import { watch } from 'node:fs'
 import os from 'node:os'
+import path from 'node:path'
 
 import { Effect, Layer } from 'effect'
 import * as vscode from 'vscode'
@@ -8,6 +10,7 @@ import { TREE_VIEW_ID } from './tree-view.ts'
 import {
   Clipboard,
   CollectProgress,
+  EventsWatcher,
   HostEnvironment,
   Opener,
   Storage,
@@ -127,6 +130,29 @@ export const terminalsLive = (context: vscode.ExtensionContext): Layer.Layer<Ter
         listeners.push(listener)
       },
     }
+  })
+
+/**
+ * Watches the events file's directory with Node's own watcher: the file lives under the
+ * extension's global storage, outside the workspace, where VS Code's watchers do not reach
+ * reliably. Watching the directory survives the file being replaced by a compaction.
+ */
+export const eventsWatcherLive = (context: vscode.ExtensionContext): Layer.Layer<EventsWatcher> =>
+  Layer.succeed(EventsWatcher, {
+    watch: (file, onChange) =>
+      Effect.sync(() => {
+        const name = path.basename(file)
+        try {
+          const watcher = watch(path.dirname(file), { persistent: false }, (_event, changed) => {
+            if (changed === null || changed === name) onChange()
+          })
+          // A watcher that errors (the directory removed) stops; the slow poll still reads.
+          watcher.on('error', () => watcher.close())
+          context.subscriptions.push({ dispose: () => watcher.close() })
+        } catch {
+          // No watcher where the platform refuses one: the slow poll reads while a session runs.
+        }
+      }),
   })
 
 const configuration = () => vscode.workspace.getConfiguration('heroSynergy')

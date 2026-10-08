@@ -9,19 +9,13 @@ import {
 } from '@hero-synergy/core'
 
 import type { ClaudeResolution } from './claude-path.ts'
-import type { ActionView, SessionView } from './protocol.ts'
-import type { TerminalExit } from './services.ts'
+import type { ActionView } from './protocol.ts'
+import { isRunning, type SessionState } from './session.ts'
 
 /**
- * Launching a ticket: the state a ticket's session is in, and the Work ticket
- * Action built from what the window knows. The state is keyed on the ticket's
- * row key; this ticket knows none, starting and ended.
+ * Launching a ticket: the Work ticket Action built from what the window knows.
+ * A ticket's session state (`./session.ts`) is keyed on its row key.
  */
-
-export type SessionState =
-  /** A terminal exists; `terminal` is null in the instant before VS Code has created it. */
-  | { readonly kind: 'starting'; readonly terminal: number | null }
-  | { readonly kind: 'ended'; readonly detail: string }
 
 /** What launching needs beyond the snapshot. */
 export interface Launching {
@@ -64,29 +58,8 @@ export function terminalIcon(type: TicketType | null): string {
   }
 }
 
-/** Why a session ended, from the terminal's exit status. */
-export function describeExit(exit: TerminalExit): string {
-  switch (exit.reason) {
-    case 'user':
-      return 'terminal closed'
-    case 'shutdown':
-      return 'window closed'
-    case 'process':
-      return exit.code === null || exit.code === 0 ? 'exited' : `exited with code ${exit.code}`
-    case 'extension':
-    case 'unknown':
-      return 'process gone'
-  }
-}
-
-export const sessionView = (state: SessionState | undefined): SessionView => {
-  if (state === undefined) return { kind: 'none' }
-  return state.kind === 'starting' ? { kind: 'starting' } : { kind: 'ended', detail: state.detail }
-}
-
 /** Whether ▶ may run for a ticket in this state: no terminal running on it. */
-export const canLaunchFrom = (state: SessionState | undefined): boolean =>
-  state === undefined || state.kind === 'ended'
+export const canLaunchFrom = (state: SessionState | undefined): boolean => !isRunning(state)
 
 type Target = { readonly map: WayfinderMap; readonly ticket: Ticket }
 

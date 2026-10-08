@@ -19,6 +19,8 @@ export interface TreeView {
   readonly post: (viewModel: ViewModel) => void
   /** Whether VS Code has asked for the view yet. */
   readonly resolved: () => boolean
+  /** The badge on the Hero Synergy container: the sessions that need me, none at 0. */
+  readonly setBadge: (count: number) => void
 }
 
 /**
@@ -31,11 +33,23 @@ export function registerTreeView(
   handlers: TreeViewHandlers,
 ): TreeView {
   let current: vscode.WebviewView | null = null
+  // The badge belongs to the view, which exists only once VS Code resolves it: keep the last count to give it then.
+  let badge = 0
+  const showBadge = (view: vscode.WebviewView): void => {
+    view.badge =
+      badge === 0
+        ? undefined
+        : {
+            value: badge,
+            tooltip: `${badge} ${badge === 1 ? 'session needs' : 'sessions need'} you`,
+          }
+  }
   const bundle = vscode.Uri.joinPath(context.extensionUri, 'dist', 'webview')
 
   const provider: vscode.WebviewViewProvider = {
     resolveWebviewView(view) {
       current = view
+      showBadge(view)
       view.webview.options = { enableScripts: true, localResourceRoots: [bundle] }
       view.webview.html = webviewHtml({
         cspSource: view.webview.cspSource,
@@ -70,6 +84,10 @@ export function registerTreeView(
       void current?.webview.postMessage(message)
     },
     resolved: () => current !== null,
+    setBadge: (count) => {
+      badge = count
+      if (current !== null) showBadge(current)
+    },
   }
 }
 
