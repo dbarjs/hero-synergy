@@ -395,7 +395,8 @@ it('shows a session live, then ended "exited", as its status events arrive', asy
   expect(sawEnded - (finished ?? 0)).toBeLessThan(2_000)
 
   // The Focus pane says the same, with the age; an ended session offers ▶ again.
-  await ticket.click()
+  // The label, not the row's centre: a crowded row (the Linux runner's fonts) puts ▶ there.
+  await ticket.locator('.label').click()
   await expect
     .poll(() => tree().locator('.pane .session dd').innerText(), { timeout: 15_000 })
     .toMatch(/^ended: exited · \d+[smhd] ago$/)
