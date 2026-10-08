@@ -2585,4 +2585,294 @@ describe('the Cockpit controller reading the registry', () => {
         }),
     ),
   )
+
+  describe('when the tracker and the session side disagree', () => {
+    const unlistedOf = (viewModel: ViewModel | undefined) =>
+      viewModel?.kind === 'maps' ? viewModel.unlisted : undefined
+    const decisionsOf = (viewModel: ViewModel | undefined) =>
+      maps(viewModel).find((map) => map.number === 3)?.decisions
+
+    it.effect(
+      'keeps a closed ticket wrapping up in the Decisions fold, counting for the badge',
+      () =>
+        withRegistry([entry('#5 Icon set', 'idle')], ({ cockpit, published, badges }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            yield* cockpit.visible(true)
+            const decisions = decisionsOf(published.at(-1))
+            expect(decisions?.wrappingUp).toBe(1)
+            expect(decisions?.entries).toEqual([
+              expect.objectContaining({
+                number: 5,
+                session: expect.objectContaining({ kind: 'live', status: 'waiting for you' }),
+                disagreement: expect.objectContaining({ kind: 'wrapping-up' }),
+              }),
+            ])
+            expect(badges.at(-1)).toBe(1)
+          }),
+        ),
+    )
+
+    it.effect(
+      'lists a registry session #999 with no ticket in one row, counting for the badge',
+      () =>
+        withRegistry(
+          [entry('#999 Elsewhere', 'idle')],
+          ({ cockpit, published, badges, terminals }) =>
+            Effect.gen(function* () {
+              yield* cockpit.show
+              yield* cockpit.visible(true)
+              expect(unlistedOf(published.at(-1))).toEqual([
+                expect.objectContaining({
+                  number: 999,
+                  title: 'Elsewhere',
+                  session: expect.objectContaining({ kind: 'live', needsYou: true }),
+                }),
+              ])
+              expect(badges.at(-1)).toBe(1)
+              // Nothing of the Cockpit runs it, so focus terminal has nowhere to go.
+              yield* cockpit.receive({ type: 'focus-terminal', key: 'unlisted:ticket:999' })
+              expect(terminals.focused).toEqual([])
+            }),
+        ),
+    )
+
+    it.effect('keeps the ended record of a session with no ticket after it ends', () =>
+      withRegistry(
+        [entry('#999 Elsewhere', 'idle')],
+        ({ cockpit, published, badges, registry, listing }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            yield* cockpit.visible(true)
+            listing([])
+            registry.change()
+            yield* TestClock.adjust('1 second')
+            yield* flush
+            expect(unlistedOf(published.at(-1))).toEqual([
+              expect.objectContaining({
+                number: 999,
+                session: expect.objectContaining({ kind: 'ended', detail: 'process gone' }),
+              }),
+            ])
+            expect(badges.at(-1)).toBe(0)
+          }),
+      ),
+    )
+
+    it.effect('reads the tracker again when the registry stops listing a session', () =>
+      withRegistry([entry('#4 Row density', 'busy')], ({ cockpit, registry, listing, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          yield* cockpit.visible(true)
+          const before = runs()
+          listing([])
+          registry.change()
+          yield* TestClock.adjust('1 second')
+          yield* flush
+          // The registry read, and the collect it asked for: the repo lookup and the plugin list.
+          expect(runs()).toBe(before + 3)
+        }),
+      ),
+    )
+  })
+})
+
+describe('the Cockpit controller reading the tracker again for sessions', () => {
+  const NINE_59 = Date.parse('2026-10-08T09:59:00.000Z')
+  const TEN = Date.parse('2026-10-08T10:00:00.000Z')
+  const PALETTE_FILE = `${ROOT}/.scratch/cockpit-colors/issues/01-palette.md`
+  const CLAIMED_PALETTE =
+    '# Palette\n\nType: prototype\nStatus: claimed\n\n## Question\n\nWhich colors?\n'
+
+  const appendEvents = (
+    fs: FileSystem['Service'],
+    watcher: { change: () => void },
+    text: string,
+  ): Effect.Effect<void> =>
+    Effect.gen(function* () {
+      const before = yield* fs.readFile(EVENTS).pipe(Effect.orElseSucceed(() => ''))
+      yield* fs.writeFile(EVENTS, before + text).pipe(Effect.orDie)
+      watcher.change()
+      for (let i = 0; i < 40; i++) yield* Effect.yieldNow
+    })
+
+  const rowOf = (published: ViewModel[], key = PALETTE) => ticketRowOf(published.at(-1), key)
+  const nextOf = (published: ViewModel[]) =>
+    maps(published.at(-1))
+      .find((map) => map.number === 3)
+      ?.tickets.find((row) => row.next)?.number
+
+  it.effect(
+    'takes a launched ticket off the frontier at once and says the claim is not there yet',
+    () =>
+      withCockpit(launchable(), ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* TestClock.setTime(NINE_59)
+          yield* cockpit.show
+          expect(nextOf(published)).toBe(1)
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(rowOf(published)).toMatchObject({
+            place: 'claimed',
+            disagreement: { kind: 'claim-pending', text: 'live · claim not on tracker yet' },
+          })
+          expect(nextOf(published)).toBe(3)
+        }),
+      ),
+  )
+
+  it.effect(
+    'collects when SessionStart arrives, and clears the text once the snapshot has the claim',
+    () =>
+      withCockpit(launchable(), ({ cockpit, published, fs, watcher, runs }) =>
+        Effect.gen(function* () {
+          yield* TestClock.setTime(NINE_59)
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          const before = runs()
+          yield* TestClock.setTime(TEN)
+          // The tracker catches up: the wayfinder session claimed the ticket.
+          yield* fs.writeFile(PALETTE_FILE, CLAIMED_PALETTE).pipe(Effect.orDie)
+          yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+          expect(runs()).toBeGreaterThan(before)
+          expect(rowOf(published)).toMatchObject({
+            place: 'claimed',
+            disagreement: null,
+            session: { kind: 'live' },
+          })
+        }),
+      ),
+  )
+
+  it.effect(
+    'warns "not claimed on the tracker" when the snapshot after SessionStart has no claim',
+    () =>
+      withCockpit(launchable(), ({ cockpit, published, fs, watcher }) =>
+        Effect.gen(function* () {
+          yield* TestClock.setTime(NINE_59)
+          yield* cockpit.show
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          yield* TestClock.setTime(TEN)
+          yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+          expect(rowOf(published)).toMatchObject({
+            place: 'claimed',
+            disagreement: {
+              kind: 'unclaimed',
+              text: 'not claimed on the tracker',
+              level: 'warning',
+            },
+          })
+          expect(nextOf(published)).toBe(3)
+        }),
+      ),
+  )
+
+  it.effect('collects when a ticket session ends', () =>
+    withCockpit(launchable(), ({ cockpit, published, fs, watcher, runs }) =>
+      Effect.gen(function* () {
+        yield* TestClock.setTime(NINE_59)
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        const before = runs()
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionEnd', 'A', 'prompt_input_exit'))
+        expect(runs()).toBeGreaterThan(before)
+        // Ended is no session to hold the ticket: it is on the frontier again.
+        expect(rowOf(published)).toMatchObject({ place: 'frontier', disagreement: null })
+      }),
+    ),
+  )
+
+  it.effect('collects when the terminal of a session closes', () =>
+    withCockpit(launchable(), ({ cockpit, fs, watcher, runs, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+        const before = runs()
+        terminals.close(1, { reason: 'user', code: null })
+        for (let i = 0; i < 40; i++) yield* Effect.yieldNow
+        expect(runs()).toBeGreaterThan(before)
+      }),
+    ),
+  )
+
+  it.effect('leaves the 60 s gap to the policy on a GitHub tracker', () =>
+    withCockpit(
+      { files: GITHUB_DOC, recordings: onGitHub(...goodCollect()) },
+      ({ cockpit, published, fs, watcher, runs }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          const perCollect = runs()
+          const number = maps(published.at(-1)).flatMap((map) => map.tickets)[0]?.number
+          if (number === undefined) throw new Error('expected an open ticket in the recording')
+          yield* TestClock.adjust('10 seconds')
+          yield* appendEvents(
+            fs,
+            watcher,
+            eventLine(String(number), 'SessionStart', 'A', 'startup'),
+          )
+          expect(runs()).toBe(perCollect)
+          yield* TestClock.adjust('61 seconds')
+          yield* appendEvents(
+            fs,
+            watcher,
+            eventLine(String(number), 'SessionEnd', 'A', 'prompt_input_exit'),
+          )
+          expect(runs()).toBe(perCollect * 2)
+        }),
+    ),
+  )
+
+  it.effect(
+    'names who claimed a ticket when a session is live here and the claim is not mine',
+    () => {
+      const user = (login: string): ProcessRecording => ({
+        command: 'gh',
+        args: ['api', 'user', '--jq', '.login'],
+        stdout: `${login}\n`,
+        stderr: '',
+        exitCode: 0,
+      })
+      /** The recording with ticket #66, open and unclaimed in it, assigned to dbarjs. */
+      const claimed66 = (recording: ProcessRecording): ProcessRecording => {
+        const at = recording.stdout.indexOf('"number":66')
+        return {
+          ...recording,
+          stdout:
+            recording.stdout.slice(0, at) +
+            recording.stdout
+              .slice(at)
+              .replace('"assignees":{"nodes":[]}', '"assignees":{"nodes":[{"login":"dbarjs"}]}'),
+        }
+      }
+      const claimedRow = (published: ViewModel[]) =>
+        maps(published.at(-1))
+          .flatMap((map) => map.tickets)
+          .find((row) => row.number === 66)
+      const run = (login: string) =>
+        withCockpit(
+          {
+            files: GITHUB_DOC,
+            recordings: onGitHub(goodCollect()[0]!, claimed66(goodCollect()[1]!), user(login)),
+          },
+          ({ cockpit, published, fs, watcher }) =>
+            Effect.gen(function* () {
+              yield* cockpit.show
+              const claimed = claimedRow(published)
+              if (claimed === undefined)
+                throw new Error('expected a claimed ticket in the recording')
+              yield* appendEvents(fs, watcher, eventLine('66', 'SessionStart', 'A', 'startup'))
+              return claimedRow(published)?.disagreement ?? null
+            }),
+        )
+      return Effect.gen(function* () {
+        expect(yield* run('someone-else')).toEqual({
+          kind: 'claimed-by-other',
+          text: 'claimed by dbarjs on the tracker, session live here',
+          level: 'warning',
+        })
+        expect(yield* run('dbarjs')).toBeNull()
+      })
+    },
+  )
 })

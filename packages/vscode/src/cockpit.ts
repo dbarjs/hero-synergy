@@ -20,6 +20,7 @@ import {
   readPluginList,
   readRegistry,
   reduceSession,
+  sessionLeft,
   type RepoTracker,
   type ScoutError,
   type SessionInput,
@@ -121,6 +122,10 @@ export interface CockpitOptions {
 
 /** Changes under Claude Code's sessions directory settle this long before the registry is read. */
 export const REGISTRY_DEBOUNCE_MS = 1000
+
+/** The prefix of the key a registry session with no ticket in view is held under. */
+const UNLISTED_KEY = 'unlisted'
+const unlistedKey = (number: number): string => `${UNLISTED_KEY}:ticket:${number}`
 
 /** A file under `.scratch` changes this long before the local tracker is read again. */
 export const SCRATCH_DEBOUNCE_MS = 1000
@@ -318,6 +323,11 @@ export const makeCockpit = (
     const stopRegistryWatch = yield* Ref.make<Effect.Effect<void> | null>(null)
     const registryDebounce = yield* Ref.make<Fiber.Fiber<void> | null>(null)
     const readingRegistry = Semaphore.makeUnsafe(1)
+    // Who is at this machine on GitHub, asked once and only when a claim and a session meet.
+    const me = yield* Ref.make<{ readonly asked: boolean; readonly login: string | null }>({
+      asked: false,
+      login: null,
+    })
     // A read that found no snapshot to match tickets against waits for the first one.
     const registryPending = yield* Ref.make(false)
     // What the last discovery found: where `claude` is and the skills; null skills until it has run.
@@ -383,6 +393,7 @@ export const makeCockpit = (
           userInvoked: found.skills === null ? null : userInvokedSkills(skills).length,
           pluginPath: environment.pluginPath,
           eventsFile: environment.eventsFile(repoRoot),
+          me: (yield* Ref.get(me)).login,
         }
       })
 
@@ -523,45 +534,126 @@ export const makeCockpit = (
       )
     })
 
+    /**
+     * The GitHub login of the person at this machine, asked with `gh api user` the first time a
+     * ticket claimed on the tracker has a session live here, so a claim of theirs can be told from
+     * someone else's. Not known stays not known: nothing is then called someone else's.
+     */
+    const ensureMe: Effect.Effect<void> = Effect.gen(function* () {
+      if ((yield* Ref.get(me)).asked) return
+      const state = yield* Ref.get(base)
+      if (state.kind !== 'snapshot' || state.snapshot.tracker.kind !== 'github') return
+      const held = yield* Ref.get(sessions)
+      const meets = state.snapshot.maps.some((map) =>
+        map.tickets.some(
+          (ticket) =>
+            ticket.state === 'open' &&
+            ticket.claim !== null &&
+            ticket.claim.by.length > 0 &&
+            isRunning(held.get(ticketKey(map, ticket.number))),
+        ),
+      )
+      if (!meets) return
+      yield* Ref.set(me, { asked: true, login: null })
+      const result = yield* runner
+        .run({
+          command: 'gh',
+          args: ['api', 'user', '--jq', '.login'],
+          cwd: state.snapshot.repoRoot,
+        })
+        .pipe(
+          Effect.catch((error) => {
+            options.log(`gh api user failed: ${error.message}`)
+            return Effect.succeed(null)
+          }),
+        )
+      const login = result !== null && result.exitCode === 0 ? result.stdout.trim() : ''
+      if (login !== '') yield* Ref.set(me, { asked: true, login })
+      else options.log('gh api user gave no login; claims are not compared with this machine')
+    })
+
     const publish: Effect.Effect<void> = Effect.gen(function* () {
+      yield* ensureMe
       options.badge([...(yield* Ref.get(sessions)).values()].filter(needsYou).length)
       options.publish(yield* current)
       options.publishDetail(yield* currentDetail)
       yield* ensurePolling
     })
 
-    /** The row key a status event's ticket number names: the one with a session, else the one in view. */
-    const keyOfTicket = (ticket: string): Effect.Effect<string | null> =>
+    /**
+     * The row key a ticket number names: the one with a session, else the one in view. With
+     * `listed`, a number that matches nothing in view gets a key of its own, so a registry session
+     * with no ticket in view is held and shown; an event for one is dropped.
+     */
+    const keyOfTicket = (ticket: string, listed = false): Effect.Effect<string | null> =>
       Effect.gen(function* () {
         const suffix = `:ticket:${ticket}`
+        const number = Number(ticket)
+        const state = yield* Ref.get(base)
+        const map =
+          state.kind === 'snapshot'
+            ? state.snapshot.maps.find((candidate) =>
+                candidate.tickets.some((entry) => entry.number === number),
+              )
+            : undefined
+        const inView = map === undefined ? null : ticketKey(map, number)
         const known = [...(yield* Ref.get(sessions))].filter(([key]) => key.endsWith(suffix))
+        const stray = known.find(([key]) => key.startsWith(`${UNLISTED_KEY}:`))
+        if (inView !== null && stray !== undefined) {
+          // The ticket came into view: its session moves from the unlisted row to the ticket.
+          yield* Ref.update(sessions, (held) => {
+            const moved = new Map(held)
+            moved.delete(stray[0])
+            if (!moved.has(inView)) moved.set(inView, stray[1])
+            return moved
+          })
+          return inView
+        }
         const running = known.find(([, session]) => isRunning(session))
         if (running !== undefined) return running[0]
         if (known.length > 0) return known[known.length - 1]![0]
-        const state = yield* Ref.get(base)
-        if (state.kind !== 'snapshot') return null
-        const number = Number(ticket)
-        const map = state.snapshot.maps.find((candidate) =>
-          candidate.tickets.some((entry) => entry.number === number),
-        )
-        return map === undefined ? null : ticketKey(map, number)
+        if (inView !== null) return inView
+        return listed ? unlistedKey(number) : null
       })
 
-    /** Feeds status events to the tickets they name; true when any changed a session. */
-    const applyEvents = (read: ReadonlyArray<StatusEvent>): Effect.Effect<boolean> =>
+    /**
+     * Feeds status events to the tickets they name. `changed` is whether any changed a session;
+     * `started` whether a `SessionStart` made a ticket's session live, which the tracker is read
+     * for.
+     */
+    const applyEvents = (
+      read: ReadonlyArray<StatusEvent>,
+    ): Effect.Effect<{ readonly changed: boolean; readonly started: boolean }> =>
       Effect.gen(function* () {
         const before = yield* Ref.get(sessions)
         const now = yield* Clock.currentTimeMillis
+        let started = false
         for (const event of read) {
           const key = yield* keyOfTicket(event.ticket)
           if (key === null) {
             options.log(`Status event ${event.hook} for #${event.ticket} matches no ticket in view`)
             continue
           }
+          const prior = (yield* Ref.get(sessions)).get(key)
           yield* dispatch(key, { type: 'event', event, at: event.at ?? now })
+          const next = (yield* Ref.get(sessions)).get(key)
+          if (event.hook === 'SessionStart' && next !== prior && next?.kind === 'live') {
+            started = true
+          }
         }
-        return (yield* Ref.get(sessions)) !== before
+        return { changed: (yield* Ref.get(sessions)) !== before, started }
       })
+
+    /** Something a session did is a cause to read the tracker again; the policy's gap still applies. */
+    const readTrackerAgain: Effect.Effect<void> = Effect.suspend(() =>
+      Effect.forkDetach(trigger('automatic')),
+    ).pipe(Effect.asVoid)
+
+    /** Whether any ticket's session left live between two sets of sessions. */
+    const anyLeft = (
+      before: ReadonlyMap<string, SessionState>,
+      after: ReadonlyMap<string, SessionState>,
+    ): boolean => [...before].some(([key, state]) => sessionLeft(state, after.get(key)))
 
     /** Reads what the plugin appended since the last read and applies it. */
     const drainEvents: Effect.Effect<void> = reading.withPermits(1)(
@@ -571,7 +663,10 @@ export const makeCockpit = (
         const read = yield* current.reader.read
         for (const problem of read.problems) options.log(problem)
         if (read.events.length === 0) return
-        if (yield* applyEvents(read.events)) yield* publish
+        const prior = yield* Ref.get(sessions)
+        const { changed, started } = yield* applyEvents(read.events)
+        if (changed) yield* publish
+        if (started || anyLeft(prior, yield* Ref.get(sessions))) yield* readTrackerAgain
       }),
     )
 
@@ -612,7 +707,7 @@ export const makeCockpit = (
               return reloaded
             })
             if (yield* reader.compact(EVENTS_SIZE_CAP)) options.log(`Compacted ${file}`)
-            yield* watcher.watch(file, () => Effect.runFork(drainEvents))
+            yield* watcher.watch(file, () => forkHere(drainEvents))
           }),
         )
         .pipe(Effect.andThen(announce ? publish : Effect.void))
@@ -660,13 +755,22 @@ export const makeCockpit = (
         for (const key of before.keys())
           numbers.set(key, Number(key.slice(key.lastIndexOf(':') + 1)))
         for (const number of grouped.keys()) {
-          const key = yield* keyOfTicket(String(number))
+          const key = yield* keyOfTicket(String(number), true)
           if (key !== null) numbers.set(key, number)
         }
         for (const [key, number] of numbers) {
-          yield* dispatch(key, { type: 'registry', listed: grouped.get(number) ?? [], at })
+          const listed = grouped.get(number) ?? []
+          // A session with no ticket in view keeps an ended record; one with a ticket just falls back.
+          yield* dispatch(
+            key,
+            ticketOf(state.snapshot, key) === null && listed.length === 0
+              ? { type: 'vanished', at }
+              : { type: 'registry', listed, at },
+          )
         }
-        if ((yield* Ref.get(sessions)) !== before) yield* publish
+        const after = yield* Ref.get(sessions)
+        if (after !== before) yield* publish
+        if (anyLeft(before, after)) yield* readTrackerAgain
       }),
     )
 
@@ -716,6 +820,9 @@ export const makeCockpit = (
         switch (loaded.kind) {
           case 'snapshot':
             yield* Ref.set(base, { kind: 'snapshot', snapshot: loaded.snapshot, notice: null })
+            yield* Ref.update(me, (known) =>
+              known.login === null ? { asked: false, login: null } : known,
+            )
             yield* Ref.set(tracker, loaded.tracker)
             yield* Ref.update(policy, (state) =>
               afterSuccess(state, now, budgetOf(loaded.rateLimit)),
@@ -1122,14 +1229,16 @@ export const makeCockpit = (
       })
 
     terminals.onClosed(({ id, exit }) => {
-      Effect.runFork(
+      forkHere(
         Effect.gen(function* () {
           const at = yield* Clock.currentTimeMillis
           const before = yield* Ref.get(sessions)
           for (const key of before.keys()) {
             yield* dispatch(key, { type: 'closed', terminal: id, exit, at })
           }
-          if ((yield* Ref.get(sessions)) !== before) yield* publish
+          const after = yield* Ref.get(sessions)
+          if (after !== before) yield* publish
+          if (anyLeft(before, after)) yield* readTrackerAgain
         }),
       )
     })

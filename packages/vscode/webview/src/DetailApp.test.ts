@@ -25,6 +25,7 @@ const detail: Detail = {
   waitsOn: [],
   clearsWayFor: [{ number: 2, title: 'Refund policy', state: 'open', key: 'map:1:ticket:2' }],
   session: { kind: 'none' },
+  disagreement: null,
   actions: [],
   drift: [],
 }

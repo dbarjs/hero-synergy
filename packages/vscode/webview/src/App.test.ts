@@ -22,7 +22,7 @@ const map: MapNode = {
   action: null,
   tickets: [],
   fog: { key: 'map:1:fog', expanded: false, entries: [] },
-  decisions: { key: 'map:1:decisions', expanded: false, entries: [] },
+  decisions: { key: 'map:1:decisions', expanded: false, entries: [], wrappingUp: 0 },
   loud: null,
 }
 
@@ -46,6 +46,7 @@ describe('the Cockpit app', () => {
         budget: null,
         maps: [map],
         finished: null,
+        unlisted: null,
         unmapped: null,
         start: NO_START,
         selection: null,
@@ -69,6 +70,7 @@ describe('the Cockpit app', () => {
         budget: null,
         maps: [map, { ...map, key: 'map:2', number: 2, expanded: true }],
         finished: null,
+        unlisted: null,
         unmapped: null,
         start: NO_START,
         selection: null,

@@ -17,6 +17,7 @@ import {
   type WayfinderMap,
 } from '@hero-synergy/core'
 
+import { overlaySessions, type SessionOverlay, shownClaim } from './disagreements.ts'
 import { driftingTickets, isLoud, mapDrift, ticketDrift } from './drift.ts'
 import {
   type Launching,
@@ -30,6 +31,8 @@ import type {
   ActionView,
   BudgetNote,
   Detail,
+  DecisionFold,
+  DecisionRow,
   DriftEntry,
   DriftGroup,
   DriftSummary,
@@ -39,6 +42,7 @@ import type {
   NeighbourView,
   Notice,
   TicketRow,
+  UnlistedRow,
   UnmappedRow,
   ViewModel,
 } from './protocol.ts'
@@ -55,6 +59,12 @@ export const focusKeyOf = (map: WayfinderMap): string => `${mapKey(map)}:map`
 /** The synthetic node that holds the tickets of no map. */
 export const UNMAPPED_KEY = 'unmapped'
 export const unmappedKey = (number: number): string => `${UNMAPPED_KEY}:ticket:${number}`
+
+/** The snapshot with the sessions laid over it: a held ticket is off the frontier, and the disagreements are named. */
+const overlaid = (snapshot: Snapshot, launching: Launching): SessionOverlay =>
+  overlaySessions(snapshot, launching.sessions, launching.me, (map, ticket) =>
+    ticketKey(map, ticket.number),
+  )
 
 /** The drift entries the person dismissed, by dismissal key; a dismissal hides exactly one entry. */
 export type Dismissed = ReadonlySet<string>
@@ -143,12 +153,13 @@ export const ticketOf = (
 
 /** The row a key selects, with what its pane shows; null when the key names nothing in the snapshot. */
 export const selectionOf = (
-  snapshot: Snapshot,
+  collected: Snapshot,
   key: string | null,
   launching: Launching = NOT_LAUNCHING,
   dismissed: Dismissed = NO_DISMISSED,
 ): Selected | null => {
   if (key === null) return null
+  const { snapshot, disagreements } = overlaid(collected, launching)
   const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
   if (stray !== undefined) {
     return {
@@ -162,6 +173,7 @@ export const selectionOf = (
         claim: stray.claim === null ? null : stray.claim.by,
         url: stray.ref.tracker === 'github' ? stray.ref.url : null,
         session: sessionView(undefined),
+        disagreement: null,
         actions: [],
         drift: summaryOf(ticketDrift(key, stray, dismissed), 0),
       },
@@ -189,6 +201,7 @@ export const selectionOf = (
     }
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
     if (ticket !== undefined) {
+      const disagreement = disagreements.get(key) ?? null
       return {
         target: target(ticket.ref),
         focus: {
@@ -197,9 +210,10 @@ export const selectionOf = (
           number: ticket.number,
           title: ticket.title,
           state: ticket.state,
-          claim: ticket.claim === null ? null : ticket.claim.by,
+          claim: shownClaim(ticket, disagreement),
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
           session: sessionView(launching.sessions.get(key)),
+          disagreement,
           actions: actionsOf(snapshot, launching, map, ticket, key),
           drift: summaryOf(ticketDrift(key, ticket, dismissed), 0),
         },
@@ -222,12 +236,13 @@ const neighbour = (
 
 /** What the Detail shows for a selected row, with the full issue; null when the key names nothing. */
 export const detailOf = (
-  snapshot: Snapshot,
+  collected: Snapshot,
   key: string | null,
   launching: Launching = NOT_LAUNCHING,
   dismissed: Dismissed = NO_DISMISSED,
 ): Detail | null => {
   if (key === null) return null
+  const { snapshot, disagreements } = overlaid(collected, launching)
   const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
   const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
   if (stray !== undefined) {
@@ -253,6 +268,7 @@ export const detailOf = (
       })),
       clearsWayFor: [],
       session: sessionView(undefined),
+      disagreement: null,
       actions: [],
       drift: ownGroup(ticketDrift(key, stray, dismissed)),
     }
@@ -289,6 +305,7 @@ export const detailOf = (
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
     if (ticket !== undefined) {
       const { waitsOn, clearsWayFor } = neighbourhoodOf(ticket, map)
+      const disagreement = disagreements.get(key) ?? null
       return {
         kind: 'ticket',
         key,
@@ -298,13 +315,14 @@ export const detailOf = (
         place: placeOf(ticket),
         type: ticket.type,
         mode: modeOf(ticket.type),
-        claim: ticket.claim === null ? null : ticket.claim.by,
+        claim: shownClaim(ticket, disagreement),
         url: openUrl(ticket.ref),
         body: ticket.body,
         resolution: ticket.resolution,
         waitsOn: waitsOn.map((blocker) => neighbour(map, blocker)),
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
         session: sessionView(launching.sessions.get(key)),
+        disagreement,
         actions: actionsOf(snapshot, launching, map, ticket, key),
         drift: ownGroup(ticketDrift(key, ticket, dismissed)),
       }
@@ -364,6 +382,7 @@ const ticketRow = (
   ticket: Ticket,
   next: Ticket | null,
   dismissed: Dismissed,
+  disagreements: SessionOverlay['disagreements'],
 ): TicketRow => {
   const place = placeOf(ticket)
   if (place === 'closed') throw new Error(`#${ticket.number} is closed and has no row`)
@@ -371,6 +390,7 @@ const ticketRow = (
   return {
     key,
     session: sessionView(launching.sessions.get(key)),
+    disagreement: disagreements.get(key) ?? null,
     action: actionsOf(snapshot, launching, map, ticket, key)[0] ?? null,
     number: ticket.number,
     title: ticket.title,
@@ -386,12 +406,70 @@ const ticketRow = (
   }
 }
 
+/**
+ * The Decisions fold: the decisions the map recorded, and any closed ticket still wrapping up that
+ * the map has not recorded yet. A ticket wrapping up keeps its status and focus terminal on its row.
+ */
+const decisionFold = (
+  launching: Launching,
+  map: WayfinderMap,
+  key: string,
+  expanded: ReadonlySet<string>,
+  disagreements: SessionOverlay['disagreements'],
+): DecisionFold => {
+  const row = (
+    number: number | null,
+    title: string,
+    gist: string,
+    ticket: Ticket | undefined,
+  ): DecisionRow => {
+    // Only a decision whose ticket is in the map can be selected.
+    const rowKey = ticket === undefined || number === null ? null : ticketKey(map, number)
+    const disagreement = rowKey === null ? null : (disagreements.get(rowKey) ?? null)
+    return {
+      key: rowKey,
+      number,
+      title,
+      gist,
+      session:
+        rowKey !== null && disagreement?.kind === 'wrapping-up'
+          ? sessionView(launching.sessions.get(rowKey))
+          : { kind: 'none' },
+      disagreement,
+    }
+  }
+  const entries = map.decisions.map(({ number, title, gist }) =>
+    row(
+      number,
+      title,
+      gist,
+      map.tickets.find((ticket) => ticket.number === number),
+    ),
+  )
+  const recorded = new Set(entries.map((entry) => entry.number))
+  const unrecorded = map.tickets
+    .filter(
+      (ticket) =>
+        !recorded.has(ticket.number) &&
+        disagreements.get(ticketKey(map, ticket.number))?.kind === 'wrapping-up',
+    )
+    .map((ticket) => row(ticket.number, ticket.title, '', ticket))
+  const all = [...entries, ...unrecorded]
+  return {
+    key,
+    expanded: expanded.has(key),
+    entries: all,
+    wrappingUp: all.filter((entry) => entry.disagreement?.kind === 'wrapping-up').length,
+  }
+}
+
 const mapNode = (
   snapshot: Snapshot,
   launching: Launching,
   map: WayfinderMap,
   expanded: ReadonlySet<string>,
   dismissed: Dismissed,
+  disagreements: SessionOverlay['disagreements'],
 ): MapNode => {
   const key = mapKey(map)
   const next = nextOf(map)
@@ -408,7 +486,7 @@ const mapNode = (
     destination: map.destination,
     action: views(mapActions(snapshot, launching, map))[0] ?? null,
     tickets: orderTickets(map).map((ticket) =>
-      ticketRow(snapshot, launching, map, ticket, next, dismissed),
+      ticketRow(snapshot, launching, map, ticket, next, dismissed, disagreements),
     ),
     loud: mapLoudTitle(map, dismissed),
     fog: {
@@ -416,20 +494,7 @@ const mapNode = (
       expanded: expanded.has(`${key}:fog`),
       entries: map.notYetSpecified.map(({ text }) => ({ text })),
     },
-    decisions: {
-      key: `${key}:decisions`,
-      expanded: expanded.has(`${key}:decisions`),
-      entries: map.decisions.map(({ number, title, gist }) => ({
-        // Only a decision whose ticket is in the map can be selected.
-        key:
-          number !== null && map.tickets.some((ticket) => ticket.number === number)
-            ? ticketKey(map, number)
-            : null,
-        number,
-        title,
-        gist,
-      })),
-    },
+    decisions: decisionFold(launching, map, `${key}:decisions`, expanded, disagreements),
   }
 }
 
@@ -452,13 +517,39 @@ const unmappedFold = (
         })),
       }
 
+/** `#999 Title` is held under `title`; a name with no title, or none at all, leaves it null. */
+const titleOfName = (name: string | null): string | null => {
+  const title = name?.replace(/^#\d+\s*/, '').trim()
+  return title === undefined || title === '' ? null : title
+}
+
+/**
+ * The sessions whose `#number` matches no ticket in view, live or ended, by number. Null when
+ * there are none, so no row shows.
+ */
+const unlistedRows = (
+  snapshot: Snapshot,
+  launching: Launching,
+): ReadonlyArray<UnlistedRow> | null => {
+  const rows = [...launching.sessions]
+    .filter(([key]) => ticketOf(snapshot, key) === null)
+    .map(([key, state]): UnlistedRow => ({
+      key,
+      number: Number(key.slice(key.lastIndexOf(':') + 1)),
+      title: titleOfName(state.kind === 'live' ? state.name : null),
+      session: sessionView(state),
+    }))
+    .sort((a, b) => a.number - b.number)
+  return rows.length === 0 ? null : rows
+}
+
 /**
  * The Tree's view model from a snapshot: the open maps by urgency, the finished
  * ones folded into one node at the bottom. Everything the Tree draws is derived
  * here with core's functions; the webview only lays it out.
  */
 export const buildViewModel = (
-  snapshot: Snapshot,
+  collected: Snapshot,
   expanded: ReadonlySet<string>,
   selected: string | null = null,
   facts: SessionFacts = NO_SESSIONS,
@@ -467,6 +558,7 @@ export const buildViewModel = (
   launching: Launching = NOT_LAUNCHING,
   dismissed: Dismissed = NO_DISMISSED,
 ): ViewModel => {
+  const { snapshot, disagreements } = overlaid(collected, launching)
   const ordered = orderMaps(snapshot.maps, facts)
   const active = ordered.filter((map) => !isFinished(map))
   const finished = ordered.filter(isFinished)
@@ -479,7 +571,7 @@ export const buildViewModel = (
         : null,
     notice,
     budget,
-    selection: selectionOf(snapshot, selected, launching, dismissed)?.focus ?? null,
+    selection: selectionOf(collected, selected, launching, dismissed)?.focus ?? null,
     // A repo with maps to show leads with them; an empty one leads with what it lacks.
     start: startOf(
       snapshot.repoRoot,
@@ -488,7 +580,10 @@ export const buildViewModel = (
         ? 'map'
         : 'nothing',
     ),
-    maps: active.map((map) => mapNode(snapshot, launching, map, expanded, dismissed)),
+    maps: active.map((map) =>
+      mapNode(snapshot, launching, map, expanded, dismissed, disagreements),
+    ),
+    unlisted: unlistedRows(snapshot, launching),
     unmapped: unmappedFold(snapshot, expanded, dismissed),
     finished:
       finished.length === 0
@@ -496,7 +591,9 @@ export const buildViewModel = (
         : {
             key: FINISHED_KEY,
             expanded: expanded.has(FINISHED_KEY),
-            maps: finished.map((map) => mapNode(snapshot, launching, map, expanded, dismissed)),
+            maps: finished.map((map) =>
+              mapNode(snapshot, launching, map, expanded, dismissed, disagreements),
+            ),
           },
   }
 }

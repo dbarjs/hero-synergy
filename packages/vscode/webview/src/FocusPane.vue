@@ -49,6 +49,10 @@ const emit = defineEmits<{
           <dt>Claim</dt>
           <dd>{{ focus.claim === null ? 'unclaimed' : focus.claim.join(', ') }}</dd>
         </div>
+        <div v-if="focus.disagreement" class="fact disagreement">
+          <dt>Tracker</dt>
+          <dd :class="focus.disagreement.level">{{ focus.disagreement.text }}</dd>
+        </div>
         <div v-if="focus.session.kind !== 'none'" class="fact session">
           <dt>Session</dt>
           <dd>
@@ -204,5 +208,8 @@ dt {
 dd {
   margin: 0;
   min-width: 0;
+}
+.disagreement .warning {
+  color: var(--vscode-editorWarning-foreground);
 }
 </style>

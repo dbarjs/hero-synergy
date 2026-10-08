@@ -98,6 +98,8 @@ describe('the Tree view model of the fixture workspace', () => {
         number: 5,
         title: 'Icon set',
         gist: 'Codicons: they ship with VS Code',
+        session: { kind: 'none' },
+        disagreement: null,
       },
     ])
   })

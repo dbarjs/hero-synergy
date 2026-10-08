@@ -182,6 +182,7 @@ export {
   type SessionState,
   type SessionStatus,
   type SessionView,
+  sessionLeft,
   sessionsOf,
   sessionText,
   sessionView,

@@ -174,6 +174,7 @@ describe('the Tree states with no maps', () => {
       budget: null,
       maps: [],
       finished: null,
+      unlisted: null,
       unmapped: null,
       start: NO_START,
       selection: null,
@@ -243,6 +244,7 @@ describe('the Tree states with no maps', () => {
       },
       maps: [],
       finished: null,
+      unlisted: null,
       unmapped: null,
       selection: null,
     })
@@ -289,7 +291,7 @@ const node = (number: number, overrides: Partial<MapNode> = {}): MapNode => ({
   action: null,
   tickets: [],
   fog: { key: `map:${number}:fog`, expanded: false, entries: [] },
-  decisions: { key: `map:${number}:decisions`, expanded: false, entries: [] },
+  decisions: { key: `map:${number}:decisions`, expanded: false, entries: [], wrappingUp: 0 },
   loud: null,
   ...overrides,
 })
@@ -302,7 +304,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
     node(i + 8, {
       decided: 5,
       total: 5,
-      decisions: { key: `map:${i + 8}:decisions`, expanded: false, entries: [] },
+      decisions: { key: `map:${i + 8}:decisions`, expanded: false, entries: [], wrappingUp: 0 },
       loud: null,
     }),
   )
@@ -314,6 +316,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
     budget: null,
     maps: active,
     finished: { key: 'finished', expanded: finishedOpen, maps: finishedMaps },
+    unlisted: null,
     unmapped: null,
     start: NO_START,
     selection: null,
@@ -345,6 +348,7 @@ describe('what the Tree asks for', () => {
       budget: null,
       maps: [node(1), node(2, { expanded: true })],
       finished: null,
+      unlisted: null,
       unmapped: null,
       start: NO_START,
       selection: null,
@@ -365,6 +369,7 @@ describe('what the Tree asks for', () => {
       budget: null,
       maps: [],
       finished: { key: 'finished', expanded: false, maps: [node(1, { decided: 1, total: 1 })] },
+      unlisted: null,
       unmapped: null,
       start: NO_START,
       selection: null,
