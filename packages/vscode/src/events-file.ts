@@ -1,4 +1,10 @@
-import { FileSystem, readStatusEvent, readStatusEvents, type StatusEvent } from '@hero-synergy/core'
+import {
+  FileSystem,
+  type HealthWarning,
+  readStatusEvent,
+  readStatusEvents,
+  type StatusEvent,
+} from '@hero-synergy/core'
 import { Effect, Ref } from 'effect'
 
 /**
@@ -20,6 +26,8 @@ export interface EventsRead {
   readonly restarted: boolean
   /** Lines that could not be decoded, and a read that failed, as log lines. */
   readonly problems: ReadonlyArray<string>
+  /** The same lines' coded health warnings, for the Health row. */
+  readonly warnings: ReadonlyArray<HealthWarning>
 }
 
 export interface EventsReader {
@@ -101,6 +109,7 @@ export const makeEventsReader = (file: string): Effect.Effect<EventsReader, neve
       return {
         events: decoded.value,
         restarted,
+        warnings: decoded.warnings,
         problems: [
           ...(chunk.failure === null ? [] : [`Could not read ${file}: ${chunk.failure}`]),
           ...decoded.warnings.map(

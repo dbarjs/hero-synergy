@@ -177,6 +177,8 @@ export {
   listedOf,
   NO_STATUS_HINT,
   needsYou,
+  needsYouNow,
+  STATUS_UNKNOWN,
   reduceSession,
   type SessionInput,
   type SessionState,

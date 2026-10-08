@@ -40,6 +40,7 @@ describe('the Cockpit app', () => {
       type: 'view-model',
       viewModel: {
         kind: 'maps',
+        health: null,
         collectedAt: '2026-10-07T00:00:00.000Z',
         repo: null,
         notice: null,
@@ -64,6 +65,7 @@ describe('the Cockpit app', () => {
       type: 'view-model',
       viewModel: {
         kind: 'maps',
+        health: null,
         collectedAt: '2026-10-07T00:00:00.000Z',
         repo: null,
         notice: null,
@@ -93,7 +95,14 @@ describe('the Cockpit app', () => {
     wrapper.unmount()
     fromHost({
       type: 'view-model',
-      viewModel: { kind: 'message', message: 'late', detail: null, start: NO_START },
+      viewModel: {
+        kind: 'message',
+        message: 'late',
+        detail: null,
+        start: NO_START,
+        health: null,
+        selection: null,
+      },
     })
     await flushPromises()
     expect(wrapper.html()).not.toContain('late')

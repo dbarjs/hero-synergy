@@ -37,6 +37,7 @@ const WebviewMessageSchema = Schema.Union([
     action: Schema.optionalKey(ActionIdSchema),
   }),
   Schema.Struct({ type: Schema.Literal('dismiss-drift'), dismissKey: Schema.String }),
+  Schema.Struct({ type: Schema.Literal('dismiss-health'), dismissKey: Schema.String }),
 ])
 
 const decode = Schema.decodeUnknownOption(WebviewMessageSchema)

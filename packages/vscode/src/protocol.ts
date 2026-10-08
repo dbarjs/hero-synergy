@@ -114,6 +114,23 @@ export interface DriftSummary {
   readonly tickets: number
 }
 
+/**
+ * The pinned Health row at the top of the Tree: the repo-level entries, health codes and
+ * `unknown-wayfinder-labels`. Absent when there are none; ⚠ when any is loud.
+ */
+export interface HealthRow {
+  /** What the webview sends to select the row. */
+  readonly key: string
+  /** `Health · 2 warnings` or `Health · 1 note`. */
+  readonly label: string
+  /** Whether any entry is loud, which puts the ⚠ on the row. */
+  readonly loud: boolean
+  /** The loud messages the ⚠ shows on hover. */
+  readonly hover: ReadonlyArray<string>
+  /** Every entry, loud first. */
+  readonly entries: ReadonlyArray<DriftEntry>
+}
+
 /** An open ticket of a map, in the place the Tree lists it. */
 export interface TicketRow {
   /** What the webview sends to select the row. */
@@ -232,6 +249,8 @@ export interface FinishedFold {
  * key, so the webview opens the pane under that row.
  */
 export type Focus =
+  /** The Health row's pane: every entry with its hint and a Dismiss. */
+  | { readonly kind: 'health'; readonly key: string; readonly entries: ReadonlyArray<DriftEntry> }
   | {
       readonly kind: 'ticket'
       readonly key: string
@@ -285,6 +304,10 @@ export type ViewModel =
       readonly message: string
       readonly detail: string | null
       readonly start: Start
+      /** The pinned Health row; null when there is nothing to report. */
+      readonly health: HealthRow | null
+      /** The Health row's pane while it is selected; a message has no other row to select. */
+      readonly selection: Focus | null
     }
   | {
       readonly kind: 'maps'
@@ -306,6 +329,8 @@ export type ViewModel =
       readonly finished: FinishedFold | null
       /** The one selected row's pane; null when nothing is selected. */
       readonly selection: Focus | null
+      /** The pinned Health row at the top; null when there is nothing to report. */
+      readonly health: HealthRow | null
     }
 
 /** A ticket the Detail shows as a neighbour; `key` is null when it is not a ticket of the map. */
@@ -436,3 +461,5 @@ export type WebviewMessage =
   | { readonly type: 'copy'; readonly key: string; readonly action?: ActionId }
   /** Hide a drift entry until its detail changes. */
   | { readonly type: 'dismiss-drift'; readonly dismissKey: string }
+  /** Hide a Health entry, in every workspace, until its detail changes. */
+  | { readonly type: 'dismiss-health'; readonly dismissKey: string }

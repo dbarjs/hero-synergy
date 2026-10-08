@@ -38,6 +38,7 @@ import type {
   DriftSummary,
   Focus,
   Fold,
+  HealthRow,
   MapNode,
   NeighbourView,
   Notice,
@@ -47,6 +48,12 @@ import type {
   ViewModel,
   WorktreeView,
 } from './protocol.ts'
+
+/** The Health row's pane, when that row is the selected one. */
+export const healthSelection = (health: HealthRow | null, selected: string | null): Focus | null =>
+  health !== null && selected === health.key
+    ? { kind: 'health', key: health.key, entries: health.entries }
+    : null
 
 /** The sessions the Tree knows about: none until the session tickets land, so no map needs me. */
 const NO_SESSIONS: SessionFacts = { needsYou: new Set() }
@@ -214,7 +221,7 @@ export const selectionOf = (
           state: ticket.state,
           claim: shownClaim(ticket, disagreement),
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
-          session: sessionView(launching.sessions.get(key)),
+          session: sessionView(launching.sessions.get(key), launching.registryUnreadable),
           disagreement,
           worktree: worktreeView(launching, ticket.number),
           actions: actionsOf(snapshot, launching, map, ticket, key),
@@ -333,7 +340,7 @@ export const detailOf = (
         resolution: ticket.resolution,
         waitsOn: waitsOn.map((blocker) => neighbour(map, blocker)),
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
-        session: sessionView(launching.sessions.get(key)),
+        session: sessionView(launching.sessions.get(key), launching.registryUnreadable),
         disagreement,
         worktree: worktreeView(launching, ticket.number),
         actions: actionsOf(snapshot, launching, map, ticket, key),
@@ -402,7 +409,7 @@ const ticketRow = (
   const key = ticketKey(map, ticket.number)
   return {
     key,
-    session: sessionView(launching.sessions.get(key)),
+    session: sessionView(launching.sessions.get(key), launching.registryUnreadable),
     disagreement: disagreements.get(key) ?? null,
     action: actionsOf(snapshot, launching, map, ticket, key)[0] ?? null,
     number: ticket.number,
@@ -446,7 +453,7 @@ const decisionFold = (
       gist,
       session:
         rowKey !== null && disagreement?.kind === 'wrapping-up'
-          ? sessionView(launching.sessions.get(rowKey))
+          ? sessionView(launching.sessions.get(rowKey), launching.registryUnreadable)
           : { kind: 'none' },
       disagreement,
     }
@@ -550,7 +557,7 @@ const unlistedRows = (
       key,
       number: Number(key.slice(key.lastIndexOf(':') + 1)),
       title: titleOfName(state.kind === 'live' ? state.name : null),
-      session: sessionView(state),
+      session: sessionView(state, launching.registryUnreadable),
     }))
     .sort((a, b) => a.number - b.number)
   return rows.length === 0 ? null : rows
@@ -570,6 +577,7 @@ export const buildViewModel = (
   budget: BudgetNote | null = null,
   launching: Launching = NOT_LAUNCHING,
   dismissed: Dismissed = NO_DISMISSED,
+  health: HealthRow | null = null,
 ): ViewModel => {
   const { snapshot, disagreements } = overlaid(collected, launching)
   const ordered = orderMaps(snapshot.maps, facts)
@@ -584,7 +592,11 @@ export const buildViewModel = (
         : null,
     notice,
     budget,
-    selection: selectionOf(collected, selected, launching, dismissed)?.focus ?? null,
+    health,
+    selection:
+      healthSelection(health, selected) ??
+      selectionOf(collected, selected, launching, dismissed)?.focus ??
+      null,
     // A repo with maps to show leads with them; an empty one leads with what it lacks.
     start: startOf(
       snapshot.repoRoot,

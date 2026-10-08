@@ -469,18 +469,40 @@ const duplicateWarning = (duplicates: number): string | null =>
       ? 'Another live session has this ticket’s number'
       : `${duplicates} other live sessions have this ticket’s number`
 
+export const STATUS_UNKNOWN = 'status unknown'
+
+/**
+ * Whether a session's status rests on a registry that cannot be read: it was last known from
+ * the registry, which now says nothing true about it. Its terminal and its ended record are
+ * untouched; only the status word and the need for me give way.
+ */
+export const statusUnknown = (
+  state: SessionState | undefined,
+  registryUnreadable: boolean,
+): boolean => registryUnreadable && state?.kind === 'live' && state.registry !== null
+
+/** Whether the session needs me, once an unreadable registry has taken its status away. */
+export const needsYouNow = (
+  state: SessionState | undefined,
+  registryUnreadable: boolean,
+): boolean => !statusUnknown(state, registryUnreadable) && needsYou(state)
+
 /** What the Tree is sent for a ticket's session. */
-export function sessionView(state: SessionState | undefined): SessionView {
+export function sessionView(
+  state: SessionState | undefined,
+  registryUnreadable = false,
+): SessionView {
   if (state === undefined) return { kind: 'none' }
   switch (state.kind) {
     case 'starting':
       return { kind: 'starting', hint: state.hint ? NO_STATUS_HINT : null }
     case 'live': {
       const { status, since } = shownStatus(state)
+      const unknown = statusUnknown(state, registryUnreadable)
       return {
         kind: 'live',
-        status: status === null ? null : STATUS_WORDS[status],
-        needsYou: needsYou(state),
+        status: unknown ? STATUS_UNKNOWN : status === null ? null : STATUS_WORDS[status],
+        needsYou: needsYouNow(state, registryUnreadable),
         since,
         focusable: state.terminal !== null,
         warning: duplicateWarning(state.duplicates),

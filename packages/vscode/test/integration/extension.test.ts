@@ -47,18 +47,29 @@ describe('hero-synergy in the extension host', () => {
     )
   })
 
-  it('activates on the tracker doc, without anyone asking, and spawns nothing', async () => {
+  it('activates on the tracker doc, without anyone asking, and spawns only the version check', async () => {
     // Never calls `activate()`: only the `workspaceContains` activation event can get it going.
     await until('the extension to activate on the tracker doc', () => extension().isActive)
+    // The floor is checked at activation with one `claude --version`, and nothing else is spawned.
+    await until('the version check', () => api().state().spawnedProcesses === 1)
     assert.deepEqual(api().state(), {
       viewResolved: false,
-      spawnedProcesses: 0,
+      spawnedProcesses: 1,
       viewModel: null,
       detailOpen: false,
       detailView: null,
       badge: 0,
     })
     assert.equal(vscode.window.terminals.length, 0)
+  })
+
+  it('logs the environment and where claude is at activation', () => {
+    const [environment, resolved] = api().log()
+    assert.equal(
+      environment,
+      `${vscode.env.appName} (${vscode.env.appHost}) ${vscode.version} on ${process.platform}`,
+    )
+    assert.match(String(resolved), /^claude resolved to .*claude \(heroSynergy\.claude\.path\)$/)
   })
 
   it('resolves the view when it is shown and collects once', async () => {
@@ -70,7 +81,7 @@ describe('hero-synergy in the extension host', () => {
     await until('the view model to go out', () => api().state().viewModel?.kind === 'maps')
 
     // Showing the view also reads the registry once, after the first snapshot names the repo.
-    await until('the registry to be read', () => api().state().spawnedProcesses >= 3)
+    await until('the registry to be read', () => api().state().spawnedProcesses >= 4)
 
     const { viewModel, spawnedProcesses } = api().state()
     assert.equal(viewModel?.kind, 'maps')
@@ -84,10 +95,12 @@ describe('hero-synergy in the extension host', () => {
       viewModel.finished?.maps.map(({ number, title }) => `#${number} ${title}`),
       ['#1 Archive search'],
     )
-    // `git rev-parse` for the repo root, then the stub `claude plugin list --json` for skill
-    // discovery, then the stub `claude agents --json` for the registry; the remote is not needed
-    // on a local tracker.
-    assert.equal(spawnedProcesses, 3)
+    // The stub `claude --version` at activation, `git rev-parse` for the repo root, then the stub
+    // `claude plugin list --json` for skill discovery, then the stub `claude agents --json` for
+    // the registry; the remote is not needed on a local tracker.
+    assert.equal(spawnedProcesses, 4)
+    // A current claude and the wayfinder skill installed: nothing to report.
+    assert.equal(viewModel.health, null)
   })
 
   it('adopts the terminal named `#4 …` as that ticket’s, which the first collect finds already open', async () => {
@@ -378,5 +391,57 @@ describe('hero-synergy skill Actions from the palette', () => {
     assert.match(String(options.shellArgs?.[0]), /^\//)
     assert.equal(options.name, options.shellArgs?.[0])
     assert.deepEqual(options.env ?? {}, {})
+  })
+})
+
+describe('hero-synergy reporting health', () => {
+  const healthLines = (): string[] =>
+    api()
+      .log()
+      .filter((line) => line.startsWith('health loud claude-below-floor'))
+
+  const refresh = async (): Promise<void> => {
+    const before = api().state().spawnedProcesses
+    await vscode.commands.executeCommand('heroSynergy.refresh')
+    await until('the refresh to collect', () => api().state().spawnedProcesses > before)
+  }
+
+  const row = () => {
+    const { viewModel } = api().state()
+    return viewModel?.kind === 'maps' ? viewModel.health : null
+  }
+
+  after(async () => {
+    writeFileSync(path.join(records(), 'version.txt'), '2.1.300 (Claude Code)\n')
+    await refresh()
+  })
+
+  it('pins a loud row when claude is below the floor, and logs the entry once', async () => {
+    writeFileSync(path.join(records(), 'version.txt'), '2.1.211 (Claude Code)\n')
+    await refresh()
+    await until('the Health row', () => row() !== null)
+    assert.equal(row()?.label, 'Health · 1 warning')
+    assert.equal(row()?.loud, true)
+    assert.match(String(row()?.hover[0]), /Claude Code 2\.1\.211 is older than 2\.1\.212/)
+    assert.equal(healthLines().length, 1)
+
+    // A second refresh reads the same version: the row stays and the entry is not logged again.
+    await refresh()
+    assert.equal(row()?.label, 'Health · 1 warning')
+    assert.equal(healthLines().length, 1)
+    assert.match(String(healthLines()[0]), /saw "2\.1\.211 \(Claude Code\)/)
+  })
+
+  it('hides a dismissed entry, and clears the row once claude is updated', async () => {
+    const entry = row()?.entries[0]
+    assert.equal(
+      await api().receive({ type: 'dismiss-health', dismissKey: entry?.dismissKey }),
+      true,
+    )
+    await until('the row to go', () => row() === null)
+
+    writeFileSync(path.join(records(), 'version.txt'), '2.1.300 (Claude Code)\n')
+    await refresh()
+    assert.equal(row(), null)
   })
 })

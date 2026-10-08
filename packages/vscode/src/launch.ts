@@ -49,6 +49,8 @@ export interface Launching {
   readonly me: string | null
   /** The worktrees the last read found, by ticket number; a ticket with none is absent. */
   readonly worktrees: ReadonlyMap<number, WorktreeState>
+  /** The registry could not be read: the sessions it reported show status unknown. */
+  readonly registryUnreadable: boolean
 }
 
 /** Nothing resolved and nothing running: what a Tree shows before the first collect finds out. */
@@ -63,6 +65,7 @@ export const NOT_LAUNCHING: Launching = {
   eventsFile: '',
   me: null,
   worktrees: new Map(),
+  registryUnreadable: false,
 }
 
 const INSTALL_HINT =

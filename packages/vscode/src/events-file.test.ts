@@ -24,7 +24,12 @@ describe('the events-file reader', () => {
   it.effect('reads a missing file as empty, then the whole file once it exists', () =>
     Effect.gen(function* () {
       const reader = yield* makeEventsReader(FILE)
-      expect(yield* reader.read).toEqual({ events: [], restarted: false, problems: [] })
+      expect(yield* reader.read).toEqual({
+        events: [],
+        restarted: false,
+        problems: [],
+        warnings: [],
+      })
 
       yield* append(line('57', 'SessionStart', 'A', 'startup') + line('58', 'SessionStart', 'B'))
       expect(hooks(yield* reader.read)).toEqual(['57:SessionStart', '58:SessionStart'])

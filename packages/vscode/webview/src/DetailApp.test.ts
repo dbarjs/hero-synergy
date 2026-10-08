@@ -48,7 +48,14 @@ describe('the Detail app', () => {
     // The Tree's view models are not its business.
     fromHost({
       type: 'view-model',
-      viewModel: { kind: 'message', message: 'No maps', detail: null, start: NO_START },
+      viewModel: {
+        kind: 'message',
+        message: 'No maps',
+        detail: null,
+        start: NO_START,
+        health: null,
+        selection: null,
+      },
     })
     await flushPromises()
     expect(wrapper.find('h1').text()).toBe('#1 Which database?')

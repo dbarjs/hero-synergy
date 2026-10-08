@@ -55,6 +55,9 @@ const notARepo = (folder: string): ProcessRecording => ({
   exitCode: 128,
 })
 
+/** The version `claude --version` prints when a test records nothing for it: current, and not counted as a run. */
+const CURRENT_CLAUDE = '2.1.300 (Claude Code)\n'
+
 /** Answers from recordings like the replay layer does, and counts what it was asked to run. */
 const countingRunner = (recordings: ReadonlyArray<ProcessRecording>, delayMillis = 0) => {
   let runs = 0
@@ -69,6 +72,9 @@ const countingRunner = (recordings: ReadonlyArray<ProcessRecording>, delayMillis
             // The worktree reads are not collects: a repo with no recorded worktrees has none, uncounted.
             if (recorded === undefined && request.args.join(' ') === 'worktree list --porcelain') {
               return { stdout: '', stderr: '', exitCode: 0, timedOut: false }
+            }
+            if (recorded === undefined && request.args.join(' ') === '--version') {
+              return { stdout: CURRENT_CLAUDE, stderr: '', exitCode: 0, timedOut: false }
             }
             runs += 1
             if (recorded === undefined) throw new Error(`not recorded: ${request.args.join(' ')}`)
@@ -94,6 +100,8 @@ interface Setup {
   readonly choose?: (choices: ReadonlyArray<SkillChoice>) => string | null
   /** Whether Claude Code's sessions directory exists to be watched; default yes. */
   readonly registryDirectory?: boolean
+  /** Storage across workspaces; windows given the same map share it, as one VS Code profile does. */
+  readonly global?: Map<string, unknown>
 }
 
 /** Runs `body` against a Cockpit on the fixture workspace; every layer is in memory. */
@@ -139,7 +147,7 @@ const withCockpit = <A>(
     Opener.inMemory(opened),
     CollectProgress.inMemory(progress),
     WorkspaceFolders.inMemory(setup.folders ?? [ROOT]),
-    Storage.inMemory(setup.stored),
+    Storage.inMemory(setup.stored, setup.global),
     FileSystem.inMemory(setup.files ?? workspaceFiles(ROOT)),
     runner.layer,
     terminals.layer,
@@ -453,8 +461,9 @@ describe('the Cockpit controller', () => {
         expect(yield* cockpit.receive(message)).toBe(false)
         expect(published).toHaveLength(before)
         expect(runs()).toBe(1)
-        expect(logged).toHaveLength(1)
-        expect(logged[0]).toContain('Rejected a malformed message')
+        const rejected = logged.filter((line) => line.startsWith('Rejected'))
+        expect(rejected).toHaveLength(1)
+        expect(rejected[0]).toContain('Rejected a malformed message')
       }),
     ),
   )
@@ -1465,7 +1474,10 @@ describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
     withCockpit(launchable(), ({ cockpit, logged, runs }) =>
       Effect.gen(function* () {
         yield* cockpit.activated
-        expect(logged).toEqual([`claude resolved to ${CLAUDE} (heroSynergy.claude.path)`])
+        expect(logged).toEqual([
+          'Visual Studio Code (desktop) 1.105.0 on linux',
+          `claude resolved to ${CLAUDE} (heroSynergy.claude.path)`,
+        ])
         expect(runs()).toBe(0)
       }),
     ),
@@ -1476,6 +1488,7 @@ describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
       Effect.gen(function* () {
         yield* cockpit.activated
         expect(logged).toEqual([
+          'Visual Studio Code (desktop) 1.105.0 on linux',
           'claude not resolved: claude was not found on PATH. Set heroSynergy.claude.path to its location.',
         ])
       }),
@@ -1838,7 +1851,11 @@ const finishedMapOf = (viewModel: ViewModel | undefined) => {
 }
 
 const selectionActions = (viewModel: ViewModel | undefined) =>
-  viewModel?.kind === 'maps' && viewModel.selection !== null ? viewModel.selection.actions : []
+  viewModel?.kind === 'maps' &&
+  viewModel.selection !== null &&
+  viewModel.selection.kind !== 'health'
+    ? viewModel.selection.actions
+    : []
 
 describe('the Cockpit controller offering To spec on a finished map', () => {
   it.effect('carries the map path on a local tracker, in a plain terminal with no env', () =>
@@ -3060,4 +3077,403 @@ describe('the Cockpit controller resuming, adopting terminals and showing worktr
       }),
     ),
   )
+})
+
+describe('the Cockpit controller reporting health', () => {
+  const flush = Effect.gen(function* () {
+    for (let i = 0; i < 20; i++) yield* Effect.yieldNow
+  })
+  const printsVersion = (stdout: string): ProcessRecording => ({
+    command: CLAUDE,
+    args: ['--version'],
+    stdout,
+    stderr: '',
+    exitCode: 0,
+  })
+  /** The launchable window, where nothing is wrong unless a test makes it so. */
+  const withVersion = (stdout: string, extra: Partial<Setup> = {}): Setup => {
+    const setup = launchable()
+    return { ...setup, recordings: [...setup.recordings!, printsVersion(stdout)], ...extra }
+  }
+  const healthOf = (viewModel: ViewModel | undefined) => {
+    if (viewModel?.kind === 'loading') throw new Error('expected a view model with a health field')
+    return viewModel?.health ?? null
+  }
+  const codes = (viewModel: ViewModel | undefined) =>
+    healthOf(viewModel)?.entries.map((entry) => entry.code) ?? []
+
+  it.effect('is loud for a claude below 2.1.212, with the hint to update', () =>
+    withCockpit(withVersion('2.1.211 (Claude Code)\n'), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.checkClaude
+        yield* cockpit.show
+        const health = healthOf(published.at(-1))
+        expect(health).toMatchObject({ loud: true, label: 'Health · 1 warning' })
+        expect(health?.entries[0]).toMatchObject({
+          code: 'claude-below-floor',
+          level: 'loud',
+          detail: '2.1.211',
+        })
+        expect(health?.entries[0]?.hint).toContain('claude update')
+        expect(health?.hover).toEqual([health?.entries[0]?.message])
+      }),
+    ),
+  )
+
+  it.effect('says nothing for 2.1.212, or for a version above the tested ceiling', () =>
+    Effect.gen(function* () {
+      for (const version of ['2.1.212 (Claude Code)\n', '2.1.1000\n', '3.0.0-beta.1\n']) {
+        yield* withCockpit(withVersion(version), ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.checkClaude
+            yield* cockpit.show
+            expect(healthOf(published.at(-1)), version).toBeNull()
+          }),
+        )
+      }
+    }),
+  )
+
+  it.effect('compares the leading x.y.z by number, so 2.1.9 is below 2.1.212', () =>
+    withCockpit(withVersion('2.1.9\n'), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.checkClaude
+        yield* cockpit.show
+        expect(codes(published.at(-1))).toEqual(['claude-below-floor'])
+      }),
+    ),
+  )
+
+  it.effect('notes a version it cannot read quietly, and skips the floor check', () =>
+    withCockpit(withVersion('banana\n'), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.checkClaude
+        yield* cockpit.show
+        const health = healthOf(published.at(-1))
+        expect(health).toMatchObject({ loud: false, label: 'Health · 1 note', hover: [] })
+        expect(codes(published.at(-1))).toEqual(['claude-version-unreadable'])
+      }),
+    ),
+  )
+
+  it.effect('reads claude --version once at activation, and again on the Refresh button', () =>
+    withCockpit(withVersion('2.1.300\n'), ({ cockpit, runs, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        expect(runs()).toBe(0)
+        yield* cockpit.checkClaude
+        expect(runs()).toBe(1)
+        // A healthy claude at activation publishes nothing: the Tree is not registered yet.
+        expect(published).toEqual([])
+        yield* cockpit.show
+        // The collect found claude where activation did: no second read for the same path.
+        const afterShow = runs()
+        yield* cockpit.refresh
+        // Refresh reads the version again, then collects (repo lookup and plugin list).
+        expect(runs()).toBe(afterShow + 3)
+      }),
+    ),
+  )
+
+  it.effect('clears the entry when the Refresh button finds claude updated', () => {
+    const setup = withVersion('2.1.211\n')
+    return withCockpit(setup, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.checkClaude
+        yield* cockpit.show
+        expect(codes(published.at(-1))).toEqual(['claude-below-floor'])
+        setup.recordings![setup.recordings!.length - 1] = printsVersion('2.1.212\n')
+        yield* cockpit.refresh
+        expect(healthOf(published.at(-1))).toBeNull()
+      }),
+    )
+  })
+
+  it.effect('reports a claude that is not found, and a missing wayfinder skill', () =>
+    withCockpit({}, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(codes(published.at(-1))).toEqual(['claude-not-found', 'skill-missing'])
+        expect(healthOf(published.at(-1))?.label).toBe('Health · 2 warnings')
+      }),
+    ),
+  )
+
+  it.effect('pins the row above the empty state too, and selects it for its pane', () =>
+    withCockpit({ recordings: [notARepo(ROOT)] }, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        const message = published.at(-1)
+        expect(message?.kind).toBe('message')
+        expect(codes(message)).toEqual(['claude-not-found'])
+        yield* cockpit.receive({ type: 'select', key: 'health' })
+        const selected = published.at(-1)
+        expect(selected?.kind === 'message' && selected.selection).toMatchObject({
+          kind: 'health',
+          key: 'health',
+        })
+      }),
+    ),
+  )
+
+  it.effect('raises the plugin manifest and hook problems the host reads', () => {
+    const setup = launchable()
+    return withCockpit(
+      { ...setup, recordings: [inRepo(ROOT, ROOT), pluginList('not json')] },
+      ({ cockpit, published, fs, watcher }) =>
+        Effect.gen(function* () {
+          yield* cockpit.show
+          expect(codes(published.at(-1))).toEqual(['plugin-manifest-unreadable'])
+          yield* fs.writeFile(EVENTS, '{"nope":1}\n').pipe(Effect.orDie)
+          watcher.change()
+          yield* flush
+          expect(codes(published.at(-1))).toEqual([
+            'hook-payload-unreadable',
+            'plugin-manifest-unreadable',
+          ])
+          // A hook line the same fault again is the same entry.
+          yield* fs.writeFile(EVENTS, '{"nope":1}\n{"nope":2}\n').pipe(Effect.orDie)
+          watcher.change()
+          yield* flush
+          expect(codes(published.at(-1))).toEqual([
+            'hook-payload-unreadable',
+            'plugin-manifest-unreadable',
+          ])
+        }),
+    )
+  })
+
+  describe('when the registry cannot be decoded', () => {
+    const AGENTS = ['agents', '--json']
+    const registryFor = (stdout: string): ProcessRecording => ({
+      command: CLAUDE,
+      args: AGENTS,
+      stdout,
+      stderr: '',
+      exitCode: 0,
+    })
+    const live = (name: string, status: string) =>
+      JSON.stringify([{ sessionId: `id-${name}`, name, status, kind: 'interactive', startedAt: 1 }])
+
+    const withRegistry = (
+      initial: string,
+      body: (
+        context: Parameters<Parameters<typeof withCockpit<void>>[1]>[0] & {
+          prints: (stdout: string) => void
+        },
+      ) => Effect.Effect<void, never, never>,
+    ) => {
+      const setup = launchable()
+      const recordings = [...setup.recordings!, registryFor(initial)]
+      const slot = recordings.length - 1
+      return withCockpit({ ...setup, recordings }, (context) =>
+        body({
+          ...context,
+          prints: (stdout) => {
+            recordings[slot] = registryFor(stdout)
+          },
+        }),
+      )
+    }
+
+    it.effect(
+      'gives one loud entry, shows status unknown with no badge, and keeps the terminal and the ended record',
+      () =>
+        withRegistry(
+          live('#1 Palette', 'idle'),
+          ({ cockpit, published, badges, registry, prints, terminals }) =>
+            Effect.gen(function* () {
+              yield* cockpit.checkClaude
+              yield* cockpit.show
+              yield* cockpit.receive({ type: 'launch', key: PALETTE })
+              yield* cockpit.visible(true)
+              expect(ticketRowOf(published.at(-1), PALETTE)?.session).toMatchObject({
+                kind: 'live',
+                status: 'waiting for you',
+                needsYou: true,
+                focusable: true,
+              })
+              expect(badges.at(-1)).toBe(1)
+              expect(healthOf(published.at(-1))).toBeNull()
+
+              prints('{"sessions": []}')
+              registry.change()
+              yield* TestClock.adjust('1 second')
+              yield* flush
+
+              const health = healthOf(published.at(-1))
+              expect(health).toMatchObject({ loud: true, label: 'Health · 1 warning' })
+              expect(health?.entries[0]).toMatchObject({
+                code: 'registry-unreadable',
+                level: 'loud',
+              })
+              expect(health?.entries[0]?.message).toContain('Claude Code 2.1.300')
+              expect(ticketRowOf(published.at(-1), PALETTE)?.session).toMatchObject({
+                kind: 'live',
+                status: 'status unknown',
+                needsYou: false,
+                focusable: true,
+              })
+              expect(badges.at(-1)).toBe(0)
+
+              // The record of a session that ends meanwhile is kept, unknown or not.
+              terminals.close(1, { reason: 'user', code: null })
+              yield* flush
+              expect(ticketRowOf(published.at(-1), PALETTE)?.session).toMatchObject({
+                kind: 'ended',
+                detail: 'terminal closed',
+              })
+            }),
+        ),
+    )
+
+    it.effect('goes back to the registry’s word, and the entry goes, once it decodes again', () =>
+      withRegistry(
+        live('#4 Row density', 'idle'),
+        ({ cockpit, published, badges, registry, prints }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            yield* cockpit.visible(true)
+            prints('nonsense')
+            registry.change()
+            yield* TestClock.adjust('1 second')
+            yield* flush
+            expect(codes(published.at(-1))).toEqual(['registry-unreadable'])
+            expect(ticketRowOf(published.at(-1), 'map:3:ticket:4')?.session).toMatchObject({
+              status: 'status unknown',
+            })
+
+            prints(live('#4 Row density', 'idle'))
+            registry.change()
+            yield* TestClock.adjust('1 second')
+            yield* flush
+            expect(healthOf(published.at(-1))).toBeNull()
+            expect(ticketRowOf(published.at(-1), 'map:3:ticket:4')?.session).toMatchObject({
+              status: 'waiting for you',
+              needsYou: true,
+            })
+            expect(badges.at(-1)).toBe(1)
+          }),
+      ),
+    )
+
+    it.effect('reports an entry it cannot read and a status it does not know', () =>
+      withRegistry(
+        JSON.stringify([
+          { sessionId: 'a', name: '#4 Row density', status: 'napping' },
+          { name: 'no id', status: 'busy' },
+        ]),
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.show
+            yield* cockpit.visible(true)
+            expect(codes(published.at(-1))).toEqual([
+              'registry-status-unknown',
+              'registry-entry-unreadable',
+            ])
+            // The registry as a whole decoded: nobody's status is unknown on its account.
+            expect(healthOf(published.at(-1))?.label).toBe('Health · 2 warnings')
+          }),
+      ),
+    )
+  })
+
+  describe('dismissing an entry', () => {
+    const dismissFirst = (published: ViewModel[], cockpit: Cockpit) => {
+      const key = healthOf(published.at(-1))?.entries[0]?.dismissKey
+      if (key === undefined) throw new Error('expected an entry to dismiss')
+      return cockpit.receive({ type: 'dismiss-health', dismissKey: key })
+    }
+
+    it.effect('stays dismissed in another workspace, and returns when its detail changes', () => {
+      const global = new Map<string, unknown>()
+      return Effect.gen(function* () {
+        yield* withCockpit(withVersion('2.1.211\n', { global }), ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.checkClaude
+            yield* cockpit.show
+            expect(codes(published.at(-1))).toEqual(['claude-below-floor'])
+            yield* dismissFirst(published, cockpit)
+            expect(healthOf(published.at(-1))).toBeNull()
+          }),
+        )
+        // Another workspace of the same profile: nothing of its own was stored.
+        yield* withCockpit(
+          withVersion('2.1.211\n', { global, stored: {} }),
+          ({ cockpit, published }) =>
+            Effect.gen(function* () {
+              yield* cockpit.checkClaude
+              yield* cockpit.show
+              expect(healthOf(published.at(-1))).toBeNull()
+            }),
+        )
+        // A different version is a different detail: the entry is back.
+        yield* withCockpit(withVersion('2.1.210\n', { global }), ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.checkClaude
+            yield* cockpit.show
+            expect(codes(published.at(-1))).toEqual(['claude-below-floor'])
+          }),
+        )
+      })
+    })
+
+    it.effect('does not use the workspace’s own storage', () => {
+      const global = new Map<string, unknown>()
+      return withCockpit(withVersion('2.1.211\n', { global }), ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.checkClaude
+          yield* cockpit.show
+          yield* dismissFirst(published, cockpit)
+          expect(global.get('dismissedHealth')).toHaveLength(1)
+        }),
+      )
+    })
+  })
+
+  describe('the output channel', () => {
+    it.effect('logs each entry once, with what was seen, across two refreshes', () =>
+      withCockpit(withVersion('2.1.211 (Claude Code)\n'), ({ cockpit, logged }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.checkClaude
+          yield* cockpit.show
+          yield* cockpit.refresh
+          yield* cockpit.refresh
+          const lines = logged.filter((line) => line.startsWith('health '))
+          expect(lines).toHaveLength(1)
+          expect(lines[0]).toContain('claude-below-floor')
+          expect(lines[0]).toContain('saw "2.1.211 (Claude Code)\\n"')
+        }),
+      ),
+    )
+
+    it.effect('cuts what was seen at 2 KB', () =>
+      withCockpit(withVersion('x'.repeat(5000)), ({ cockpit, logged }) =>
+        Effect.gen(function* () {
+          yield* cockpit.checkClaude
+          const line = logged.find((entry) => entry.includes('claude-version-unreadable'))
+          expect(line).toBeDefined()
+          expect(line!.length).toBeLessThan(2048 + 400)
+        }),
+      ),
+    )
+
+    it.effect('logs an entry again when it comes back with another detail', () => {
+      const setup = withVersion('2.1.211\n')
+      return withCockpit(setup, ({ cockpit, logged }) =>
+        Effect.gen(function* () {
+          yield* cockpit.checkClaude
+          setup.recordings![setup.recordings!.length - 1] = printsVersion('2.1.210\n')
+          yield* cockpit.refresh
+          expect(logged.filter((line) => line.startsWith('health ')).length).toBe(2)
+        }),
+      )
+    })
+  })
 })

@@ -11,11 +11,13 @@ import {
   HINT_AFTER_MS,
   isRunning,
   isFinished,
+  isBelowClaudeFloor,
   type Launch,
-  needsYou,
+  needsYouNow,
   type ProcessError,
   ProcessRunner,
   type RateLimit,
+  readClaudeVersion,
   readGitHubTracker,
   readLocalTracker,
   readPluginList,
@@ -56,6 +58,17 @@ import {
   startOf,
   ticketActions,
 } from './launch.ts'
+import {
+  formatVersion,
+  type HealthContext,
+  healthDismissalKey,
+  healthEntries,
+  healthEntry,
+  healthRowOf,
+  type Raised,
+  raise,
+  snapshotEntry,
+} from './health.ts'
 import { decodeWebviewMessage } from './messages.ts'
 import { describeCollectFailure } from './notices.ts'
 import {
@@ -98,6 +111,7 @@ import {
   detailOf,
   firstFocusKey,
   focusKeyOf,
+  healthSelection,
   revealKeys,
   selectionOf,
   ticketKey,
@@ -110,6 +124,8 @@ export const EXPANDED_KEY = 'expanded'
 export const SELECTED_KEY = 'selected'
 /** The key the dismissed drift entries are stored under: their dismissal keys, each at its exact detail. */
 export const DISMISSED_KEY = 'dismissedDrift'
+/** The key the dismissed Health entries are stored under, in global state: their dismissal keys. */
+export const HEALTH_DISMISSED_KEY = 'dismissedHealth'
 
 export interface CockpitOptions {
   /** Sends a view model to the Tree's webview. */
@@ -152,7 +168,7 @@ export interface Cockpit {
   readonly visible: (visible: boolean) => Effect.Effect<void>
   /** A file under `.scratch` changed: one automatic collect after the debounce, on a local tracker only. */
   readonly scratchChanged: Effect.Effect<void>
-  /** The Refresh button: ignores the gap, and joins a collect that is already running. */
+  /** The Refresh button: reads `claude --version` again, ignores the gap, and joins a collect that is already running. */
   readonly refresh: Effect.Effect<void>
   /** A message from the webview; false when it was rejected as malformed. */
   readonly receive: (input: unknown) => Effect.Effect<boolean>
@@ -162,8 +178,10 @@ export interface Cockpit {
   readonly openDetail: Effect.Effect<void>
   /** The Detail as it stands, for a panel that just mounted or was restored. */
   readonly currentDetail: Effect.Effect<DetailView>
-  /** Activation: resolve `claude` and log where it is. Spawns nothing. */
+  /** Activation: log the environment, resolve `claude` and log where it is. Spawns nothing. */
   readonly activated: Effect.Effect<void>
+  /** Activation's one `claude --version`, for the floor. Publishes when it raises or clears an entry. */
+  readonly checkClaude: Effect.Effect<void>
   /** `Hero Synergy: Chart a map`, the Tree's title-bar button: a plain terminal on the wayfinder command. */
   readonly chartMap: Effect.Effect<void>
   /** `Hero Synergy: Run skill…`: a QuickPick of the user-invoked skills, then a plain terminal on the one chosen. */
@@ -341,7 +359,27 @@ export const makeCockpit = (
     const discovery = yield* Ref.make<{
       readonly claude: ClaudeResolution
       readonly skills: ReadonlyArray<DiscoveredSkill> | null
-    }>({ claude: NOT_LAUNCHING.claude, skills: null })
+      /** What discovery could not read: plugin manifests, skill files, doubled installs. */
+      readonly warnings: ReadonlyArray<Raised>
+    }>({ claude: NOT_LAUNCHING.claude, skills: null, warnings: [] })
+    // Health: what the host saw of the machine. Each source holds the entries its last look raised.
+    // Null until `claude` was resolved once, so a window that never looked does not report it missing.
+    const claudeFact = yield* Ref.make<ClaudeResolution | null>(null)
+    const claudeVersion = yield* Ref.make<string | null>(null)
+    const versionRaised = yield* Ref.make<ReadonlyArray<Raised>>([])
+    // The path `claude --version` was last read at; undefined until activation has checked once.
+    const versionChecked = yield* Ref.make<{ readonly path: string | null } | undefined>(undefined)
+    const versionLock = Semaphore.makeUnsafe(1)
+    const registryRaised = yield* Ref.make<ReadonlyArray<Raised>>([])
+    const registryUnreadable = yield* Ref.make(false)
+    // One entry per hook code: the events file keeps a bad line for as long as it is not compacted.
+    const hookRaised = yield* Ref.make<ReadonlyMap<string, Raised>>(new Map())
+    // Health entries hidden by the person, in every workspace; a changed detail has a new key.
+    const dismissedHealth = yield* Ref.make<ReadonlySet<string>>(
+      storedDismissed(yield* storage.getGlobal(HEALTH_DISMISSED_KEY)),
+    )
+    // The entries already written to the output channel, so each is logged once.
+    const loggedHealth = yield* Ref.make<ReadonlySet<string>>(new Set())
     // The host holds the one selection; the webview only asks to change it.
     const selected = yield* Ref.make<string | null>(
       storedSelected(yield* storage.get(SELECTED_KEY)),
@@ -380,10 +418,13 @@ export const makeCockpit = (
     })
 
     /** The numbers of the tickets whose session needs me. */
-    const needing = (map: ReadonlyMap<string, SessionState>): ReadonlySet<number> =>
+    const needing = (
+      map: ReadonlyMap<string, SessionState>,
+      unreadable: boolean,
+    ): ReadonlySet<number> =>
       new Set(
         [...map].flatMap(([key, session]) =>
-          needsYou(session) ? [Number(key.slice(key.lastIndexOf(':') + 1))] : [],
+          needsYouNow(session, unreadable) ? [Number(key.slice(key.lastIndexOf(':') + 1))] : [],
         ),
       )
 
@@ -402,19 +443,53 @@ export const makeCockpit = (
           eventsFile: environment.eventsFile(repoRoot),
           me: (yield* Ref.get(me)).login,
           worktrees: yield* Ref.get(worktrees),
+          registryUnreadable: yield* Ref.get(registryUnreadable),
         }
       })
 
+    /** Everything the host has raised about the machine, before dismissals, and the context its messages name. */
+    const raisedNow: Effect.Effect<{
+      readonly raised: ReadonlyArray<Raised>
+      readonly context: HealthContext
+    }> = Effect.gen(function* () {
+      const claude = yield* Ref.get(claudeFact)
+      const found = yield* Ref.get(discovery)
+      return {
+        raised: [
+          ...(claude?.kind === 'missing' ? [raise('claude-not-found', claude.reason)] : []),
+          ...(yield* Ref.get(versionRaised)),
+          ...(yield* Ref.get(registryRaised)),
+          ...(yield* Ref.get(hookRaised)).values(),
+          ...found.warnings,
+          ...(found.skills !== null && commandOf(found.skills, 'wayfinder') === null
+            ? [raise('skill-missing', undefined)]
+            : []),
+        ],
+        context: { claude: yield* Ref.get(claudeVersion) },
+      }
+    })
+
+    /** The pinned Health row for a snapshot's warnings (none while there is no snapshot). */
+    const healthRow = (snapshot: Snapshot | null) =>
+      Effect.gen(function* () {
+        const { raised, context } = yield* raisedNow
+        return healthRowOf(
+          healthEntries(raised, snapshot?.warnings ?? [], context, yield* Ref.get(dismissedHealth)),
+        )
+      })
     const current: Effect.Effect<ViewModel> = Effect.gen(function* () {
       const state = yield* Ref.get(base)
       if (state.kind === 'loading') return state
       if (state.kind === 'message') {
         const facts = yield* launchingFor(state.repoRoot ?? '')
+        const health = yield* healthRow(null)
         return {
           kind: 'message',
           message: state.message,
           detail: state.detail,
           start: startOf(state.repoRoot, facts, state.noTrackerDoc ? 'tracker-doc' : 'other'),
+          health,
+          selection: healthSelection(health, yield* Ref.get(selected)),
         }
       }
       const open = (yield* Ref.get(expanded)) ?? defaultExpanded(state.snapshot)
@@ -422,11 +497,12 @@ export const makeCockpit = (
         state.snapshot,
         open,
         yield* Ref.get(selected),
-        { needsYou: needing(yield* Ref.get(sessions)) },
+        { needsYou: needing(yield* Ref.get(sessions), yield* Ref.get(registryUnreadable)) },
         state.notice,
         yield* budgetNote,
         yield* launchingFor(state.snapshot.repoRoot),
         yield* Ref.get(dismissed),
+        yield* healthRow(state.snapshot),
       )
     })
 
@@ -466,10 +542,87 @@ export const makeCockpit = (
         : `claude not resolved: ${resolution.reason}`
 
     const activated: Effect.Effect<void> = Effect.gen(function* () {
-      options.log(describeResolution(yield* resolveNow))
+      options.log(
+        `${environment.appName} (${environment.appHost}) ${environment.vscodeVersion} on ${environment.platform}`,
+      )
+      const resolution = yield* resolveNow
+      yield* Ref.set(claudeFact, resolution)
+      options.log(describeResolution(resolution))
       // The last good snapshot names the repo, so the events file is read without a collect.
       // Nothing is published: the Tree is not registered yet.
       if (cached !== null) yield* startEvents(cached.snapshot.repoRoot, false)
+    })
+
+    /**
+     * The floor check: one `claude --version`. `activation` and `refresh` always read it; `path`
+     * (a collect found `claude` somewhere else) only when the resolved path changed since the last
+     * read, and only once activation has read it at all. Returns whether the entries it raised changed.
+     */
+    const checkVersion = (
+      resolution: ClaudeResolution,
+      mode: 'activation' | 'refresh' | 'path',
+    ): Effect.Effect<boolean> =>
+      versionLock.withPermits(1)(
+        Effect.gen(function* () {
+          const path = resolution.kind === 'found' ? resolution.claude.path : null
+          const last = yield* Ref.get(versionChecked)
+          if (mode === 'path' && (last === undefined || last.path === path)) return false
+          const before = yield* Ref.get(versionRaised)
+          yield* Ref.set(versionChecked, { path })
+          const outcome = yield* Effect.gen(function* () {
+            if (resolution.kind === 'missing') {
+              return { version: null, raised: [] as ReadonlyArray<Raised> }
+            }
+            const result = yield* runner
+              .run({ command: resolution.claude.path, args: ['--version'] })
+              .pipe(
+                Effect.catch((error) => {
+                  options.log(`claude --version failed: ${error.message}`)
+                  return Effect.succeed(null)
+                }),
+              )
+            if (result === null || result.exitCode !== 0) {
+              const why =
+                result === null
+                  ? 'it could not be run'
+                  : `it exited with ${result.exitCode ?? 'a timeout'}`
+              return {
+                version: null,
+                raised: [raise('claude-version-unreadable', why, result?.stderr ?? null)],
+              }
+            }
+            const read = readClaudeVersion(result.stdout)
+            if (read.value === null) {
+              return {
+                version: null,
+                raised: read.warnings.map((warning) =>
+                  raise(warning.code, warning.detail, result.stdout),
+                ),
+              }
+            }
+            const version = formatVersion(read.value)
+            return {
+              version,
+              raised: isBelowClaudeFloor(read.value)
+                ? [raise('claude-below-floor', version, result.stdout)]
+                : [],
+            }
+          })
+          yield* Ref.set(claudeVersion, outcome.version)
+          yield* Ref.set(versionRaised, outcome.raised)
+          return JSON.stringify(before) !== JSON.stringify(outcome.raised)
+        }),
+      )
+
+    const checkClaude: Effect.Effect<void> = Effect.gen(function* () {
+      if (yield* checkVersion(yield* resolveNow, 'activation')) yield* publish
+    })
+
+    /** The Refresh button reads the version again, in case `claude` was updated since. */
+    const recheckClaude: Effect.Effect<void> = Effect.gen(function* () {
+      const resolution = yield* resolveNow
+      yield* Ref.set(claudeFact, resolution)
+      if (yield* checkVersion(resolution, 'refresh')) yield* publish
     })
 
     /**
@@ -479,6 +632,8 @@ export const makeCockpit = (
     const discover = (repoRoot: string): Effect.Effect<void> =>
       Effect.gen(function* () {
         const claude = yield* resolveNow
+        yield* Ref.set(claudeFact, claude)
+        yield* checkVersion(claude, 'path')
         const listed =
           claude.kind === 'found'
             ? yield* runner
@@ -495,12 +650,19 @@ export const makeCockpit = (
                   }),
                 )
             : '[]'
+        const plugins = readPluginList(listed)
         const inventory = yield* discoverSkills({
           repoRoot,
           home: environment.home,
-          plugins: readPluginList(listed).value,
+          plugins: plugins.value,
         }).pipe(Effect.provideService(FileSystem, fs))
-        yield* Ref.set(discovery, { claude, skills: inventory.skills })
+        yield* Ref.set(discovery, {
+          claude,
+          skills: inventory.skills,
+          warnings: [...plugins.warnings, ...inventory.warnings].map((warning) =>
+            raise(warning.code, warning.detail),
+          ),
+        })
       })
 
     /** Sets a ticket's session to what the reducer makes of the input. */
@@ -580,9 +742,42 @@ export const makeCockpit = (
       else options.log('gh api user gave no login; claims are not compared with this machine')
     })
 
+    /** Writes each health entry to the output channel the first time it is raised, with what was seen. */
+    const logHealth: Effect.Effect<void> = Effect.gen(function* () {
+      const { raised, context } = yield* raisedNow
+      const state = yield* Ref.get(base)
+      const warnings = state.kind === 'snapshot' ? state.snapshot.warnings : []
+      const logged = yield* Ref.get(loggedHealth)
+      const fresh = new Set(logged)
+      for (const entry of raised) {
+        const key = healthDismissalKey(entry.code, entry.detail)
+        if (fresh.has(key)) continue
+        fresh.add(key)
+        const shown = healthEntry(entry, context)
+        options.log(
+          `health ${shown.level} ${entry.code}: ${shown.message}${
+            entry.seen === null ? '' : ` saw ${JSON.stringify(entry.seen)}`
+          }`,
+        )
+      }
+      for (const warning of warnings) {
+        const shown = snapshotEntry(warning)
+        if (fresh.has(shown.dismissKey)) continue
+        fresh.add(shown.dismissKey)
+        options.log(`health ${shown.level} ${warning.code}: ${shown.message}`)
+      }
+      if (fresh.size !== logged.size) yield* Ref.set(loggedHealth, fresh)
+    })
+
     const publish: Effect.Effect<void> = Effect.gen(function* () {
       yield* ensureMe
-      options.badge([...(yield* Ref.get(sessions)).values()].filter(needsYou).length)
+      const unreadable = yield* Ref.get(registryUnreadable)
+      options.badge(
+        [...(yield* Ref.get(sessions)).values()].filter((session) =>
+          needsYouNow(session, unreadable),
+        ).length,
+      )
+      yield* logHealth
       options.publish(yield* current)
       options.publishDetail(yield* currentDetail)
       yield* ensurePolling
@@ -662,6 +857,19 @@ export const makeCockpit = (
       before: ReadonlyMap<string, SessionState>,
       after: ReadonlyMap<string, SessionState>,
     ): boolean => [...before].some(([key, state]) => sessionLeft(state, after.get(key)))
+    /** Notes the hook warnings of a read, one per code; true when the entries changed. */
+    const noteHooks = (warnings: ReadonlyArray<{ code: Raised['code']; detail?: string }>) =>
+      Ref.modify(hookRaised, (current) => {
+        const next = new Map(current)
+        for (const warning of warnings) {
+          // The line number is the chunk's own; without it the same fault is the same entry.
+          next.set(warning.code, raise(warning.code, warning.detail?.replace(/^line \d+: /, '')))
+        }
+        const changed = [...next].some(
+          ([code, entry]) => current.get(code)?.detail !== entry.detail,
+        )
+        return [changed, changed ? next : current] as const
+      })
 
     /** Reads what the plugin appended since the last read and applies it. */
     const drainEvents: Effect.Effect<void> = reading.withPermits(1)(
@@ -670,10 +878,14 @@ export const makeCockpit = (
         if (current === null) return
         const read = yield* current.reader.read
         for (const problem of read.problems) options.log(problem)
-        if (read.events.length === 0) return
+        const raisedChanged = yield* noteHooks(read.warnings)
+        if (read.events.length === 0) {
+          if (raisedChanged) yield* publish
+          return
+        }
         const prior = yield* Ref.get(sessions)
         const { changed, started } = yield* applyEvents(read.events)
-        if (changed) yield* publish
+        if (changed || raisedChanged) yield* publish
         if (started || anyLeft(prior, yield* Ref.get(sessions))) yield* readTrackerAgain
       }),
     )
@@ -715,6 +927,7 @@ export const makeCockpit = (
             yield* Ref.set(events, { file, reader })
             const first = yield* reader.read
             for (const problem of first.problems) options.log(problem)
+            yield* noteHooks(first.warnings)
             const prior = yield* Ref.get(sessions)
             yield* applyEvents(first.events)
             const at = yield* Clock.currentTimeMillis
@@ -772,8 +985,20 @@ export const makeCockpit = (
         for (const warning of read.warnings) {
           options.log(`registry: ${warning.code}${warning.detail ? ` ${warning.detail}` : ''}`)
         }
-        // A registry that cannot be read says nothing about the sessions: they keep their state.
-        if (read.warnings.some((warning) => warning.code === 'registry-unreadable')) return
+        const raised = read.warnings.map((warning) =>
+          raise(warning.code, warning.detail, result.stdout),
+        )
+        const unreadable = read.warnings.some((warning) => warning.code === 'registry-unreadable')
+        const raisedBefore = yield* Ref.getAndSet(registryRaised, raised)
+        const unreadableBefore = yield* Ref.getAndSet(registryUnreadable, unreadable)
+        const healthChanged =
+          JSON.stringify(raisedBefore) !== JSON.stringify(raised) || unreadableBefore !== unreadable
+        // A registry that cannot be read says nothing about the sessions: they keep their state,
+        // their terminal and their record, and show status unknown.
+        if (unreadable) {
+          if (healthChanged) yield* publish
+          return
+        }
         const grouped = groupByTicket(read.value)
         const before = yield* Ref.get(sessions)
         const at = yield* Clock.currentTimeMillis
@@ -795,7 +1020,7 @@ export const makeCockpit = (
           )
         }
         const after = yield* Ref.get(sessions)
-        if (after !== before) yield* publish
+        if (after !== before || healthChanged) yield* publish
         if (anyLeft(before, after)) yield* readTrackerAgain
       }),
     )
@@ -1015,6 +1240,16 @@ export const makeCockpit = (
           return [next, next] as const
         })
         yield* storage.set(DISMISSED_KEY, [...after])
+        yield* publish
+      })
+
+    const dismissHealthEntry = (dismissKey: string): Effect.Effect<void> =>
+      Effect.gen(function* () {
+        const after = yield* Ref.modify(dismissedHealth, (current) => {
+          const next = new Set(current).add(dismissKey)
+          return [next, next] as const
+        })
+        yield* storage.setGlobal(HEALTH_DISMISSED_KEY, [...after])
         yield* publish
       })
 
@@ -1304,13 +1539,14 @@ export const makeCockpit = (
 
     return {
       activated,
+      checkClaude,
       chartMap: chartMapCommand,
       runSkill: runSkillCommand,
       show: trigger('automatic'),
       focus: trigger('automatic').pipe(Effect.andThen(ensureRegistryWatch)),
       visible,
       scratchChanged,
-      refresh: trigger('button'),
+      refresh: recheckClaude.pipe(Effect.andThen(trigger('button'))),
       current,
       currentDetail,
       openDetail: openDetailCommand,
@@ -1326,6 +1562,7 @@ export const makeCockpit = (
               yield* publish
               break
             case 'refresh':
+              yield* recheckClaude
               yield* trigger('button')
               break
             case 'expand':
@@ -1368,6 +1605,9 @@ export const makeCockpit = (
               break
             case 'dismiss-drift':
               yield* dismissDrift(message.dismissKey)
+              break
+            case 'dismiss-health':
+              yield* dismissHealthEntry(message.dismissKey)
               break
           }
           return true
