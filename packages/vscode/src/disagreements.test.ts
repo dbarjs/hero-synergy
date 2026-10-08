@@ -1,24 +1,22 @@
 import {
+  CLAIM_PENDING_TEXT,
+  claimedByOtherText,
+  disagreementOf,
   FileSystem,
+  NOT_CLAIMED_TEXT,
   readLocalTracker,
   reduceSession,
   type SessionState,
   type Snapshot,
   type StatusEvent,
   type Ticket,
+  WRAPPING_UP_TEXT,
 } from '@hero-synergy/core'
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vite-plus/test'
 
 import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
-import {
-  CLAIM_PENDING_TEXT,
-  claimedByOtherText,
-  disagreementOf,
-  NOT_CLAIMED_TEXT,
-  shownClaim,
-  WRAPPING_UP_TEXT,
-} from './disagreements.ts'
+import { shownClaim } from './disagreements.ts'
 import { NOT_LAUNCHING } from './launch.ts'
 import { buildViewModel, detailOf, selectionOf } from './view-model.ts'
 

@@ -1,5 +1,6 @@
 import {
   afterReload,
+  checkClaudeVersion,
   commandOf,
   type DiscoveredSkill,
   discoverSkills,
@@ -8,16 +9,17 @@ import {
   findRepo,
   type GitHubCollectFailed,
   groupByTicket,
+  type HealthContext,
   HINT_AFTER_MS,
   isRunning,
   isFinished,
-  isBelowClaudeFloor,
   type Launch,
   needsYouNow,
   type ProcessError,
   ProcessRunner,
+  raise,
+  type Raised,
   type RateLimit,
-  readClaudeVersion,
   readGitHubTracker,
   readLocalTracker,
   readPluginList,
@@ -59,14 +61,10 @@ import {
   ticketActions,
 } from './launch.ts'
 import {
-  formatVersion,
-  type HealthContext,
   healthDismissalKey,
   healthEntries,
   healthEntry,
   healthRowOf,
-  type Raised,
-  raise,
   snapshotEntry,
 } from './health.ts'
 import { decodeWebviewMessage } from './messages.ts'
@@ -581,32 +579,7 @@ export const makeCockpit = (
                   return Effect.succeed(null)
                 }),
               )
-            if (result === null || result.exitCode !== 0) {
-              const why =
-                result === null
-                  ? 'it could not be run'
-                  : `it exited with ${result.exitCode ?? 'a timeout'}`
-              return {
-                version: null,
-                raised: [raise('claude-version-unreadable', why, result?.stderr ?? null)],
-              }
-            }
-            const read = readClaudeVersion(result.stdout)
-            if (read.value === null) {
-              return {
-                version: null,
-                raised: read.warnings.map((warning) =>
-                  raise(warning.code, warning.detail, result.stdout),
-                ),
-              }
-            }
-            const version = formatVersion(read.value)
-            return {
-              version,
-              raised: isBelowClaudeFloor(read.value)
-                ? [raise('claude-below-floor', version, result.stdout)]
-                : [],
-            }
+            return checkClaudeVersion(result)
           })
           yield* Ref.set(claudeVersion, outcome.version)
           yield* Ref.set(versionRaised, outcome.raised)

@@ -16,6 +16,15 @@
 // `main` (uncommitted files, commits ahead), read through git's read-only commands (ADR 0003).
 // `next` never creates, merges or removes a worktree.
 //
+// --list also prints every warning the Cockpit shows, in the Cockpit's codes and words, all from
+// core's tables. Health comes first, from the machine: Claude Code against the floor, the plugin
+// and the skills, then what the registry and the status hooks gave. Drift sits under the map or
+// ticket row it is about, one line per loud warning and one muted count of the old forms per map
+// (closed tickets included, listed under the open ones when they have a line). The disagreements
+// between the tracker and the session side sit under their ticket, and a live session whose ticket
+// is in neither list closes the output. A warning never gates: `next` still lists and still
+// launches, and the decoders' own warnings on a launch stay a line on stderr.
+//
 // `resume` is the Cockpit's Resume: core builds the command from the ended session's id and the
 // same context a launch uses (by name, a plain session, when no id is on record). A ticket with no
 // ended session is refused, as the Cockpit's row offers no Resume there; when nothing is running on
@@ -40,14 +49,21 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import {
+  checkClaudeVersion,
   collectGitHubPromise,
   commandOf,
+  disagreementOf,
   discoverSkillsPromise,
+  driftEntryOf,
   groupByTicket,
+  healthEntryList,
+  healthLabel,
   isClaimed,
+  isLoud,
   isRunning,
   openBlockers,
   placeOf,
+  raise,
   readPluginList,
   readRegistry,
   readSnapshot,
@@ -57,6 +73,7 @@ import {
   resumeEnded,
   sessionsOf,
   sessionText,
+  sessionTitleOf,
   sessionView,
   workTicket,
   worktreeText,
@@ -116,6 +133,22 @@ function run(command, args) {
     stdio: ['ignore', 'pipe', 'pipe'],
   })
   if (result.error) throw new Error(`${command}: ${result.error.message}`)
+  return result
+}
+
+// `claude` is run by name, as the launch is. One that cannot be started is `claude-not-found` on
+// the Health line and an empty answer here, never a stop.
+function runClaude(args) {
+  const result = spawnSync('claude', args, {
+    cwd: REPO_ROOT,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  if (result.error) {
+    const missing =
+      result.error.code === 'ENOENT' ? 'claude was not found on PATH.' : result.error.message
+    return { missing, status: null, stdout: '', stderr: '' }
+  }
   return result
 }
 
@@ -180,32 +213,55 @@ async function readSpec(number) {
       title: node.title,
       parent: number,
       open: node.state === 'OPEN',
+      state: node.state === 'OPEN' ? 'open' : 'closed',
+      claim: claimedBy.length > 0 ? { by: claimedBy } : null,
       claimed: claimedBy.length > 0,
       claimedBy,
       waitsOn,
       takeable: claimedBy.length === 0 && waitsOn.length === 0,
+      // A spec is not a map: the scout reads none, so its tickets carry no drift.
+      warnings: [],
     }
   })
-  return { number, title: parent.title, tickets }
+  return {
+    number,
+    title: parent.title,
+    tickets,
+    warnings: [],
+    snapshotWarnings: [],
+    readAt: Date.now(),
+  }
 }
 
 // The map through core: its collect, its snapshot and its frontier rules, so `next` and the Tree
 // agree on what is takeable, a blocker outside the map included.
 async function readMap(number) {
   const { collected } = await collectGitHubPromise(REPO_ROOT)
-  const map = readSnapshot(collected).maps.find((m) => m.number === number)
+  const snapshot = readSnapshot(collected)
+  const map = snapshot.maps.find((m) => m.number === number)
   if (!map) throw new Error(`#${number} is not an open wayfinder map on ${OWNER}/${REPO}`)
   const tickets = map.tickets.map((ticket) => ({
     number: ticket.number,
     title: ticket.title,
     parent: number,
     open: ticket.state === 'open',
+    state: ticket.state,
+    claim: ticket.claim,
     claimed: isClaimed(ticket),
     claimedBy: ticket.claim?.by ?? [],
     waitsOn: openBlockers(ticket).map((blocker) => blocker.number),
     takeable: placeOf(ticket) === 'frontier',
+    warnings: ticket.warnings,
   }))
-  return { number, title: map.title, tickets }
+  return {
+    number,
+    title: map.title,
+    tickets,
+    warnings: map.warnings,
+    // The repo-level drift, which the Cockpit lists in its Health row.
+    snapshotWarnings: snapshot.warnings,
+    readAt: Date.parse(snapshot.collectedAt),
+  }
 }
 
 function readParents() {
@@ -238,58 +294,126 @@ function readTicket(number) {
 // One run, one read of what the Focus pane reads: the events file the status plugin's hooks append
 // to (start, failure, end; a missing file is an empty one), then the registry, `claude agents
 // --json`, whose entries belong to the ticket their name starts with. Core derives each ticket's
-// session from the two, the Cockpit's own derivation; what cannot be read comes back as coded
-// warnings.
+// session from the two, the Cockpit's own derivation. What cannot be read comes back as `raised`
+// health warnings (the Cockpit's own codes) and `notes`, the lines the Cockpit logs to its output
+// channel.
 function readSessions() {
+  const notes = []
   let text = ''
   try {
     text = readFileSync(EVENTS_FILE, 'utf8')
   } catch (error) {
-    if (error?.code !== 'ENOENT')
-      console.error(`warning: could not read ${EVENTS_FILE}: ${error.message}`)
+    if (error?.code !== 'ENOENT') notes.push(`could not read ${EVENTS_FILE}: ${error.message}`)
   }
   // A line still being appended is not read yet.
   const events = readStatusEvents(text.slice(0, text.lastIndexOf('\n') + 1))
-  for (const warning of events.warnings) warnLine(warning)
-  const result = run('claude', ['agents', '--json'])
-  const registry = readRegistry(result.stdout)
-  for (const warning of registry.warnings) {
-    const detail = warning.detail ? `: ${warning.detail}` : ''
-    console.error(
-      `warning: ${warning.code}${detail} (claude agents --json exited ${result.status})`,
-    )
+  // One entry per code, without the chunk's own line number: the same fault is the same entry.
+  const hooks = new Map()
+  for (const warning of events.warnings)
+    hooks.set(warning.code, raise(warning.code, warning.detail?.replace(/^line \d+: /, '')))
+  const result = runClaude(['agents', '--json'])
+  let registry = readRegistry('[]')
+  if (!result.missing) {
+    if (result.status === 0) registry = readRegistry(result.stdout)
+    else notes.push(`claude agents --json exited with ${result.status ?? 'a timeout'}`)
   }
-  return sessionsOf(events.value, groupByTicket(registry.value), Date.now())
+  const fromRegistry = registry.warnings.map((warning) =>
+    raise(warning.code, warning.detail, result.stdout),
+  )
+  return {
+    sessions: sessionsOf(events.value, groupByTicket(registry.value), Date.now()),
+    raised: [...fromRegistry, ...hooks.values()],
+    // A registry that cannot be read says nothing about the sessions: they show status unknown.
+    registryUnreadable: registry.warnings.some((warning) => warning.code === 'registry-unreadable'),
+    notes,
+  }
 }
 
+// The sessions of a launch or a resume; what could not be read is a line on stderr, as it always was.
+function readSessionsForLaunch() {
+  const read = readSessions()
+  for (const note of read.notes) console.error(`warning: ${note}`)
+  for (const raised of read.raised) warnLine(raised)
+  return read
+}
+
+const entryLine = (entry) => `${isLoud(entry) ? '⚠' : '·'} ${entry.code}: ${entry.message}`
+
+const disagreementLine = (disagreement) =>
+  `${disagreement.level === 'warning' ? '⚠' : '·'} ${disagreement.kind}: ${disagreement.text}`
+
+const plural = (count, one, many) => `${count} ${count === 1 ? one : many}`
+
 // The open tickets of every parent with their notes; `next` marks the first takeable one across all
-// parents in parent order.
-function annotate(parents, sessions) {
+// parents in parent order. Under a row go its lines: what the tracker and the session side
+// disagree about, then its loud drift. A closed ticket is listed after the open ones only when it
+// has a line. A map's own loud drift and one count of all the old forms, its tickets' included,
+// are lines of the map.
+function annotate(parents, { sessions, registryUnreadable }, me) {
   const now = Date.now()
   let nextSeen = false
-  return parents.map((parent) => ({
-    ...parent,
-    tickets: parent.tickets
-      .filter((t) => t.open)
-      .map((ticket) => {
-        const notes = []
-        if (ticket.waitsOn.length)
-          notes.push(`waits on ${ticket.waitsOn.map((n) => `#${n}`).join(' ')}`)
-        if (ticket.claimed)
-          notes.push(
-            ticket.claimedBy.length ? `claimed by ${ticket.claimedBy.join(', ')}` : 'claimed',
+  return parents.map((parent) => {
+    const rows = parent.tickets.map((ticket) => {
+      const entries = ticket.warnings.map(driftEntryOf)
+      const disagreement = disagreementOf(ticket, sessions.get(ticket.number), parent.readAt, me)
+      const lines = [
+        ...(disagreement === null ? [] : [disagreementLine(disagreement)]),
+        ...entries.filter(isLoud).map(entryLine),
+      ]
+      return { ticket, lines, quiet: entries.filter((entry) => !isLoud(entry)).length }
+    })
+    const own = parent.warnings.map(driftEntryOf)
+    const quiet =
+      own.filter((entry) => !isLoud(entry)).length + rows.reduce((n, r) => n + r.quiet, 0)
+    return {
+      ...parent,
+      lines: [
+        ...own.filter(isLoud).map(entryLine),
+        ...(quiet === 0 ? [] : [`· ${plural(quiet, 'old form', 'old forms')}`]),
+      ],
+      tickets: rows
+        .filter(({ ticket }) => ticket.open)
+        .map(({ ticket, lines }) => {
+          const notes = []
+          if (ticket.waitsOn.length)
+            notes.push(`waits on ${ticket.waitsOn.map((n) => `#${n}`).join(' ')}`)
+          if (ticket.claimed)
+            notes.push(
+              ticket.claimedBy.length ? `claimed by ${ticket.claimedBy.join(', ')}` : 'claimed',
+            )
+          const session = sessionText(
+            sessionView(sessions.get(ticket.number), registryUnreadable),
+            now,
           )
-        const session = sessionText(sessionView(sessions.get(ticket.number)), now)
-        if (session !== null) notes.push(session)
-        // As in the Cockpit: a ticket is takeable again once its session is ended or gone.
-        const takeable = ticket.takeable && !isRunning(sessions.get(ticket.number))
-        if (takeable && !nextSeen) {
-          notes.push('next')
-          nextSeen = true
-        }
-        return { ...ticket, takeable, notes }
-      }),
-  }))
+          if (session !== null) notes.push(session)
+          // As in the Cockpit: a ticket is takeable again once its session is ended or gone.
+          const takeable = ticket.takeable && !isRunning(sessions.get(ticket.number))
+          if (takeable && !nextSeen) {
+            notes.push('next')
+            nextSeen = true
+          }
+          return { ...ticket, takeable, notes, lines }
+        }),
+      closed: rows
+        .filter(({ ticket, lines }) => !ticket.open && lines.length > 0)
+        .map(({ ticket, lines }) => {
+          const session = sessionText(
+            sessionView(sessions.get(ticket.number), registryUnreadable),
+            now,
+          )
+          return { ...ticket, notes: ['closed', ...(session === null ? [] : [session])], lines }
+        }),
+    }
+  })
+}
+
+// The sessions still running on a ticket that is in neither list, by number. An ended record of a
+// ticket in some other map is not worth a line here.
+function withoutTicket(parents, sessions) {
+  const inView = new Set(parents.flatMap((parent) => parent.tickets.map((t) => t.number)))
+  return [...sessions]
+    .filter(([number, state]) => !inView.has(number) && isRunning(state))
+    .sort(([a], [b]) => a - b)
 }
 
 function warnLine(warning) {
@@ -297,18 +421,63 @@ function warnLine(warning) {
   console.error(`warning: ${warning.code}${detail}`)
 }
 
-// Core's skill discovery, before the launch: which skills are installed, and as which command. It
-// says what is wrong in the Cockpit's words and never gates. A skill that is missing falls back to
-// the plugin's namespaced command, which is what the launch would have used.
-async function discoverCommands(needs) {
-  const list = run('claude', ['plugin', 'list', '--json'])
-  const plugins = readPluginList(list.stdout)
+// Which plugins and skills are installed, from `claude plugin list --json` and the skill folders;
+// what cannot be read comes back as the decoders' own warnings. A `claude` that is missing or
+// fails to list reads as no plugins, as in the Cockpit.
+async function readSkills() {
+  const list = runClaude(['plugin', 'list', '--json'])
+  const plugins = readPluginList(list.status === 0 ? list.stdout : '[]')
   const inventory = await discoverSkillsPromise({
     repoRoot: REPO_ROOT,
     home: homedir(),
     plugins: plugins.value,
   })
-  for (const warning of [...plugins.warnings, ...inventory.warnings]) warnLine(warning)
+  return { inventory, warnings: [...plugins.warnings, ...inventory.warnings] }
+}
+
+// What the Cockpit's Health row says about the machine: Claude Code against the floor, the plugin
+// and the skills, then what the registry and the status hooks gave, and the repo-level drift the
+// row lists too. Core's table words each entry; none of it gates.
+async function readHealth({ raised: fromSessions }, snapshotWarnings) {
+  const raised = []
+  const version = runClaude(['--version'])
+  let claude = null
+  if (version.missing) raised.push(raise('claude-not-found', version.missing))
+  else {
+    const checked = checkClaudeVersion({
+      exitCode: version.status,
+      stdout: version.stdout,
+      stderr: version.stderr,
+    })
+    claude = checked.version
+    raised.push(...checked.raised)
+  }
+  raised.push(...fromSessions)
+  const { inventory, warnings } = await readSkills()
+  raised.push(...warnings.map((warning) => raise(warning.code, warning.detail)))
+  if (commandOf(inventory.skills, WAYFINDER) === null)
+    raised.push(raise('skill-missing', undefined))
+  return healthEntryList(raised, snapshotWarnings, { claude })
+}
+
+// The GitHub login of the person at this machine, as the Cockpit asks it, so a claim by someone
+// else is told from one of this machine's own. Null when `gh` gives none.
+function readMe() {
+  const result = run('gh', ['api', 'user', '--jq', '.login'])
+  const login = result.status === 0 ? result.stdout.trim() : ''
+  if (login === '') {
+    console.error('warning: gh api user gave no login; claims are not compared with this machine')
+    return null
+  }
+  return login
+}
+
+// Core's skill discovery, before the launch: which skills are installed, and as which command. It
+// says what is wrong in the Cockpit's words and never gates. A skill that is missing falls back to
+// the plugin's namespaced command, which is what the launch would have used.
+async function discoverCommands(needs) {
+  const { inventory, warnings } = await readSkills()
+  for (const warning of warnings) warnLine(warning)
   const commands = {}
   for (const name of [WAYFINDER, TO_SPEC, IMPLEMENT]) {
     const command = commandOf(inventory.skills, name)
@@ -363,26 +532,59 @@ async function launch(ticket, { implement }) {
 
 // Under a ticket whose worktree exists: where it is, its branch, and what it holds that is not on
 // `main`, as core words it for the Focus pane. Read through core's read-only git reads.
+//
+// The warnings are the Cockpit's: Health at the top, a map's drift under its row, a ticket's
+// disagreement and drift under its row, and the sessions with no ticket in view at the bottom.
 async function list() {
-  const parents = annotate(await readParents(), readSessions())
+  const read = readSessions()
+  for (const note of read.notes) console.error(`warning: ${note}`)
+  const found = await readParents()
+  const health = await readHealth(
+    read,
+    found.flatMap((parent) => parent.snapshotWarnings),
+  )
+  const parents = annotate(found, read, readMe())
   const worktrees = await readWorktreesPromise(
     REPO_ROOT,
     parents.flatMap((parent) => parent.tickets.map((t) => t.number)),
   )
+  const label = healthLabel(health)
+  if (label !== null) {
+    console.log(`${health.some(isLoud) ? '⚠ ' : ''}${label}`)
+    for (const entry of health) console.log(`    ${entryLine(entry)}`)
+    console.log()
+  }
+  const row = (t) => {
+    const notes = t.notes.length ? `  (${t.notes.join(', ')})` : ''
+    console.log(`  #${t.number} ${t.title}${notes}`)
+    for (const line of t.lines) console.log(`      ${line}`)
+  }
   parents.forEach((parent, i) => {
     if (i > 0) console.log()
     console.log(`#${parent.number} ${parent.title}`)
+    for (const line of parent.lines) console.log(`    ${line}`)
     for (const t of parent.tickets) {
-      const notes = t.notes.length ? `  (${t.notes.join(', ')})` : ''
-      console.log(`  #${t.number} ${t.title}${notes}`)
+      row(t)
       const worktree = worktrees.get(t.number)
       if (worktree) console.log(`      worktree ${worktree.path} · ${worktreeText(worktree)}`)
     }
+    for (const t of parent.closed) row(t)
   })
+  const stray = withoutTicket(found, read.sessions)
+  if (stray.length > 0) {
+    const now = Date.now()
+    console.log()
+    console.log('Sessions without a ticket in view')
+    for (const [number, state] of stray) {
+      const title = sessionTitleOf(state)
+      const session = sessionText(sessionView(state, read.registryUnreadable), now)
+      console.log(`  #${number}${title === null ? '' : ` ${title}`}  (${session})`)
+    }
+  }
 }
 
 function launchNumber(number, options) {
-  if (isRunning(readSessions().get(number))) {
+  if (isRunning(readSessionsForLaunch().sessions.get(number))) {
     console.error(
       `#${number} already has a live session; resume it with: claude --resume '#${number} …'`,
     )
@@ -399,7 +601,7 @@ function launchNumber(number, options) {
 }
 
 async function launchNext(options) {
-  const parents = annotate(await readParents(), readSessions())
+  const parents = annotate(await readParents(), readSessionsForLaunch(), null)
   const next = parents.flatMap((p) => p.tickets).find((t) => t.takeable)
   if (!next) {
     const names = parents.map((p) => `#${p.number} ${p.title}`).join(' or ')
@@ -413,7 +615,7 @@ async function launchNext(options) {
 // the registry the way the Focus pane reads it; core picks by id, with the plugin and env set
 // again, or by name, a plain session, when no id is on record.
 function resumeNumber(number) {
-  const state = readSessions().get(number)
+  const state = readSessionsForLaunch().sessions.get(number)
   if (state?.kind !== 'ended') return refuseResume(number, state)
   const { title } = readTicket(number)
   const resuming = resumeEnded(LAUNCH_CONTEXT, { number, title }, state.sessionId)

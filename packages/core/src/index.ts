@@ -52,6 +52,21 @@ export {
   type StatusEvent,
 } from './claude/status-event.ts'
 export {
+  checkClaudeVersion,
+  formatVersion,
+  HEALTH_TABLE,
+  type HealthContext,
+  healthEntryList,
+  healthEntryOf,
+  healthLabel,
+  healthLevel,
+  raise,
+  type Raised,
+  SEEN_LIMIT,
+  skillOfDetail,
+  type VersionRun,
+} from './claude/health.ts'
+export {
   type ClaudeVersion,
   claudeVersionFloor,
   compareClaudeVersions,
@@ -121,16 +136,20 @@ export {
   type CollectedTicket,
   readSnapshot,
 } from './snapshot/read.ts'
+export { DRIFT_TABLE, driftEntryOf } from './snapshot/drift-table.ts'
 export {
   type DriftWarning,
   type HealthCode,
   healthCodes,
   type HealthWarning,
   isHealthCode,
+  isLoud,
   isWarningCode,
   type Warning,
   type WarningCode,
   warningCodes,
+  type WarningEntry,
+  type WarningLevel,
 } from './snapshot/warnings.ts'
 export {
   defaultTimeout,
@@ -169,6 +188,14 @@ export {
 } from './scout/tracker-doc.ts'
 export { groupByTicket, ticketOfName } from './session/registry-sessions.ts'
 export {
+  CLAIM_PENDING_TEXT,
+  claimedByOtherText,
+  type DisagreementView,
+  disagreementOf,
+  NOT_CLAIMED_TEXT,
+  WRAPPING_UP_TEXT,
+} from './session/disagreements.ts'
+export {
   afterReload,
   ageSince,
   describeExit,
@@ -189,6 +216,7 @@ export {
   sessionLeft,
   sessionsOf,
   sessionText,
+  sessionTitleOf,
   sessionView,
   shownStatus,
   STATUS_WORDS,

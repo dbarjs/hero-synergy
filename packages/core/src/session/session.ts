@@ -448,6 +448,15 @@ export function ticketOfTerminalName(name: string): number | null {
 export const isRunning = (state: SessionState | undefined): boolean =>
   state !== undefined && state.kind !== 'ended'
 
+/**
+ * The title in a live session's name: `#999 Title` gives `Title`. A name with no title, a session
+ * the registry has not named and an ended one give null.
+ */
+export function sessionTitleOf(state: SessionState): string | null {
+  const title = (state.kind === 'live' ? state.name : null)?.replace(/^#\d+\s*/, '').trim()
+  return title === undefined || title === '' ? null : title
+}
+
 export const STATUS_WORDS: Readonly<Record<SessionStatus, string>> = {
   working: 'working',
   waiting: 'waiting for you',

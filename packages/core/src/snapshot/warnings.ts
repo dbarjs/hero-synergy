@@ -4,9 +4,9 @@
  * A warning is one coded point. Drift (`WarningCode`) is about the tracker: a
  * map or ticket off the current wayfinder conventions, raised by the scout.
  * Health (`HealthCode`) is about the machine: Claude Code, the skills, the
- * registry, raised by the extension host. Core ships the codes only; the level
- * (loud or quiet) and the copy of each code live in the Cockpit, which tells the
- * kind from the code.
+ * registry, raised by the extension host. The level (loud or quiet) and the copy
+ * of each code are tables beside them, `drift-table.ts` and `claude/health.ts`,
+ * so the Cockpit and `next` word every warning alike; the code says which kind.
  */
 
 /** Drift codes, by the level they attach to: snapshot, map or ticket. */
@@ -74,6 +74,26 @@ export interface HealthWarning {
 
 /** One coded point about the tracker or the machine; the code says which. */
 export type Warning = DriftWarning | HealthWarning
+
+/**
+ * Loud when what the Cockpit shows may be wrong or missing; quiet when something old or odd was
+ * still read correctly.
+ */
+export type WarningLevel = 'loud' | 'quiet'
+
+/** A warning with its level and words: a drift or health code once the tables have spoken. */
+export interface WarningEntry {
+  readonly code: string
+  readonly level: WarningLevel
+  /** What was found. */
+  readonly message: string
+  /** The specifics recorded with the code; null when there are none. */
+  readonly detail: string | null
+  /** One line on the current convention, or the one thing to do. */
+  readonly hint: string
+}
+
+export const isLoud = (entry: { readonly level: WarningLevel }): boolean => entry.level === 'loud'
 
 const driftCodes: ReadonlySet<string> = new Set(warningCodes)
 const machineCodes: ReadonlySet<string> = new Set(healthCodes)

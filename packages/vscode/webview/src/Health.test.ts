@@ -1,9 +1,9 @@
-import { FileSystem, readLocalTracker, type Snapshot } from '@hero-synergy/core'
+import { FileSystem, raise, readLocalTracker, type Snapshot } from '@hero-synergy/core'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { Effect } from 'effect'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
-import { healthEntries, healthRowOf, raise } from '../../src/health.ts'
+import { healthEntries, healthRowOf } from '../../src/health.ts'
 import type { HealthRow } from '../../src/protocol.ts'
 import { buildViewModel } from '../../src/view-model.ts'
 import { NOT_LAUNCHING } from '../../src/launch.ts'

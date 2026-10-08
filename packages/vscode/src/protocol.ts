@@ -1,4 +1,10 @@
-import type { Mode, SessionView, TicketType } from '@hero-synergy/core'
+import type {
+  DisagreementView,
+  Mode,
+  SessionView,
+  TicketType,
+  WarningEntry,
+} from '@hero-synergy/core'
 
 /**
  * The messages between the extension host and the Tree's webview. The webview
@@ -6,16 +12,8 @@ import type { Mode, SessionView, TicketType } from '@hero-synergy/core'
  * host validates what arrives from the webview in `messages.ts`.
  */
 
-/**
- * A situation where the tracker and the session side disagree, named and never overridden. A
- * `note` is what is expected to settle at the next refresh; a `warning` is a disagreement that
- * stands until someone acts.
- */
-export interface DisagreementView {
-  readonly kind: 'claim-pending' | 'unclaimed' | 'claimed-by-other' | 'wrapping-up'
-  readonly text: string
-  readonly level: 'note' | 'warning'
-}
+/** A situation where the tracker and the session side disagree, named by core. */
+export type { DisagreementView }
 
 /**
  * A ticket's worktree as git reports it, read-only: it exists, how many files are uncommitted,
@@ -89,16 +87,8 @@ export interface BlockerView {
   readonly title: string
 }
 
-/** One drift warning, with the copy the drift table gives its code. */
-export interface DriftEntry {
-  readonly code: string
-  readonly level: 'loud' | 'quiet'
-  /** What was found. */
-  readonly message: string
-  /** The specifics the scout recorded; null when there are none. */
-  readonly detail: string | null
-  /** One line on the current convention. */
-  readonly hint: string
+/** One warning, with the words core's tables give its code. */
+export interface DriftEntry extends WarningEntry {
   /** What dismissing the entry sends: the subject, the code and the exact detail. */
   readonly dismissKey: string
 }

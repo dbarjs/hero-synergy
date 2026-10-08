@@ -1,25 +1,16 @@
 import {
-  isRunning,
+  type DisagreementView,
+  disagreementOf,
   type SessionState,
   type Snapshot,
   type Ticket,
   type WayfinderMap,
 } from '@hero-synergy/core'
 
-import type { DisagreementView } from './protocol.ts'
-
 /**
- * The situations where the tracker and the session side disagree. Each is named, never
- * overridden, and lasts until the next refresh: the tracker alone says claimed, open, closed and
- * blocked; the session side alone says alive and what status; neither wins.
+ * Where the tracker and the session side disagree is named by core (`disagreementOf`), the same
+ * words `next` prints. This lays those sessions over a snapshot, which only the Tree does.
  */
-
-export const CLAIM_PENDING_TEXT = 'live · claim not on tracker yet'
-export const NOT_CLAIMED_TEXT = 'not claimed on the tracker'
-export const WRAPPING_UP_TEXT = 'wrapping up'
-
-export const claimedByOtherText = (by: ReadonlyArray<string>): string =>
-  `claimed by ${by.join(', ')} on the tracker, session live here`
 
 /** The snapshot with the claims the sessions imply laid over it, and the disagreements found. */
 export interface SessionOverlay {
@@ -30,47 +21,6 @@ export interface SessionOverlay {
   readonly snapshot: Snapshot
   /** By ticket row key. */
   readonly disagreements: ReadonlyMap<string, DisagreementView>
-}
-
-const note = (kind: DisagreementView['kind'], text: string): DisagreementView => ({
-  kind,
-  text,
-  level: 'note',
-})
-const warning = (kind: DisagreementView['kind'], text: string): DisagreementView => ({
-  kind,
-  text,
-  level: 'warning',
-})
-
-const sameLogin = (a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase()
-
-/**
- * What a ticket and its session disagree about, if anything. `collectedAt` is when the snapshot
- * was collected (epoch milliseconds) and `me` the GitHub login of the person at this machine,
- * null when it is not known (a local tracker names nobody).
- */
-export function disagreementOf(
-  ticket: Ticket,
-  session: SessionState | undefined,
-  collectedAt: number,
-  me: string | null,
-): DisagreementView | null {
-  if (ticket.state === 'closed') {
-    return session?.kind === 'live' ? note('wrapping-up', WRAPPING_UP_TEXT) : null
-  }
-  if (!isRunning(session)) return null
-  if (ticket.claim === null) {
-    // The first snapshot collected after the session went live decides: it shows the claim or it does not.
-    return session?.kind === 'live' && collectedAt >= session.startedAt
-      ? warning('unclaimed', NOT_CLAIMED_TEXT)
-      : note('claim-pending', CLAIM_PENDING_TEXT)
-  }
-  const others = me === null ? [] : ticket.claim.by.filter((login) => !sameLogin(login, me))
-  // Someone else is on it only when nobody named is me; a shared claim that includes me is mine.
-  return me !== null && others.length > 0 && others.length === ticket.claim.by.length
-    ? warning('claimed-by-other', claimedByOtherText(others))
-    : null
 }
 
 /** The claim a row shows: a held ticket is unclaimed on the tracker, so it says so. */

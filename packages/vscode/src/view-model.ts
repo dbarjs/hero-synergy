@@ -11,6 +11,7 @@ import {
   placeOf,
   type Ref,
   type SessionFacts,
+  sessionTitleOf,
   sessionView,
   type Snapshot,
   type Ticket,
@@ -537,12 +538,6 @@ const unmappedFold = (
         })),
       }
 
-/** `#999 Title` is held under `title`; a name with no title, or none at all, leaves it null. */
-const titleOfName = (name: string | null): string | null => {
-  const title = name?.replace(/^#\d+\s*/, '').trim()
-  return title === undefined || title === '' ? null : title
-}
-
 /**
  * The sessions whose `#number` matches no ticket in view, live or ended, by number. Null when
  * there are none, so no row shows.
@@ -556,7 +551,7 @@ const unlistedRows = (
     .map(([key, state]): UnlistedRow => ({
       key,
       number: Number(key.slice(key.lastIndexOf(':') + 1)),
-      title: titleOfName(state.kind === 'live' ? state.name : null),
+      title: sessionTitleOf(state),
       session: sessionView(state, launching.registryUnreadable),
     }))
     .sort((a, b) => a.number - b.number)
