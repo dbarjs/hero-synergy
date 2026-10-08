@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { watch } from 'node:fs'
+import { existsSync, watch } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -14,6 +14,7 @@ import {
   HostEnvironment,
   Opener,
   Palette,
+  RegistryWatcher,
   Storage,
   type TerminalClosed,
   type TerminalExit,
@@ -170,6 +171,32 @@ export const paletteLive: Layer.Layer<Palette> = Layer.succeed(Palette, {
     }),
   inform: (message) =>
     Effect.promise(async () => void (await vscode.window.showInformationMessage(message))),
+})
+
+/**
+ * Claude Code's sessions directory, watched as a trigger only: a change means the registry may
+ * have changed, and `claude agents --json` is what reads it. `CLAUDE_CONFIG_DIR` moves the
+ * directory the way it moves the rest of Claude Code's state.
+ */
+export const registryWatcherLive: Layer.Layer<RegistryWatcher> = Layer.succeed(RegistryWatcher, {
+  watch: (onChange) =>
+    Effect.sync(() => {
+      const configured = process.env.CLAUDE_CONFIG_DIR
+      const directory = path.join(
+        configured !== undefined && configured !== ''
+          ? configured
+          : path.join(os.homedir(), '.claude'),
+        'sessions',
+      )
+      if (!existsSync(directory)) return null
+      try {
+        const watcher = watch(directory, { persistent: false }, () => onChange())
+        watcher.on('error', () => watcher.close())
+        return Effect.sync(() => watcher.close())
+      } catch {
+        return null
+      }
+    }),
 })
 
 const configuration = () => vscode.workspace.getConfiguration('heroSynergy')

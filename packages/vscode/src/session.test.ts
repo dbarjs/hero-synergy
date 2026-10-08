@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vite-plus/test'
 import {
   afterReload,
   describeExit,
+  type Listed,
   NO_STATUS_HINT,
   needsYou,
   reduceSession,
@@ -301,12 +302,16 @@ describe('what the Tree is told', () => {
       status: null,
       needsYou: false,
       since: 100,
+      focusable: true,
+      warning: null,
     })
     expect(sessionView(run([...launchedInTerminal, start('A'), fail('A')]))).toEqual({
       kind: 'live',
       status: 'failed',
       needsYou: true,
       since: 150,
+      focusable: true,
+      warning: null,
     })
     expect(
       sessionView(run([...launchedInTerminal, start('A'), end('A', 'prompt_input_exit')])),
@@ -325,5 +330,160 @@ describe('what the Tree is told', () => {
     expect(needsYou(run([...launchedInTerminal, start('A'), fail('A'), end('A', 'other')]))).toBe(
       false,
     )
+  })
+})
+
+const listed = (sessionId: string, status: Listed['status'], at = 400): SessionInput => ({
+  type: 'registry',
+  listed: [{ sessionId, status }],
+  at,
+})
+const unlisted = (at = 500): SessionInput => ({ type: 'registry', listed: [], at })
+
+/** The Tree's words for a state: status, whether it needs me, since when. */
+const told = (state: SessionState | undefined) => {
+  const view = sessionView(state)
+  return view.kind === 'live'
+    ? { status: view.status, needsYou: view.needsYou, since: view.since }
+    : view.kind
+}
+
+describe('the registry as the first source of liveness', () => {
+  it('makes a ticket with no terminal of ours live, with the status and the id the registry gave', () => {
+    const state = run([listed('R', 'working')])
+    expect(state).toMatchObject({ kind: 'live', terminal: null, sessionId: 'R', adopted: true })
+    expect(told(state)).toEqual({ status: 'working', needsYou: false, since: 400 })
+    expect(sessionView(state)).toMatchObject({ focusable: false })
+  })
+
+  it.each([
+    ['working', 'working', false],
+    ['waiting', 'waiting for you', true],
+    ['approval', 'needs approval', true],
+  ] as const)('shows the registry word %s as "%s"', (status, word, needs) => {
+    expect(told(run([listed('R', status)]))).toEqual({ status: word, needsYou: needs, since: 400 })
+  })
+
+  it('shows a status word the registry added later as live, with no word', () => {
+    expect(told(run([listed('R', null)]))).toEqual({ status: null, needsYou: false, since: 400 })
+  })
+
+  it('takes the word of the registry over the last status event', () => {
+    const state = run([...launchedInTerminal, start('A'), listed('A', 'approval', 300)])
+    expect(told(state)).toEqual({ status: 'needs approval', needsYou: true, since: 300 })
+    expect(
+      told(
+        run([
+          ...launchedInTerminal,
+          start('A'),
+          listed('A', 'approval'),
+          listed('A', 'working', 450),
+        ]),
+      ),
+    ).toEqual({
+      status: 'working',
+      needsYou: false,
+      since: 450,
+    })
+  })
+
+  it('keeps the age of a word the registry keeps saying', () => {
+    expect(told(run([listed('R', 'waiting', 400), listed('R', 'waiting', 900)]))).toMatchObject({
+      since: 400,
+    })
+  })
+
+  it('turns a starting terminal live, keeping the terminal', () => {
+    const state = run([...launchedInTerminal, listed('R', 'working')])
+    expect(state).toMatchObject({ kind: 'live', terminal: 4, adopted: false, sessionId: 'R' })
+    expect(sessionView(state)).toMatchObject({ focusable: true })
+  })
+
+  it('keeps a failure through an idle registry and drops it for any other word', () => {
+    const failed = run([...launchedInTerminal, start('A'), fail('A'), listed('A', 'waiting')])
+    expect(told(failed)).toEqual({ status: 'failed', needsYou: true, since: 150 })
+    const busy = run([...launchedInTerminal, start('A'), fail('A'), listed('A', 'working', 450)])
+    expect(told(busy)).toEqual({ status: 'working', needsYou: false, since: 450 })
+    expect(told(reduceSession(busy, listed('A', 'waiting', 460)))).toEqual({
+      status: 'waiting for you',
+      needsYou: true,
+      since: 460,
+    })
+  })
+
+  it('falls back to the last status event, with its age, when the registry no longer lists it', () => {
+    const state = run([
+      ...launchedInTerminal,
+      start('A'),
+      fail('A'),
+      listed('A', 'working'),
+      unlisted(),
+    ])
+    expect(told(state)).toEqual({ status: null, needsYou: false, since: 150 })
+    expect(told(run([...launchedInTerminal, start('A'), fail('A'), unlisted()]))).toEqual({
+      status: 'failed',
+      needsYou: true,
+      since: 150,
+    })
+  })
+
+  it('forgets a session only the registry knew once the registry stops listing it', () => {
+    expect(run([listed('R', 'working'), unlisted()])).toBeUndefined()
+  })
+
+  it('does not bring back a session that ended while its entry lingers', () => {
+    const ended = run([...launchedInTerminal, start('A'), end('A', 'prompt_input_exit')])
+    expect(reduceSession(ended, listed('A', 'working'))).toBe(ended)
+    const closedTerminal = run([...launchedInTerminal, start('A'), closed(4, 'process', 1)])
+    expect(reduceSession(closedTerminal, listed('A', 'working'))?.kind).toBe('ended')
+  })
+
+  it('brings an ended ticket back when a new session with its number is listed', () => {
+    const ended = run([...launchedInTerminal, start('A'), end('A', 'prompt_input_exit')])
+    expect(reduceSession(ended, listed('B', 'waiting'))).toMatchObject({
+      kind: 'live',
+      sessionId: 'B',
+      finished: ['A'],
+    })
+  })
+
+  it('warns about a second live session and shows the one it already knew', () => {
+    const state = run([
+      ...launchedInTerminal,
+      start('A'),
+      {
+        type: 'registry',
+        listed: [
+          { sessionId: 'B', status: 'working' },
+          { sessionId: 'A', status: 'waiting' },
+        ],
+        at: 400,
+      },
+    ])
+    expect(sessionView(state)).toMatchObject({
+      status: 'waiting for you',
+      warning: 'Another live session has this ticket’s number',
+    })
+    expect(state).toMatchObject({ sessionId: 'A', duplicates: 1 })
+    expect(
+      sessionView(
+        reduceSession(state, {
+          type: 'registry',
+          listed: [
+            { sessionId: 'A', status: 'waiting' },
+            { sessionId: 'B', status: 'waiting' },
+            { sessionId: 'C', status: 'waiting' },
+          ],
+          at: 450,
+        }),
+      ),
+    ).toMatchObject({ warning: '2 other live sessions have this ticket’s number' })
+    expect(sessionView(reduceSession(state, unlisted()))).toMatchObject({ warning: null })
+  })
+
+  it('counts a session the registry says needs me in the badge', () => {
+    expect(needsYou(run([listed('R', 'waiting')]))).toBe(true)
+    expect(needsYou(run([listed('R', 'approval')]))).toBe(true)
+    expect(needsYou(run([listed('R', 'working')]))).toBe(false)
   })
 })

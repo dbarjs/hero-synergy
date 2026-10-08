@@ -19,6 +19,7 @@ import {
   hostEnvironmentLive,
   openerLive,
   paletteLive,
+  registryWatcherLive,
   storageLive,
   terminalsLive,
   workspaceFoldersLive,
@@ -102,6 +103,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
           paletteLive,
           terminalsLive(context),
           eventsWatcherLive(context),
+          registryWatcherLive,
           hostEnvironmentLive(context),
           storageLive(context.workspaceState),
           FileSystem.live,
@@ -115,14 +117,22 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
   await Effect.runPromise(cockpit.activated)
 
   const run = (effect: Effect.Effect<unknown>): void => void Effect.runPromise(effect)
+  // The Cockpit is on screen while the Tree or the Detail is; the registry is read only then.
+  const onScreen = { tree: false, detail: false }
+  const setOnScreen = (surface: keyof typeof onScreen, visible: boolean): void => {
+    onScreen[surface] = visible
+    run(cockpit.visible(onScreen.tree || onScreen.detail))
+  }
   const tree = registerTreeView(context, {
     onShown: () => run(cockpit.show),
+    onVisibility: (visible) => setOnScreen('tree', visible),
     onMessage: (message) => run(cockpit.receive(message)),
   })
   // `detail` is read by the cockpit's callbacks above, which only run after this line.
   const detail = registerDetailPanel(context, {
     // A restored panel may be the only surface shown, so collect for it; the page also asks on mount.
     onShown: () => run(cockpit.show),
+    onVisibility: (visible) => setOnScreen('detail', visible),
     onMessage: (message) => run(cockpit.receive(message)),
     onCommand: () => run(cockpit.openDetail),
   })

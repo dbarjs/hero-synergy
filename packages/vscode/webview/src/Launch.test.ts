@@ -30,6 +30,9 @@ const live = (status: SessionStatus | null = null): SessionState => ({
   terminal: 1,
   status,
   since: Date.now() - 12_000,
+  registry: null,
+  adopted: false,
+  duplicates: 0,
 })
 const ended = (detail: string): SessionState => ({
   ...BASE,
@@ -129,6 +132,25 @@ describe('a ticket with a session', () => {
     expect(row?.find('.session').classes()).not.toContain('needs')
     await row?.find('.focus-terminal').trigger('click')
     expect(wrapper.emitted('focusTerminal')).toEqual([[PALETTE]])
+  })
+
+  it('offers no terminal to focus for a session another window started, and warns about a duplicate', () => {
+    const elsewhere = {
+      ...live('approval'),
+      terminal: null,
+      adopted: true,
+      duplicates: 1,
+    } as SessionState
+    const wrapper = render(launchable({ [PALETTE]: elsewhere }), PALETTE)
+    const row = rowOf(wrapper, '#1 Palette')
+    expect(row?.find('.session').text()).toBe('needs approval · 12s')
+    expect(row?.find('.focus-terminal').exists()).toBe(false)
+    expect(row?.find('.duplicate').attributes('title')).toBe(
+      'Another live session has this ticket’s number',
+    )
+    const pane = wrapper.find('.pane')
+    expect(pane.text()).toContain('Another live session has this ticket’s number')
+    expect(pane.find('.link').exists()).toBe(false)
   })
 
   it('marks a session that needs me', () => {

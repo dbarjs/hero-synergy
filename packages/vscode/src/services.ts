@@ -250,6 +250,56 @@ export class Palette extends Context.Service<Palette, PaletteShape>()('hero-syne
     })
 }
 
+export interface RegistryWatcherShape {
+  /**
+   * Calls `onChange` each time something under Claude Code's sessions directory changes: a trigger
+   * to read the registry, never a source (the files are not parsed). Returns the effect that
+   * stops the watcher, or null where there is nothing to watch (no such directory yet).
+   */
+  readonly watch: (onChange: () => void) => Effect.Effect<Effect.Effect<void> | null>
+}
+
+/** What a test holds to see whether the registry is watched and to play a change. */
+export interface RegistryWatcherRecorder {
+  /** How many watchers were started, stopped ones included. */
+  readonly started: () => number
+  /** Whether a watcher is running now. */
+  readonly watching: () => boolean
+  readonly change: () => void
+}
+
+/** The registry directory's watcher, behind a service so tests play the change instead of waiting for a disk. */
+export class RegistryWatcher extends Context.Service<RegistryWatcher, RegistryWatcherShape>()(
+  'hero-synergy/RegistryWatcher',
+) {
+  /** `available: false` is a machine with no sessions directory. */
+  static readonly inMemory = (
+    available = true,
+  ): { recorder: RegistryWatcherRecorder; layer: Layer.Layer<RegistryWatcher> } => {
+    const running = new Set<() => void>()
+    let started = 0
+    const recorder: RegistryWatcherRecorder = {
+      started: () => started,
+      watching: () => running.size > 0,
+      change: () => [...running].forEach((listener) => listener()),
+    }
+    return {
+      recorder,
+      layer: Layer.succeed(RegistryWatcher, {
+        watch: (onChange) =>
+          Effect.sync(() => {
+            if (!available) return null
+            started += 1
+            running.add(onChange)
+            return Effect.sync(() => {
+              running.delete(onChange)
+            })
+          }),
+      }),
+    }
+  }
+}
+
 export interface ClipboardShape {
   readonly write: (text: string) => Effect.Effect<void>
 }

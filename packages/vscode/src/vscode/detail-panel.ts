@@ -10,6 +10,8 @@ export const OPEN_DETAIL_COMMAND = 'heroSynergy.openDetail'
 export interface DetailHandlers {
   /** The panel appeared: new, or restored after a reload. */
   readonly onShown: () => void
+  /** The panel is on screen or not, each time that changes. */
+  readonly onVisibility: (visible: boolean) => void
   /** A message from the webview, unvalidated. */
   readonly onMessage: (message: unknown) => void
   /** The command: open the Detail on the selection. */
@@ -55,11 +57,16 @@ export function registerDetailPanel(
     })
     const disposables = [
       panel.webview.onDidReceiveMessage(handlers.onMessage),
+      panel.onDidChangeViewState(() => handlers.onVisibility(panel.visible)),
       panel.onDidDispose(() => {
-        if (current === panel) current = null
+        if (current === panel) {
+          current = null
+          handlers.onVisibility(false)
+        }
         disposables.forEach((disposable) => disposable.dispose())
       }),
     ]
+    handlers.onVisibility(panel.visible)
     handlers.onShown()
   }
 
