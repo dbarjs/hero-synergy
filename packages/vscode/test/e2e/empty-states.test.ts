@@ -37,7 +37,7 @@ let scratch: string
 beforeAll(async () => {
   executablePath = await downloadAndUnzipVSCode({ version: 'stable', cachePath })
   // Electron's IPC socket lives under the user data dir; Unix caps socket paths at 107 characters.
-  scratch = mkdtempSync(path.join(tmpdir(), 'hero-synergy-empty-'))
+  scratch = mkdtempSync(path.join(tmpdir(), 'hs-e-'))
 })
 
 afterAll(() => {
@@ -64,30 +64,30 @@ function cleanEnv(home: string): Record<string, string> {
   for (const [name, value] of Object.entries(process.env)) {
     if (value !== undefined && !name.startsWith('HERO_SYNERGY_')) env[name] = value
   }
-  return { ...env, HOME: home }
+  // On macOS a window with a HOME of its own never shows the Activity Bar item (seen on CI), so it
+  // keeps the real one there; the machines that run it have no personal skills to find.
+  return process.platform === 'darwin' ? env : { ...env, HOME: home }
 }
 
 /**
- * Opens a window on a fresh workspace with the Tree showing. HOME is a folder of its own, so the
- * machine running the test has no personal skills to find.
+ * Opens a window on a fresh workspace with the Tree showing. HOME is a folder of its own (but on
+ * macOS, see {@link cleanEnv}), so the machine running the test has no personal skills to find.
  */
-async function openWindow(
-  name: string,
-  options: { trackerDoc: boolean; skills: string[] },
-): Promise<Window> {
+async function openWindow(options: { trackerDoc: boolean; skills: string[] }): Promise<Window> {
   // A retry gets a window of its own: a user data dir that remembers the side bar open would make
-  // the click on the Activity Bar item close it.
-  const parent = mkdtempSync(path.join(scratch, `${name}-`))
+  // the click on the Activity Bar item close it. The names stay short because Electron's socket
+  // lives under the user data dir and macOS caps socket paths at 104 characters.
+  const parent = mkdtempSync(path.join(scratch, 'w-'))
   mkdirSync(path.join(parent, 'home'), { recursive: true })
   const workspace = createEmptyWorkspace(path.join(parent, 'repo'), options)
   const claude = createClaudeStub(parent)
-  writeUserSettings(path.join(parent, 'user-data'), { 'heroSynergy.claude.path': claude.claude })
+  writeUserSettings(path.join(parent, 'ud'), { 'heroSynergy.claude.path': claude.claude })
   const app = await electron.launch({
     executablePath,
     env: cleanEnv(path.join(parent, 'home')),
     args: [
       `--extensionDevelopmentPath=${extensionDir}`,
-      `--user-data-dir=${path.join(parent, 'user-data')}`,
+      `--user-data-dir=${path.join(parent, 'ud')}`,
       `--extensions-dir=${path.join(parent, 'extensions')}`,
       '--disable-extensions',
       '--disable-workspace-trust',
@@ -126,7 +126,7 @@ async function inWindow(
   let window: Window | undefined
   onTestFailed(() => captureFailure(window, name))
   try {
-    window = await openWindow(name, options)
+    window = await openWindow(options)
     await body(window)
   } finally {
     await window?.app.close()

@@ -163,9 +163,9 @@ const toggle = (key: string, expanded: boolean): void => {
             @open="(key) => emit('open', key)"
             @detail="(key) => emit('openDetail', key, null)"
             @drift="(key) => emit('openDetail', key, 'drift')"
-            @launch="(key) => emit('launch', key)"
+            @launch="(key, action) => emit('launch', key, action)"
             @focus-terminal="(key) => emit('focusTerminal', key)"
-            @copy="(key) => emit('copy', key)"
+            @copy="(key, action) => emit('copy', key, action)"
           />
         </template>
       </template>
