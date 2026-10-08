@@ -765,7 +765,9 @@ export const makeCockpit = (
       // The events file is read once the first snapshot names the repo, before the Tree shows it.
       if (loaded.kind === 'snapshot') yield* startEvents(loaded.snapshot.repoRoot, false)
       yield* publish
-      if (yield* Ref.get(registryPending)) yield* refreshRegistry
+      // A registry read that waited for this snapshot runs beside the collect, not inside it: a
+      // slow `claude` must not keep the collect "running" and swallow the next Refresh press.
+      if (yield* Ref.get(registryPending)) yield* Effect.forkDetach(refreshRegistry)
     })
 
     /** Runs the collect this call was admitted for, then the one queued behind it, one at a time. */
