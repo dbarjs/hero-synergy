@@ -165,3 +165,27 @@ export {
   type TrackerHeading,
   type TrackerKind,
 } from './scout/tracker-doc.ts'
+export { groupByTicket, ticketOfName } from './session/registry-sessions.ts'
+export {
+  afterReload,
+  ageSince,
+  describeExit,
+  describeReason,
+  HINT_AFTER_MS,
+  isRunning,
+  type Listed,
+  listedOf,
+  NO_STATUS_HINT,
+  needsYou,
+  reduceSession,
+  type SessionInput,
+  type SessionState,
+  type SessionStatus,
+  type SessionView,
+  sessionsOf,
+  sessionText,
+  sessionView,
+  shownStatus,
+  STATUS_WORDS,
+  type TerminalExit,
+} from './session/session.ts'

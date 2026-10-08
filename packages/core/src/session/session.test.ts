@@ -1,4 +1,4 @@
-import type { StatusEvent } from '@hero-synergy/core'
+import type { StatusEvent } from '../claude/status-event.ts'
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
@@ -8,6 +8,8 @@ import {
   NO_STATUS_HINT,
   needsYou,
   reduceSession,
+  sessionsOf,
+  sessionText,
   type SessionInput,
   type SessionState,
   sessionView,
@@ -485,5 +487,93 @@ describe('the registry as the first source of liveness', () => {
     expect(needsYou(run([listed('R', 'waiting')]))).toBe(true)
     expect(needsYou(run([listed('R', 'approval')]))).toBe(true)
     expect(needsYou(run([listed('R', 'working')]))).toBe(false)
+  })
+})
+
+describe('the sessions a reader without a terminal sees', () => {
+  const at = (hook: string, session: string, ticket: string, when: number, detail?: string) => ({
+    ...event(hook, session, detail ?? null),
+    ticket,
+    at: when,
+  })
+  const kinds = (events: ReadonlyArray<StatusEvent>, listed = new Map()) =>
+    [...sessionsOf(events, listed, 1000)].map(([number, state]) => [number, state.kind])
+
+  it('shows nothing for a ticket no event or registry entry names', () => {
+    expect(sessionsOf([], new Map(), 1000).size).toBe(0)
+  })
+
+  it('shows a start the file says is live as ended, window closed, when the registry lists nothing', () => {
+    const sessions = sessionsOf([at('SessionStart', 'a', '68', 100, 'startup')], new Map(), 1000)
+    expect(sessionView(sessions.get(68))).toEqual({
+      kind: 'ended',
+      detail: 'window closed',
+      since: 1000,
+    })
+  })
+
+  it('brings a session the registry lists back to live, with the registry word', () => {
+    const listed = new Map([[68, [{ sessionId: 'a', status: 'waiting' as const }]]])
+    const sessions = sessionsOf([at('SessionStart', 'a', '68', 100, 'startup')], listed, 1000)
+    expect(sessionView(sessions.get(68))).toMatchObject({
+      kind: 'live',
+      status: 'waiting for you',
+      needsYou: true,
+      since: 1000,
+    })
+  })
+
+  it('ends a session with the reason its end gave', () => {
+    const sessions = sessionsOf(
+      [at('SessionStart', 'a', '68', 100), at('SessionEnd', 'a', '68', 200, 'logout')],
+      new Map(),
+      1000,
+    )
+    expect(sessionView(sessions.get(68))).toEqual({ kind: 'ended', detail: 'logout', since: 200 })
+  })
+
+  it('shows a registry-only session as live, and keeps tickets apart', () => {
+    const listed = new Map([[70, [{ sessionId: 'b', status: 'working' as const }]]])
+    expect(kinds([at('SessionEnd', 'a', '68', 200, 'logout')], listed)).toEqual([
+      [68, 'ended'],
+      [70, 'live'],
+    ])
+  })
+
+  it('skips events whose ticket is not a number', () => {
+    expect(kinds([at('SessionStart', 'a', 'abc', 100)])).toEqual([])
+  })
+})
+
+describe('a session in words', () => {
+  it.each([
+    [{ kind: 'none' as const }, null],
+    [{ kind: 'starting' as const, hint: null }, 'starting'],
+    [{ kind: 'starting' as const, hint: NO_STATUS_HINT }, `starting, ${NO_STATUS_HINT}`],
+    [
+      {
+        kind: 'live' as const,
+        status: null,
+        needsYou: false,
+        since: 0,
+        focusable: false,
+        warning: null,
+      },
+      'live · 3m ago',
+    ],
+    [
+      {
+        kind: 'live' as const,
+        status: 'waiting for you',
+        needsYou: true,
+        since: 0,
+        focusable: false,
+        warning: 'Another live session has this ticket’s number',
+      },
+      'waiting for you · 3m ago, Another live session has this ticket’s number',
+    ],
+    [{ kind: 'ended' as const, detail: 'logout', since: 0 }, 'ended: logout · 3m ago'],
+  ])('words %j', (view, text) => {
+    expect(sessionText(view, 180_000)).toBe(text)
   })
 })

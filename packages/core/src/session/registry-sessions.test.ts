@@ -1,7 +1,7 @@
-import { readRegistry } from '@hero-synergy/core'
 import { describe, expect, it } from 'vite-plus/test'
 
-import ceiling from '../../core/fixtures/process/claude-agents-json-2.1.292.json' with { type: 'json' }
+import ceiling from '../../fixtures/process/claude-agents-json-2.1.292.json' with { type: 'json' }
+import { readRegistry } from '../claude/registry.ts'
 import { groupByTicket, ticketOfName } from './registry-sessions.ts'
 import { listedOf, reduceSession, sessionView } from './session.ts'
 

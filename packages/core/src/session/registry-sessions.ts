@@ -1,4 +1,4 @@
-import type { RegistryEntry } from '@hero-synergy/core'
+import type { RegistryEntry } from '../claude/registry.ts'
 
 import { type Listed, listedOf } from './session.ts'
 

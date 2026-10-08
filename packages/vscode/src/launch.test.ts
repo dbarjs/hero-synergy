@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { canLaunchFrom, NO_WAYFINDER_REASON, terminalIcon } from './launch.ts'
-import type { SessionState } from './session.ts'
+import type { SessionState } from '@hero-synergy/core'
 
 describe('the terminal icon per ticket type', () => {
   it('matches the row icons and gives a typeless ticket a plain terminal', () => {
