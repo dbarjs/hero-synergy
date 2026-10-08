@@ -2374,6 +2374,7 @@ describe('the Cockpit controller reading the registry', () => {
         yield* cockpit.visible(true)
         expect(published).toEqual([])
         yield* cockpit.show
+        yield* flush
         expect(sessionOfKey(published, ROW)).toMatchObject({
           status: 'waiting for you',
           needsYou: true,
@@ -2400,6 +2401,29 @@ describe('the Cockpit controller reading the registry', () => {
           })
         }),
     ),
+  )
+
+  it.effect(
+    'does not keep the collect open while it reads the registry, so Refresh still collects',
+    () => {
+      const setup = launchable()
+      return withCockpit(
+        { ...setup, recordings: [...setup.recordings!, agents([])], delay: 1000 },
+        ({ cockpit, runs }) =>
+          Effect.gen(function* () {
+            yield* cockpit.visible(true)
+            const shown = yield* Effect.forkChild(cockpit.show)
+            // The collect runs the repo lookup and plugin list; the registry read that waited for it starts after.
+            yield* TestClock.adjust('2 seconds')
+            yield* flush
+            const refreshed = yield* Effect.forkChild(cockpit.refresh)
+            yield* TestClock.adjust('1 minute')
+            yield* Fiber.joinAll([shown, refreshed])
+            // show: repo lookup, plugin list, registry; refresh: repo lookup and plugin list again.
+            expect(runs()).toBe(5)
+          }),
+      )
+    },
   )
 
   it.effect('leaves entries whose names carry no ticket number alone', () =>
