@@ -111,7 +111,11 @@ Job `claude` of the daily canary ([#34], built in [#56]): the native installer, 
 
 Not watched, because no runner can: the positional slash-command prompt, `-n` with `--resume`, hook payloads and the status values of a live session (they need a login), and the `~/.claude/sessions` files.
 
-**Open items the first runs settle**, recorded here by the build of [#56]: _pending the first scheduled run_ for `claude` printing its outputs with no credentials, `plugin install` working non-interactively on a runner, and the keepalive call resetting the 60-day idle clock.
+**Open items, settled by the first dispatched runs on 2026-10-08** ([#56]):
+
+- `claude` 2.1.293 with no credentials, on a GitHub-hosted Ubuntu runner after the native installer: `--version`, `--help`, `agents --json` (prints `[]`, exit 0) and `plugin list --json` all print and decode. No fallback was needed.
+- `claude plugin install mattpocock-skills@claude-plugins-official` works non-interactively, but only after the marketplace is known: a fresh runner has none and fails with "not found in marketplace". The canary runs `claude plugin marketplace update claude-plugins-official` and falls back to `claude plugin marketplace add anthropics/claude-plugins-official` first.
+- The keepalive, `PUT …/actions/workflows/canary.yml/enable` with the workflow token (`actions: write`), succeeds on every run. Whether it resets GitHub's 60-day idle clock is **unverified** and cannot be seen before the day 60; the fallback, a dated commit to the `canary-keepalive` branch, is built and switched on by the repository variable `CANARY_KEEPALIVE_COMMIT=true`. Check that the schedule is still enabled around 2026-12-07.
 
 ## mattpocock-skills
 
