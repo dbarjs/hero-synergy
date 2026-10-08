@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, watch } from 'vue'
 
-import type { DetailView, MapSection, NeighbourView } from '../../src/protocol.ts'
+import type { ActionId, DetailView, MapSection, NeighbourView } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
 import Markdown from './Markdown.vue'
 import SessionLine from './SessionLine.vue'
@@ -20,9 +20,9 @@ const emit = defineEmits<{
   open: [key: string]
   /** A link in a rendered body. */
   link: [url: string]
-  launch: [key: string]
+  launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
-  copy: [key: string]
+  copy: [key: string, action: ActionId]
   /** Hide a drift entry until its detail changes. */
   dismiss: [dismissKey: string]
 }>()
@@ -130,11 +130,12 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
     </dl>
 
     <ActionBlock
-      v-if="view.detail.action"
-      :action="view.detail.action"
+      v-for="action in view.detail.actions"
+      :key="action.id"
+      :action="action"
       :ticket-key="view.detail.key"
-      @launch="(key) => emit('launch', key)"
-      @copy="(key) => emit('copy', key)"
+      @launch="(key, action) => emit('launch', key, action)"
+      @copy="(key, action) => emit('copy', key, action)"
     />
 
     <section class="neighbourhood" aria-label="Neighbourhood">
@@ -248,6 +249,15 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       {{ view.detail.takeable === 0 ? 'nothing takeable' : `${view.detail.takeable} takeable` }} ·
       {{ view.detail.decided }}/{{ view.detail.total }} decided
     </p>
+
+    <ActionBlock
+      v-for="action in view.detail.actions"
+      :key="action.id"
+      :action="action"
+      :ticket-key="view.detail.key"
+      @launch="(key, action) => emit('launch', key, action)"
+      @copy="(key, action) => emit('copy', key, action)"
+    />
 
     <section
       v-for="{ section, heading } in sections"

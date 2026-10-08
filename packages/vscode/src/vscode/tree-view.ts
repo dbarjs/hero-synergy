@@ -96,6 +96,29 @@ export function registerRefreshCommand(context: vscode.ExtensionContext, run: ()
   context.subscriptions.push(vscode.commands.registerCommand(REFRESH_COMMAND, run))
 }
 
+export const CHART_MAP_COMMAND = 'heroSynergy.chartMap'
+export const RUN_SKILL_COMMAND = 'heroSynergy.runSkill'
+
+export interface ActionCommands {
+  readonly chartMap: () => void
+  readonly runSkill: () => void
+}
+
+/**
+ * `Hero Synergy: Chart a map` and `Hero Synergy: Run skill…`, also the Tree's title-bar buttons.
+ * Neither is disabled when its skill is missing (a disabled command would vanish from the
+ * palette): pressed, it says why it did nothing.
+ */
+export function registerActionCommands(
+  context: vscode.ExtensionContext,
+  commands: ActionCommands,
+): void {
+  context.subscriptions.push(
+    vscode.commands.registerCommand(CHART_MAP_COMMAND, commands.chartMap),
+    vscode.commands.registerCommand(RUN_SKILL_COMMAND, commands.runSkill),
+  )
+}
+
 /** The output channel the Cockpit logs to. */
 export function createLog(context: vscode.ExtensionContext): (line: string) => void {
   const channel = vscode.window.createOutputChannel('Hero Synergy')

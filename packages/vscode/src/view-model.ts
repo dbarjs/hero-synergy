@@ -17,7 +17,14 @@ import {
 } from '@hero-synergy/core'
 
 import { driftingTickets, isLoud, mapDrift, ticketDrift } from './drift.ts'
-import { canLaunchFrom, type Launching, NOT_LAUNCHING, workTicketAction } from './launch.ts'
+import {
+  type Launching,
+  mapActions,
+  NOT_LAUNCHING,
+  type Planned,
+  startOf,
+  ticketActions,
+} from './launch.ts'
 import type {
   ActionView,
   BudgetNote,
@@ -155,7 +162,7 @@ export const selectionOf = (
         claim: stray.claim === null ? null : stray.claim.by,
         url: stray.ref.tracker === 'github' ? stray.ref.url : null,
         session: sessionView(undefined),
-        action: null,
+        actions: [],
         drift: summaryOf(ticketDrift(key, stray, dismissed), 0),
       },
     }
@@ -176,6 +183,7 @@ export const selectionOf = (
           total,
           destination: map.destination,
           drift: mapSummary(map, dismissed),
+          actions: views(mapActions(snapshot, launching, map)),
         },
       }
     }
@@ -192,7 +200,7 @@ export const selectionOf = (
           claim: ticket.claim === null ? null : ticket.claim.by,
           url: ticket.ref.tracker === 'github' ? ticket.ref.url : null,
           session: sessionView(launching.sessions.get(key)),
-          action: actionOf(snapshot, launching, map, ticket, key),
+          actions: actionsOf(snapshot, launching, map, ticket, key),
           drift: summaryOf(ticketDrift(key, ticket, dismissed), 0),
         },
       }
@@ -245,7 +253,7 @@ export const detailOf = (
       })),
       clearsWayFor: [],
       session: sessionView(undefined),
-      action: null,
+      actions: [],
       drift: ownGroup(ticketDrift(key, stray, dismissed)),
     }
   }
@@ -275,6 +283,7 @@ export const detailOf = (
         outOfScope: map.outOfScope.map(({ text }) => ({ text })),
         freeForm: map.warnings.some(({ code }) => code === 'map-body-free-form') ? map.body : null,
         drift: mapGroups(map, dismissed),
+        actions: views(mapActions(snapshot, launching, map)),
       }
     }
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
@@ -296,7 +305,7 @@ export const detailOf = (
         waitsOn: waitsOn.map((blocker) => neighbour(map, blocker)),
         clearsWayFor: clearsWayFor.map((other) => neighbour(map, other)),
         session: sessionView(launching.sessions.get(key)),
-        action: actionOf(snapshot, launching, map, ticket, key),
+        actions: actionsOf(snapshot, launching, map, ticket, key),
         drift: ownGroup(ticketDrift(key, ticket, dismissed)),
       }
     }
@@ -336,17 +345,17 @@ export const defaultExpanded = (snapshot: Snapshot): ReadonlySet<string> => {
   return new Set(first === undefined ? [] : [mapKey(first)])
 }
 
-/** Work ticket for a frontier ticket with no terminal on it; every other ticket has none to offer. */
-const actionOf = (
+const views = (planned: ReadonlyArray<Planned>): ReadonlyArray<ActionView> =>
+  planned.map(({ view }) => view)
+
+/** The Actions of the ticket's context (see `ticketActions`), first the one ▶ runs. */
+const actionsOf = (
   snapshot: Snapshot,
   launching: Launching,
   map: WayfinderMap,
   ticket: Ticket,
   key: string,
-): ActionView | null =>
-  placeOf(ticket) === 'frontier' && canLaunchFrom(launching.sessions.get(key))
-    ? workTicketAction(snapshot, launching, { map, ticket })
-    : null
+): ReadonlyArray<ActionView> => views(ticketActions(snapshot, launching, { map, ticket }, key))
 
 const ticketRow = (
   snapshot: Snapshot,
@@ -362,7 +371,7 @@ const ticketRow = (
   return {
     key,
     session: sessionView(launching.sessions.get(key)),
-    action: actionOf(snapshot, launching, map, ticket, key),
+    action: actionsOf(snapshot, launching, map, ticket, key)[0] ?? null,
     number: ticket.number,
     title: ticket.title,
     place,
@@ -397,6 +406,7 @@ const mapNode = (
     decided,
     total,
     destination: map.destination,
+    action: views(mapActions(snapshot, launching, map))[0] ?? null,
     tickets: orderTickets(map).map((ticket) =>
       ticketRow(snapshot, launching, map, ticket, next, dismissed),
     ),
@@ -470,6 +480,14 @@ export const buildViewModel = (
     notice,
     budget,
     selection: selectionOf(snapshot, selected, launching, dismissed)?.focus ?? null,
+    // A repo with maps to show leads with them; an empty one leads with what it lacks.
+    start: startOf(
+      snapshot.repoRoot,
+      launching,
+      active.length === 0 && finished.length === 0 && snapshot.unmapped.length === 0
+        ? 'map'
+        : 'nothing',
+    ),
     maps: active.map((map) => mapNode(snapshot, launching, map, expanded, dismissed)),
     unmapped: unmappedFold(snapshot, expanded, dismissed),
     finished:

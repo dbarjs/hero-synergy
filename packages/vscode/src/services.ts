@@ -96,8 +96,11 @@ export type TerminalLocation = 'panel' | 'editor'
 /** A terminal the Cockpit opens: the process is the terminal's own, never typed into a shell. */
 export interface TerminalSpec {
   readonly name: string
-  readonly shellPath: string
+  /** The program that is the terminal's own process; null opens the default shell. */
+  readonly shellPath: string | null
   readonly shellArgs: ReadonlyArray<string>
+  /** Typed into the shell once it is up, for a command that is not a `claude` session; null otherwise. */
+  readonly sendText: string | null
   readonly cwd: string
   readonly env: Readonly<Record<string, string>>
   /** A codicon id, without the `$(…)` wrapper. */
@@ -202,6 +205,49 @@ export class EventsWatcher extends Context.Service<EventsWatcher, EventsWatcherS
       }),
     }
   }
+}
+
+/** One skill in the Run skill… list: the command as label, where it came from, what it does. */
+export interface SkillChoice {
+  /** `/mattpocock-skills:grill-me`. */
+  readonly label: string
+  /** `plugin 1.2.3`, `project` or `personal`. */
+  readonly description: string
+  /** The skill's frontmatter description. */
+  readonly detail: string
+}
+
+export interface PaletteShape {
+  /** Shows a native QuickPick; resolves to the chosen label, or null when it was dismissed. */
+  readonly pickSkill: (
+    title: string,
+    choices: ReadonlyArray<SkillChoice>,
+  ) => Effect.Effect<string | null>
+  /** Tells the person why a palette command did nothing. */
+  readonly inform: (message: string) => Effect.Effect<void>
+}
+
+/** The native QuickPick and messages behind the palette commands, behind a service so tests see the choices and make one. */
+export class Palette extends Context.Service<Palette, PaletteShape>()('hero-synergy/Palette') {
+  /** Records each pick and message; `choose` answers a pick with the label to choose, or null to dismiss. */
+  static readonly inMemory = (
+    record: {
+      picks: Array<{ title: string; choices: ReadonlyArray<SkillChoice> }>
+      informed: string[]
+    },
+    choose: (choices: ReadonlyArray<SkillChoice>) => string | null = () => null,
+  ): Layer.Layer<Palette> =>
+    Layer.succeed(Palette, {
+      pickSkill: (title, choices) =>
+        Effect.sync(() => {
+          record.picks.push({ title, choices })
+          return choose(choices)
+        }),
+      inform: (message) =>
+        Effect.sync(() => {
+          record.informed.push(message)
+        }),
+    })
 }
 
 export interface ClipboardShape {

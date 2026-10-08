@@ -325,3 +325,42 @@ describe('hero-synergy dismissing drift', () => {
     await until('the row to be loud again', () => (rowOf(DARK_MODE)?.loud.length ?? 0) === 1)
   })
 })
+
+describe('hero-synergy skill Actions from the palette', () => {
+  const plainOptions = (): vscode.TerminalOptions =>
+    vscode.window.terminals.at(-1)?.creationOptions as vscode.TerminalOptions
+
+  it('contributes Chart a map and Run skill… to the Command Palette', async () => {
+    const commands = await vscode.commands.getCommands(true)
+    assert.ok(commands.includes('heroSynergy.chartMap'))
+    assert.ok(commands.includes('heroSynergy.runSkill'))
+  })
+
+  it('opens a plain terminal on the wayfinder command with Chart a map', async () => {
+    const before = vscode.window.terminals.length
+    await vscode.commands.executeCommand('heroSynergy.chartMap')
+    await until('the terminal', () => vscode.window.terminals.length === before + 1)
+    const options = plainOptions()
+    assert.equal(options.name, 'Chart a map')
+    assert.equal(options.shellPath, path.join(records(), 'claude'))
+    assert.deepEqual(options.shellArgs, ['-n', 'Chart a map', '/wayfinder'])
+    // Plain: no status plugin, no ticket env.
+    assert.deepEqual(options.env ?? {}, {})
+  })
+
+  it('lists the skills in a native QuickPick and runs the chosen one in a plain terminal', async () => {
+    const before = vscode.window.terminals.length
+    // The QuickPick waits for a choice, so the command is started and the choice accepted.
+    const running = vscode.commands.executeCommand('heroSynergy.runSkill')
+    await new Promise((resolve) => setTimeout(resolve, 1_000))
+    await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem')
+    await running
+    await until('the terminal', () => vscode.window.terminals.length === before + 1)
+    const options = plainOptions()
+    assert.equal(options.shellPath, path.join(records(), 'claude'))
+    assert.equal(options.shellArgs?.length, 1)
+    assert.match(String(options.shellArgs?.[0]), /^\//)
+    assert.equal(options.name, options.shellArgs?.[0])
+    assert.deepEqual(options.env ?? {}, {})
+  })
+})

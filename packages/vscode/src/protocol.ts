@@ -24,12 +24,49 @@ export type SessionView =
     }
   | { readonly kind: 'ended'; readonly detail: string; readonly since: number }
 
+/** Which Action a button runs; the host looks it up among the Actions of the row it was pressed on. */
+export type ActionId =
+  | 'work-ticket'
+  | 'launch-fresh'
+  | 'resume-by-name'
+  | 'to-spec'
+  | 'chart-map'
+  | 'run-skill'
+  | 'setup'
+  | 'install-plugin'
+  | 'install-npx'
+
+export const ACTION_IDS: ReadonlyArray<ActionId> = [
+  'work-ticket',
+  'launch-fresh',
+  'resume-by-name',
+  'to-spec',
+  'chart-map',
+  'run-skill',
+  'setup',
+  'install-plugin',
+  'install-npx',
+]
+
+/** The key an Action that belongs to the repo, not to a map or a ticket, is pressed on. */
+export const REPO_KEY = 'repo'
+
 /**
- * What ▶ launches for a ticket, with the exact command it shows. A greyed Action
+ * An Action as it is offered, with the exact command it shows. A greyed Action
  * keeps the command it would run when it has one, and says why in `disabled`.
  */
 export interface ActionView {
-  readonly label: 'Work ticket'
+  readonly id: ActionId
+  readonly label:
+    | 'Work ticket'
+    | 'Launch fresh'
+    | 'Resume by name'
+    | 'To spec'
+    | 'Chart a map'
+    | 'Run skill…'
+    | 'Setup'
+    | 'Install the plugin'
+    | 'Install with npx'
   /** The shell-quoted command, built once from the argv; null when no command could be built. */
   readonly command: string | null
   /** The muted `env:` line, or null when there is no env. */
@@ -86,7 +123,7 @@ export interface TicketRow {
   /** The blockers still open; empty unless the ticket is blocked. */
   readonly waitsOn: ReadonlyArray<BlockerView>
   readonly session: SessionView
-  /** The Action ▶ runs; null for every row but a frontier row. */
+  /** The Action ▶ runs, the first of the row's context; null when the context offers none. */
   readonly action: ActionView | null
   /** The loud messages the ⚠ shows on hover; empty when the row is unmarked. */
   readonly loud: ReadonlyArray<string>
@@ -147,6 +184,8 @@ export interface MapNode {
   readonly decided: number
   readonly total: number
   readonly destination: string | null
+  /** To spec on a finished map, which the ⚑ Map row's ▶ runs; null on an unfinished one. */
+  readonly action: ActionView | null
   /** The open tickets: claimed, then the frontier, then blocked. */
   readonly tickets: ReadonlyArray<TicketRow>
   readonly fog: Fold<FogRow>
@@ -178,8 +217,8 @@ export type Focus =
       /** The issue's URL on GitHub; null on a local tracker, which opens a file. */
       readonly url: string | null
       readonly session: SessionView
-      /** The Work ticket Action; null unless the ticket is on the frontier. */
-      readonly action: ActionView | null
+      /** The Actions of the ticket's context, first the one ▶ runs; empty when it offers none. */
+      readonly actions: ReadonlyArray<ActionView>
       readonly drift: DriftSummary | null
     }
   | {
@@ -192,12 +231,32 @@ export type Focus =
       readonly total: number
       readonly destination: string | null
       readonly drift: DriftSummary | null
+      /** To spec on a finished map; empty on an unfinished one. */
+      readonly actions: ReadonlyArray<ActionView>
     }
+
+/**
+ * What an empty Tree leads with: the install commands when no user-invoked skill was found,
+ * Setup when the repo has no tracker doc, Chart a map when it has no map. Each Action is
+ * pressed on {@link REPO_KEY}.
+ */
+export interface Start {
+  /** What the webview sends as `key` for these Actions: {@link REPO_KEY}. */
+  readonly key: string
+  readonly actions: ReadonlyArray<ActionView>
+  /** A line under the Actions, such as "pick one, never both". */
+  readonly note: string | null
+}
 
 /** What the Tree draws: a wait, one plain message, or the maps. */
 export type ViewModel =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'message'; readonly message: string; readonly detail: string | null }
+  | {
+      readonly kind: 'message'
+      readonly message: string
+      readonly detail: string | null
+      readonly start: Start
+    }
   | {
       readonly kind: 'maps'
       readonly collectedAt: string
@@ -207,6 +266,8 @@ export type ViewModel =
       readonly notice: Notice | null
       /** Set while the gh budget or a secondary limit holds automatic refreshes back. */
       readonly budget: BudgetNote | null
+      /** What the Tree leads with when there is no map to show; no Actions when there are maps. */
+      readonly start: Start
       /** The unfinished maps in display order. */
       readonly maps: ReadonlyArray<MapNode>
       /** The tickets that belong to no map, folded above Finished; null when there are none. */
@@ -273,8 +334,8 @@ export type Detail =
       /** The tickets of the map that wait on it. */
       readonly clearsWayFor: ReadonlyArray<NeighbourView>
       readonly session: SessionView
-      /** The Work ticket Action; null unless the ticket is on the frontier with no terminal on it. */
-      readonly action: ActionView | null
+      /** The Actions of the ticket's context, first the one ▶ runs. */
+      readonly actions: ReadonlyArray<ActionView>
       /** The Drift section; empty hides it. */
       readonly drift: ReadonlyArray<DriftGroup>
     }
@@ -295,6 +356,8 @@ export type Detail =
       readonly freeForm: string | null
       /** The map's own drift first, then its tickets' under their `#n title`, closed ones included. */
       readonly drift: ReadonlyArray<DriftGroup>
+      /** To spec on a finished map. */
+      readonly actions: ReadonlyArray<ActionView>
     }
 
 /**
@@ -328,11 +391,14 @@ export type WebviewMessage =
   | { readonly type: 'reveal'; readonly key: string }
   /** A link in a rendered body; the host opens only web links. */
   | { readonly type: 'open-link'; readonly url: string }
-  /** ▶: run the ticket's Action; the host ignores it unless the ticket is launchable. */
-  | { readonly type: 'launch'; readonly key: string }
+  /**
+   * ▶: run an Action of the row `key` names (a ticket, a map's ⚑ row, or {@link REPO_KEY}); without
+   * `action` the row's first. The host ignores it when the row offers no such Action.
+   */
+  | { readonly type: 'launch'; readonly key: string; readonly action?: ActionId }
   /** Focus the ticket's terminal. */
   | { readonly type: 'focus-terminal'; readonly key: string }
-  /** The copy button: put the ticket's command on the clipboard. */
-  | { readonly type: 'copy'; readonly key: string }
+  /** The copy button: put an Action's command on the clipboard. */
+  | { readonly type: 'copy'; readonly key: string; readonly action?: ActionId }
   /** Hide a drift entry until its detail changes. */
   | { readonly type: 'dismiss-drift'; readonly dismissKey: string }

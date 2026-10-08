@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Focus } from '../../src/protocol.ts'
+import type { ActionId, Focus } from '../../src/protocol.ts'
 import ActionBlock from './ActionBlock.vue'
 import SessionLine from './SessionLine.vue'
 
@@ -16,9 +16,9 @@ const emit = defineEmits<{
   detail: [key: string]
   /** A drift line was clicked: open the Detail at its Drift section. */
   drift: [key: string]
-  launch: [key: string]
+  launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
-  copy: [key: string]
+  copy: [key: string, action: ActionId]
 }>()
 </script>
 
@@ -103,11 +103,12 @@ const emit = defineEmits<{
     </div>
 
     <ActionBlock
-      v-if="focus.kind === 'ticket' && focus.action"
-      :action="focus.action"
+      v-for="action in focus.actions"
+      :key="action.id"
+      :action="action"
       :ticket-key="focus.key"
-      @launch="(key) => emit('launch', key)"
-      @copy="(key) => emit('copy', key)"
+      @launch="(key, action) => emit('launch', key, action)"
+      @copy="(key, action) => emit('copy', key, action)"
     />
   </section>
 </template>

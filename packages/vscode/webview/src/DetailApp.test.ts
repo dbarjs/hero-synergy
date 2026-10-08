@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vite-plus/test'
 import type { Detail, HostMessage } from '../../src/protocol.ts'
 import DetailApp from './DetailApp.vue'
 
+const NO_START = { key: 'repo', actions: [], note: null }
 const postMessage = vi.fn()
 // The webview host hands out its API once per page; the stub stands in for it.
 vi.stubGlobal('acquireVsCodeApi', () => ({ postMessage }))
@@ -24,7 +25,7 @@ const detail: Detail = {
   waitsOn: [],
   clearsWayFor: [{ number: 2, title: 'Refund policy', state: 'open', key: 'map:1:ticket:2' }],
   session: { kind: 'none' },
-  action: null,
+  actions: [],
   drift: [],
 }
 
@@ -45,7 +46,7 @@ describe('the Detail app', () => {
     // The Tree's view models are not its business.
     fromHost({
       type: 'view-model',
-      viewModel: { kind: 'message', message: 'No maps', detail: null },
+      viewModel: { kind: 'message', message: 'No maps', detail: null, start: NO_START },
     })
     await flushPromises()
     expect(wrapper.find('h1').text()).toBe('#1 Which database?')

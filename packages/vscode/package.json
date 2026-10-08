@@ -89,9 +89,16 @@
         "category": "Hero Synergy"
       },
       {
+        "command": "heroSynergy.chartMap",
+        "title": "Chart a map",
+        "category": "Hero Synergy",
+        "icon": "$(compass)"
+      },
+      {
         "command": "heroSynergy.runSkill",
         "title": "Run skill…",
-        "category": "Hero Synergy"
+        "category": "Hero Synergy",
+        "icon": "$(terminal)"
       },
       {
         "command": "heroSynergy.refresh",
@@ -103,9 +110,19 @@
     "menus": {
       "view/title": [
         {
+          "command": "heroSynergy.chartMap",
+          "when": "view == heroSynergy.tree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "heroSynergy.runSkill",
+          "when": "view == heroSynergy.tree",
+          "group": "navigation@2"
+        },
+        {
           "command": "heroSynergy.refresh",
           "when": "view == heroSynergy.tree",
-          "group": "navigation"
+          "group": "navigation@3"
         }
       ]
     },

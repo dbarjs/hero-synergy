@@ -78,7 +78,7 @@ describe('drift in the Tree view model', () => {
     expect(detailOf(snapshot, 'unmapped:ticket:3')).toMatchObject({
       kind: 'ticket',
       number: 3,
-      action: null,
+      actions: [],
       drift: [{ entries: [{ code: 'no-map', level: 'loud' }] }],
     })
   })

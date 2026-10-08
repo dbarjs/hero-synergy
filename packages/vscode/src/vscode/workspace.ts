@@ -13,6 +13,7 @@ import {
   EventsWatcher,
   HostEnvironment,
   Opener,
+  Palette,
   Storage,
   type TerminalClosed,
   type TerminalExit,
@@ -104,8 +105,9 @@ export const terminalsLive = (context: vscode.ExtensionContext): Layer.Layer<Ter
         Effect.sync(() => {
           const terminal = vscode.window.createTerminal({
             name: spec.name,
-            shellPath: spec.shellPath,
-            shellArgs: [...spec.shellArgs],
+            ...(spec.shellPath === null
+              ? {}
+              : { shellPath: spec.shellPath, shellArgs: [...spec.shellArgs] }),
             cwd: spec.cwd,
             env: { ...spec.env },
             iconPath: new vscode.ThemeIcon(spec.icon),
@@ -120,6 +122,7 @@ export const terminalsLive = (context: vscode.ExtensionContext): Layer.Layer<Ter
           byId.set(id, terminal)
           idOf.set(terminal, id)
           terminal.show()
+          if (spec.sendText !== null) terminal.sendText(spec.sendText)
           return id
         }),
       focus: (id) =>
@@ -154,6 +157,20 @@ export const eventsWatcherLive = (context: vscode.ExtensionContext): Layer.Layer
         }
       }),
   })
+
+/** Run skill…: VS Code's own QuickPick, matching on the description and detail too. */
+export const paletteLive: Layer.Layer<Palette> = Layer.succeed(Palette, {
+  pickSkill: (title, choices) =>
+    Effect.promise(async () => {
+      const picked = await vscode.window.showQuickPick(
+        choices.map((choice) => ({ ...choice })),
+        { title, matchOnDescription: true, matchOnDetail: true },
+      )
+      return picked?.label ?? null
+    }),
+  inform: (message) =>
+    Effect.promise(async () => void (await vscode.window.showInformationMessage(message))),
+})
 
 const configuration = () => vscode.workspace.getConfiguration('heroSynergy')
 

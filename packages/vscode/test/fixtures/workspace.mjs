@@ -164,6 +164,37 @@ export function createGitHubWorkspace(parent, recording) {
 }
 
 /**
+ * A git repo for the empty-state windows: it may carry a local tracker doc (with no map under it)
+ * and project skills, each a user-invoked skill named after its folder.
+ *
+ * @param {string} parent an existing or creatable directory the repo goes into
+ * @param {{ trackerDoc: boolean, skills: string[] }} options
+ * @returns {string} the workspace folder to open
+ */
+export function createEmptyWorkspace(parent, { trackerDoc, skills }) {
+  const workspace = path.join(parent, 'workspace')
+  mkdirSync(workspace, { recursive: true })
+  writeFileSync(path.join(workspace, 'README.md'), '# A repo with nothing charted\n')
+  if (trackerDoc) {
+    mkdirSync(path.join(workspace, 'docs', 'agents'), { recursive: true })
+    writeFileSync(
+      path.join(workspace, 'docs', 'agents', 'issue-tracker.md'),
+      '# Issue tracker: Local Markdown\n',
+    )
+  }
+  for (const name of skills) {
+    const folder = path.join(workspace, '.claude', 'skills', name)
+    mkdirSync(folder, { recursive: true })
+    writeFileSync(
+      path.join(folder, 'SKILL.md'),
+      `---\nname: ${name}\ndescription: What ${name} does.\ndisable-model-invocation: true\n---\n# ${name}\n`,
+    )
+  }
+  execFileSync('git', ['init', '--quiet', workspace])
+  return workspace
+}
+
+/**
  * A git repo with no tracker doc, so the Tree shows the setup message.
  *
  * @param {string} parent an existing or creatable directory the repo goes into

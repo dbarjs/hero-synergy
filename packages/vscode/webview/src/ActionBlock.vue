@@ -1,25 +1,29 @@
 <script setup lang="ts">
-import type { ActionView } from '../../src/protocol.ts'
+import type { ActionId, ActionView } from '../../src/protocol.ts'
 
 /**
- * An Action as the Focus pane and the Detail show it: the button that runs it, a copy
- * button, the command whole in a code block, the env on a muted second line and any note.
- * A greyed Action keeps its command and says why it cannot run.
+ * An Action as the Focus pane, the Detail and the empty states show it: the button that runs
+ * it, a copy button, the command whole in a code block, the env on a muted second line and any
+ * note. A greyed Action keeps its command and says why it cannot run. `ticketKey` is the key of
+ * the row the Action belongs to, which the host looks the Action up on.
  */
 defineProps<{ action: ActionView; ticketKey: string }>()
 
-const emit = defineEmits<{ launch: [key: string]; copy: [key: string] }>()
+const emit = defineEmits<{
+  launch: [key: string, action: ActionId]
+  copy: [key: string, action: ActionId]
+}>()
 </script>
 
 <template>
-  <div class="action">
+  <div class="action" :data-action="action.id">
     <div class="action-head">
       <button
         type="button"
         class="run"
         :aria-disabled="action.disabled !== null"
         :title="action.disabled ?? action.command ?? undefined"
-        @click="action.disabled === null && emit('launch', ticketKey)"
+        @click="action.disabled === null && emit('launch', ticketKey, action.id)"
       >
         <span class="codicon codicon-play" /> {{ action.label }}
       </button>
@@ -29,7 +33,7 @@ const emit = defineEmits<{ launch: [key: string]; copy: [key: string] }>()
         class="copy"
         title="Copy command"
         aria-label="Copy command"
-        @click="emit('copy', ticketKey)"
+        @click="emit('copy', ticketKey, action.id)"
       >
         <span class="codicon codicon-copy" />
       </button>
