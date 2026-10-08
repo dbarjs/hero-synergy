@@ -44,6 +44,8 @@ export interface ExtensionApi {
     /** The Tree container's badge: how many sessions need me; 0 shows none. */
     readonly badge: number
   }
+  /** Every line written to the output channel so far, in order. */
+  readonly log: () => ReadonlyArray<string>
   /** Delivers a message as if the webview had posted it; false when it was rejected. */
   readonly receive: (message: unknown) => Promise<boolean>
   /** Adopts a panel as VS Code's serializer does after a reload. */
@@ -75,7 +77,12 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     }),
   ).pipe(Layer.provide(ProcessRunner.live))
 
-  const log = createLog(context)
+  const lines: string[] = []
+  const write = createLog(context)
+  const log = (line: string): void => {
+    lines.push(line)
+    write(line)
+  }
   const cockpit = await Effect.runPromise(
     makeCockpit({
       publish: (next) => {
@@ -105,7 +112,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
           eventsWatcherLive(context),
           registryWatcherLive,
           hostEnvironmentLive(context),
-          storageLive(context.workspaceState),
+          storageLive(context.workspaceState, context.globalState),
           FileSystem.live,
           countedRunner,
         ),
@@ -113,7 +120,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     ),
   )
 
-  // Resolves `claude` on the setting or `PATH` and logs where it is; spawns nothing.
+  // Logs the environment, resolves `claude` on the setting or `PATH` and logs where it is; spawns nothing.
   await Effect.runPromise(cockpit.activated)
 
   const run = (effect: Effect.Effect<unknown>): void => void Effect.runPromise(effect)
@@ -145,6 +152,8 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     onFocus: () => run(cockpit.focus),
     onScratchChange: () => run(cockpit.scratchChanged),
   })
+  // The floor check is one `claude --version`; it runs beside activation so a slow `claude` never holds it up.
+  run(cockpit.checkClaude)
 
   return {
     state: () => ({
@@ -155,6 +164,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
       detailView,
       badge,
     }),
+    log: () => lines,
     receive: (message) => Effect.runPromise(cockpit.receive(message)),
     restoreDetail: (panel) => {
       detail.adopt(panel)

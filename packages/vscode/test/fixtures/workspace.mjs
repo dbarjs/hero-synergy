@@ -25,7 +25,8 @@ export function createWorkspace(parent) {
 }
 
 /**
- * A stub `claude` for the windows that launch a session. Asked for the plugin list it answers `[]`;
+ * A stub `claude` for the windows that launch a session. Asked for its version it prints
+ * `version.txt` (written by the test) or a current one; asked for the plugin list it answers `[]`;
  * started as a session it records what it was given, plays the script it finds, then stays open
  * like a live session:
  *
@@ -42,7 +43,7 @@ export function createWorkspace(parent) {
  * A node script, so the same stub runs wherever the tests do.
  *
  * @param {string} parent an existing or creatable directory the stub and its records go into
- * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string, scriptFile: string, writtenFile: string, registryFile: string }}
+ * @returns {{ claude: string, argvFile: string, envFile: string, cwdFile: string, scriptFile: string, writtenFile: string, registryFile: string, versionFile: string }}
  */
 export function createClaudeStub(parent) {
   const bin = path.join(parent, 'bin')
@@ -54,12 +55,17 @@ export function createClaudeStub(parent) {
   const scriptFile = path.join(bin, 'script.txt')
   const writtenFile = path.join(bin, 'written.txt')
   const registryFile = path.join(bin, 'registry.json')
+  const versionFile = path.join(bin, 'version.txt')
   writeFileSync(
     claude,
     [
       `#!${process.execPath}`,
       `const fs = require('node:fs')`,
       `const args = process.argv.slice(2)`,
+      `if (args[0] === '--version') {`,
+      `  console.log(fs.existsSync(${JSON.stringify(versionFile)}) ? fs.readFileSync(${JSON.stringify(versionFile)}, 'utf8').trim() : '2.1.300 (Claude Code)')`,
+      `  process.exit(0)`,
+      `}`,
       `if (args[0] === 'plugin') {`,
       `  console.log('[]')`,
       `  process.exit(0)`,
@@ -94,7 +100,7 @@ export function createClaudeStub(parent) {
     ].join('\n'),
     { mode: 0o755 },
   )
-  return { claude, argvFile, envFile, cwdFile, scriptFile, writtenFile, registryFile }
+  return { claude, argvFile, envFile, cwdFile, scriptFile, writtenFile, registryFile, versionFile }
 }
 
 /**

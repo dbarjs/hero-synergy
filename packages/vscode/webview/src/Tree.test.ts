@@ -157,6 +157,8 @@ describe('the Tree states with no maps', () => {
   it('shows one plain message and its detail', () => {
     const text = render({
       kind: 'message',
+      health: null,
+      selection: null,
       message: 'This repo has no issue tracker set up.',
       detail: 'Run /setup-matt-pocock-skills in Claude Code.',
       start: NO_START,
@@ -168,6 +170,7 @@ describe('the Tree states with no maps', () => {
   it('says there are no maps for a tracker that holds none', () => {
     const wrapper = render({
       kind: 'maps',
+      health: null,
       collectedAt: '2026-10-07T00:00:00.000Z',
       repo: null,
       notice: null,
@@ -188,6 +191,8 @@ describe('the Tree states with no maps', () => {
   it('leads with both install commands and the pick-one line, each command with ▶ and copy', async () => {
     const wrapper = render({
       kind: 'message',
+      health: null,
+      selection: null,
       message: 'This repo has no issue tracker set up.',
       detail: null,
       start: {
@@ -217,6 +222,8 @@ describe('the Tree states with no maps', () => {
   it('leads with Setup under the message when the repo has no tracker doc', () => {
     const wrapper = render({
       kind: 'message',
+      health: null,
+      selection: null,
       message: 'This repo has no issue tracker set up.',
       detail: null,
       start: {
@@ -233,6 +240,7 @@ describe('the Tree states with no maps', () => {
   it('leads with Chart a map when the tracker holds no map', async () => {
     const wrapper = render({
       kind: 'maps',
+      health: null,
       collectedAt: '2026-10-07T00:00:00.000Z',
       repo: null,
       notice: null,
@@ -257,6 +265,8 @@ describe('the Tree states with no maps', () => {
   it('greys an Action whose skill is missing, with the reason, and posts nothing', async () => {
     const wrapper = render({
       kind: 'message',
+      health: null,
+      selection: null,
       message: 'This repo has no issue tracker set up.',
       detail: null,
       start: {
@@ -310,6 +320,7 @@ describe('a repo with 45 maps, 38 of them finished', () => {
   )
   const model = (finishedOpen: boolean): ViewModel => ({
     kind: 'maps',
+    health: null,
     collectedAt: '2026-10-07T00:00:00.000Z',
     repo: null,
     notice: null,
@@ -342,6 +353,7 @@ describe('what the Tree asks for', () => {
   it('asks to expand a closed map and to collapse an open one', async () => {
     const wrapper = render({
       kind: 'maps',
+      health: null,
       collectedAt: '2026-10-07T00:00:00.000Z',
       repo: null,
       notice: null,
@@ -363,6 +375,7 @@ describe('what the Tree asks for', () => {
   it('asks to expand the Finished fold from the keyboard', async () => {
     const wrapper = render({
       kind: 'maps',
+      health: null,
       collectedAt: '2026-10-07T00:00:00.000Z',
       repo: null,
       notice: null,

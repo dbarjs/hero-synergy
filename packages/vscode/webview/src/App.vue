@@ -32,5 +32,6 @@ onBeforeUnmount(() => window.removeEventListener('message', onMessage))
     @launch="(key, action) => post({ type: 'launch', key, action })"
     @focus-terminal="(key) => post({ type: 'focus-terminal', key })"
     @copy="(key, action) => post({ type: 'copy', key, action })"
+    @dismiss-health="(dismissKey) => post({ type: 'dismiss-health', dismissKey })"
   />
 </template>

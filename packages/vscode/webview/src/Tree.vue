@@ -3,6 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { ActionId, MapSection, ViewModel } from '../../src/protocol.ts'
 import FocusPane from './FocusPane.vue'
+import Health from './Health.vue'
 import MapBranch from './MapBranch.vue'
 import Row from './Row.vue'
 import RowSession from './RowSession.vue'
@@ -23,6 +24,7 @@ const emit = defineEmits<{
   launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
   copy: [key: string, action: ActionId]
+  dismissHealth: [dismissKey: string]
 }>()
 
 // The repo row's age is read against the clock, so tick to keep "tracker read 2 min ago" honest.
@@ -69,7 +71,7 @@ const isStale = (model: Extract<ViewModel, { kind: 'maps' }>): boolean =>
 
 /** A click on the selected row again closes its pane. */
 const select = (key: string): void => {
-  const selected = props.viewModel.kind === 'maps' ? props.viewModel.selection?.key : undefined
+  const selected = props.viewModel.kind === 'loading' ? undefined : props.viewModel.selection?.key
   emit('select', selected === key ? null : key)
 }
 
@@ -82,17 +84,33 @@ const toggle = (key: string, expanded: boolean): void => {
 <template>
   <p v-if="viewModel.kind === 'loading'" class="note">Reading the tracker…</p>
 
-  <div v-else-if="viewModel.kind === 'message'" class="note">
-    <p class="message">{{ viewModel.message }}</p>
-    <p v-if="viewModel.detail" class="detail">{{ viewModel.detail }}</p>
-    <StartActions
-      :start="viewModel.start"
-      @launch="(key, action) => emit('launch', key, action)"
-      @copy="(key, action) => emit('copy', key, action)"
+  <div v-else-if="viewModel.kind === 'message'">
+    <Health
+      v-if="viewModel.health"
+      :health="viewModel.health"
+      :selection="viewModel.selection"
+      @select="(key) => emit('select', key)"
+      @dismiss-health="(dismissKey) => emit('dismissHealth', dismissKey)"
     />
+    <div class="note">
+      <p class="message">{{ viewModel.message }}</p>
+      <p v-if="viewModel.detail" class="detail">{{ viewModel.detail }}</p>
+      <StartActions
+        :start="viewModel.start"
+        @launch="(key, action) => emit('launch', key, action)"
+        @copy="(key, action) => emit('copy', key, action)"
+      />
+    </div>
   </div>
 
   <div v-else role="tree" aria-label="Maps">
+    <Health
+      v-if="viewModel.health"
+      :health="viewModel.health"
+      :selection="viewModel.selection"
+      @select="(key) => emit('select', key)"
+      @dismiss-health="(dismissKey) => emit('dismissHealth', dismissKey)"
+    />
     <Row
       v-if="viewModel.repo !== null"
       class="repo"

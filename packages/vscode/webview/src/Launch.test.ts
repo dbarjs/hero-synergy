@@ -61,6 +61,7 @@ const launchable = (sessions: Record<string, SessionState> = {}): Launching => (
   eventsFile: '/storage/events/repo.jsonl',
   me: null,
   worktrees: new Map(),
+  registryUnreadable: false,
 })
 
 const render = (launching: Launching, selected: string | null = null): VueWrapper =>

@@ -25,12 +25,17 @@ export interface StorageShape {
   /** The JSON value stored under the key, or `undefined` when nothing is. */
   readonly get: (key: string) => Effect.Effect<unknown>
   readonly set: (key: string, value: unknown) => Effect.Effect<void>
+  /** The same, across every workspace: what a dismissed health entry is remembered in. */
+  readonly getGlobal: (key: string) => Effect.Effect<unknown>
+  readonly setGlobal: (key: string, value: unknown) => Effect.Effect<void>
 }
 
-/** Per-workspace storage for what the Cockpit remembers: which nodes are expanded. */
+/** Storage for what the Cockpit remembers: per workspace (the expanded nodes) and across workspaces. */
 export class Storage extends Context.Service<Storage, StorageShape>()('hero-synergy/Storage') {
+  /** `global` is shared by every layer given the same map, as one VS Code profile is by its windows. */
   static readonly inMemory = (
     initial: Readonly<Record<string, unknown>> = {},
+    global: Map<string, unknown> = new Map(),
   ): Layer.Layer<Storage> =>
     Layer.sync(Storage, () => {
       const values = new Map<string, unknown>(Object.entries(initial))
@@ -39,6 +44,11 @@ export class Storage extends Context.Service<Storage, StorageShape>()('hero-syne
         set: (key, value) =>
           Effect.sync(() => {
             values.set(key, value)
+          }),
+        getGlobal: (key) => Effect.sync(() => global.get(key)),
+        setGlobal: (key, value) =>
+          Effect.sync(() => {
+            global.set(key, value)
           }),
       }
     })
@@ -332,6 +342,12 @@ export class Clipboard extends Context.Service<Clipboard, ClipboardShape>()(
 export interface HostEnvironmentShape {
   /** `process.platform`. */
   readonly platform: string
+  /** `vscode.env.appName`, logged at activation for a bug report from a fork. */
+  readonly appName: string
+  /** `vscode.env.appHost`: `desktop`, or the web host. */
+  readonly appHost: string
+  /** `vscode.version`. */
+  readonly vscodeVersion: string
   /** The home directory, whose `.claude/skills` holds personal skills; null when unknown. */
   readonly home: string | null
   /** The `PATH` variable. */
@@ -355,6 +371,9 @@ export class HostEnvironment extends Context.Service<HostEnvironment, HostEnviro
   ): Layer.Layer<HostEnvironment> =>
     Layer.succeed(HostEnvironment, {
       platform: 'linux',
+      appName: 'Visual Studio Code',
+      appHost: 'desktop',
+      vscodeVersion: '1.105.0',
       home: null,
       pathVariable: '',
       claudeSetting: Effect.succeed(''),

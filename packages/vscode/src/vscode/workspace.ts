@@ -29,11 +29,17 @@ export const workspaceFoldersLive: Layer.Layer<WorkspaceFolders> = Layer.succeed
   ),
 })
 
-/** Per-workspace storage over the extension's `workspaceState`. */
-export const storageLive = (memento: vscode.Memento): Layer.Layer<Storage> =>
+/** Storage over the extension's `workspaceState`, and across workspaces over its `globalState`. */
+export const storageLive = (
+  memento: vscode.Memento,
+  globalMemento: vscode.Memento,
+): Layer.Layer<Storage> =>
   Layer.succeed(Storage, {
     get: (key) => Effect.sync(() => memento.get<unknown>(key)),
     set: (key, value) => Effect.promise(() => Promise.resolve(memento.update(key, value))),
+    getGlobal: (key) => Effect.sync(() => globalMemento.get<unknown>(key)),
+    setGlobal: (key, value) =>
+      Effect.promise(() => Promise.resolve(globalMemento.update(key, value))),
   })
 
 /** ↗ Open: an issue in the browser, a local ticket in an editor. */
@@ -218,6 +224,9 @@ export const hostEnvironmentLive = (
 ): Layer.Layer<HostEnvironment> =>
   Layer.succeed(HostEnvironment, {
     platform: process.platform,
+    appName: vscode.env.appName,
+    appHost: vscode.env.appHost,
+    vscodeVersion: vscode.version,
     home: os.homedir(),
     pathVariable: process.env.PATH ?? process.env.Path ?? '',
     claudeSetting: Effect.sync(() => configuration().get<string>('claude.path', '')),

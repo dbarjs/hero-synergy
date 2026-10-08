@@ -20,11 +20,42 @@ const emit = defineEmits<{
   launch: [key: string, action: ActionId]
   focusTerminal: [key: string]
   copy: [key: string, action: ActionId]
+  /** A Health entry's Dismiss. */
+  dismissHealth: [dismissKey: string]
 }>()
 </script>
 
 <template>
-  <section class="pane" :class="`depth-${depth}`" :aria-label="`#${focus.number} ${focus.title}`">
+  <section
+    v-if="focus.kind === 'health'"
+    class="pane health"
+    :class="`depth-${depth}`"
+    aria-label="Health"
+  >
+    <header class="head">
+      <span class="title plain">Health</span>
+      <button type="button" class="close" aria-label="Close" @click="emit('close')">✕</button>
+    </header>
+    <ul class="entries">
+      <li v-for="entry in focus.entries" :key="entry.dismissKey" class="entry" :class="entry.level">
+        <p class="message">
+          <span v-if="entry.level === 'loud'" class="codicon codicon-warning" />
+          {{ entry.message }}
+        </p>
+        <p class="hint">{{ entry.hint }}</p>
+        <button type="button" class="dismiss" @click="emit('dismissHealth', entry.dismissKey)">
+          Dismiss
+        </button>
+      </li>
+    </ul>
+  </section>
+
+  <section
+    v-else
+    class="pane"
+    :class="`depth-${depth}`"
+    :aria-label="`#${focus.number} ${focus.title}`"
+  >
     <header class="head">
       <a
         class="title"
@@ -128,6 +159,46 @@ const emit = defineEmits<{
   padding: 6px 8px;
   border-left: 2px solid var(--vscode-focusBorder);
   background: var(--vscode-editorWidget-background, var(--vscode-sideBar-background));
+}
+.title.plain {
+  color: var(--vscode-foreground);
+  cursor: default;
+}
+.entries {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  column-gap: 8px;
+  margin-top: 4px;
+}
+.entry .message,
+.entry .hint {
+  grid-column: 1;
+  margin: 0;
+}
+.entry .hint {
+  color: var(--vscode-descriptionForeground);
+}
+.entry.loud .codicon {
+  color: var(--vscode-editorWarning-foreground);
+}
+.entry.quiet .message {
+  color: var(--vscode-descriptionForeground);
+}
+.dismiss {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: start;
+  border: 0;
+  border-radius: 2px;
+  padding: 1px 6px;
+  color: var(--vscode-button-secondaryForeground);
+  background: var(--vscode-button-secondaryBackground);
+  cursor: pointer;
 }
 .depth-0 {
   margin-left: 20px;
