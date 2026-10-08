@@ -1,5 +1,8 @@
 import type { Mode, SessionView, TicketType } from '@hero-synergy/core'
 
+/** The session the Tree shows for a ticket; core owns it, the webview imports it from here. */
+export type { SessionView }
+
 /**
  * The messages between the extension host and the Tree's webview. The webview
  * imports this module for its types only and validates nothing (ADR 0002); the
