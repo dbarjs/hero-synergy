@@ -2484,7 +2484,8 @@
       "map": ".scratch/effort-24/MAP.md",
       "parent": null,
       "blockedBy": [
-        2
+        2,
+        3
       ],
       "blocks": [],
       "resolution": {
@@ -2528,7 +2529,8 @@
       "map": ".scratch/effort-24/MAP.md",
       "parent": null,
       "blockedBy": [
-        3
+        3,
+        4
       ],
       "blocks": [],
       "resolution": null

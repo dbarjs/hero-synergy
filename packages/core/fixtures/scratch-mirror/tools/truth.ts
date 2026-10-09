@@ -133,15 +133,26 @@ export function typeAndMode(header: Map<string, string>): Pick<TicketReading, 't
   }
 }
 
-/** A header value's items: split on commas outside brackets and parentheses. */
+/** Text that starts with a reference: a Markdown link, a bare `NN-<slug>.md`, or `NN` or `#NN`. */
+const STARTS_WITH_REFERENCE =
+  /^\s*(?:\[[^\]]*\]\(|(?:[^\s/]*\/)?\d+-[^\s/]*\.md\b|#?\d{1,3}(?![\d-]))/
+
+/**
+ * A header value's items, outside brackets and parentheses: a comma always splits; a semicolon
+ * splits only before a reference, and is otherwise part of the item's annotation (ticket 145).
+ */
 export function splitItems(value: string): string[] {
   const items: string[] = []
   let depth = 0
   let current = ''
-  for (const character of value) {
+  for (const [index, character] of [...value].entries()) {
     if (character === '(' || character === '[') depth++
     if ((character === ')' || character === ']') && depth > 0) depth--
-    if (character === ',' && depth === 0) {
+    const splits =
+      depth === 0 &&
+      (character === ',' ||
+        (character === ';' && STARTS_WITH_REFERENCE.test([...value].slice(index + 1).join(''))))
+    if (splits) {
       items.push(current)
       current = ''
     } else current += character

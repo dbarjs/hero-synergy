@@ -105,6 +105,18 @@ describe('splitItems', () => {
       '03',
     ])
   })
+
+  it('splits on a semicolon only before a reference, else keeps it in the annotation', () => {
+    expect(splitItems('[a](01-a.md) (closed); [b](02-b.md) (closed — done)')).toEqual([
+      '[a](01-a.md) (closed)',
+      '[b](02-b.md) (closed — done)',
+    ])
+    expect(splitItems('01 resolved 2026-01-02; frontier — next')).toEqual([
+      '01 resolved 2026-01-02; frontier — next',
+    ])
+    expect(splitItems('01 (done); 03-c.md; #04')).toEqual(['01 (done)', '03-c.md', '#04'])
+    expect(splitItems('01 (closed; done), 02')).toEqual(['01 (closed; done)', '02'])
+  })
 })
 
 describe('referencedTickets', () => {
