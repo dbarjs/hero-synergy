@@ -222,7 +222,7 @@
   },
   {
     "path": ".scratch/blockers/issues/14-swap-step-14.md",
-    "form": "`Blocked by: — ([<NN>](<NN>-<slug>.md) closed <date>)`: a none marker naming the closed blocker",
+    "form": "`Blocked by: — ([<NN>](<NN>-<slug>.md) closed <date>)`: a none marker naming a closed ticket: no blockers",
     "kind": "ticket",
     "reading": {
       "state": "open",
@@ -232,7 +232,7 @@
       "mode": null,
       "map": null,
       "parent": null,
-      "blockedBy": [1],
+      "blockedBy": [],
       "blocks": [],
       "resolution": null
     }
@@ -249,7 +249,7 @@
       "mode": null,
       "map": null,
       "parent": null,
-      "blockedBy": [2],
+      "blockedBy": [],
       "blocks": [],
       "resolution": null
     }
@@ -266,7 +266,7 @@
       "mode": null,
       "map": null,
       "parent": null,
-      "blockedBy": [2],
+      "blockedBy": [],
       "blocks": [],
       "resolution": null
     }
@@ -1407,7 +1407,9 @@
       "blocks": [],
       "resolution": {
         "placement": "answer",
-        "firstLine": "Yes, after a dry check."
+        "firstLine": "Yes, after a dry check.",
+        "at": null,
+        "author": null
       }
     }
   },
@@ -1427,13 +1429,15 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-resolution",
-        "firstLine": "Yes, after a dry check."
+        "firstLine": "Yes, after a dry check.",
+        "at": "2025-05-01",
+        "author": null
       }
     }
   },
   {
     "path": ".scratch/resolutions/issues/03-returns-3.md",
-    "form": "`### Resolution — <date> (<prose>)` under `## Comments`",
+    "form": "`### Resolution — <date> (<prose>)` under `## Comments`, after a dated item",
     "kind": "ticket",
     "reading": {
       "state": "closed",
@@ -1447,7 +1451,9 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-resolution",
-        "firstLine": "No, a week in the dry box first."
+        "firstLine": "No, a week in the dry box first.",
+        "at": "2025-05-02",
+        "author": null
       }
     }
   },
@@ -1467,7 +1473,9 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-resolution",
-        "firstLine": "Yes, the same day."
+        "firstLine": "Yes, the same day.",
+        "at": "2025-05-03",
+        "author": null
       }
     }
   },
@@ -1487,7 +1495,9 @@
       "blocks": [],
       "resolution": {
         "placement": "resolution",
-        "firstLine": "Yes, the same day."
+        "firstLine": "Yes, the same day.",
+        "at": "2025-05-04",
+        "author": null
       }
     }
   },
@@ -1507,13 +1517,15 @@
       "blocks": [],
       "resolution": {
         "placement": "resolution",
-        "firstLine": "Yes, the same day."
+        "firstLine": "Yes, the same day.",
+        "at": null,
+        "author": null
       }
     }
   },
   {
     "path": ".scratch/resolutions/issues/07-returns-7.md",
-    "form": "a bold paragraph, `**Resolution …**`",
+    "form": "a bold label leading a paragraph, `**Resolution …**`",
     "kind": "ticket",
     "reading": {
       "state": "closed",
@@ -1527,13 +1539,15 @@
       "blocks": [],
       "resolution": {
         "placement": "bold-paragraph",
-        "firstLine": "**Resolution (2025-05-05):** yes, after a dry check."
+        "firstLine": "yes, after a dry check.",
+        "at": "2025-05-05",
+        "author": null
       }
     }
   },
   {
     "path": ".scratch/resolutions/issues/08-returns-8.md",
-    "form": "a dated list item under `## Comments`, `- <date> (<person>): <prose>`",
+    "form": "a dated item under `## Comments`, `- <date> (<person>): <prose>`, and no label",
     "kind": "ticket",
     "reading": {
       "state": "closed",
@@ -1547,13 +1561,15 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-item",
-        "firstLine": "- 2025-05-06 (wren): done; returns go back the same day."
+        "firstLine": "- 2025-05-06 (wren): done; returns go back the same day.",
+        "at": "2025-05-06",
+        "author": "wren"
       }
     }
   },
   {
     "path": ".scratch/resolutions/issues/09-returns-9.md",
-    "form": "other text under `## Comments`",
+    "form": "other text under `## Comments`, and no label",
     "kind": "ticket",
     "reading": {
       "state": "closed",
@@ -1567,7 +1583,9 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-text",
-        "firstLine": "Returns go back the same day; the dry box is for gifts only."
+        "firstLine": "Returns go back the same day; the dry box is for gifts only.",
+        "at": null,
+        "author": null
       }
     }
   },
@@ -1577,6 +1595,128 @@
     "kind": "ticket",
     "reading": {
       "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/11-returns-11.md",
+    "form": "several candidates: `## Answer` and dated items, `## Answer` wins",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "answer",
+        "firstLine": "Yes, the same day.",
+        "at": null,
+        "author": null
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/12-returns-12.md",
+    "form": "several candidates: a bold `**Done**` beside a Resolution heading, the heading wins",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "Yes, after a dry check.",
+        "at": "2025-05-08",
+        "author": null
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/13-returns-13.md",
+    "form": "several candidates: `## Resolution` and dated items, the Resolution wins",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "resolution",
+        "firstLine": "No, a week in the dry box first.",
+        "at": "2025-05-09",
+        "author": null
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/14-returns-14.md",
+    "form": "several candidates: two `### Resolution` headings, the last wins",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "No, a week in the dry box first.",
+        "at": "2025-05-12",
+        "author": null
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/15-open-dated-items.md",
+    "form": "an open ticket with dated items under `## Comments`: no resolution",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/16-open-resolution-heading.md",
+    "form": "an open ticket with a `### Resolution` heading: no resolution",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
       "role": null,
       "assignee": null,
       "type": null,
@@ -2275,7 +2415,9 @@
       "blocks": [],
       "resolution": {
         "placement": "comments-resolution",
-        "firstLine": "Gold."
+        "firstLine": "Gold.",
+        "at": "2025-06-02",
+        "author": null
       }
     }
   },
