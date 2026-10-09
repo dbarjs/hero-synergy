@@ -16,6 +16,7 @@ const LOUD = [
   'closed-unrecorded',
   'closed-no-resolution',
   'unknown-status',
+  'map-file-ambiguous',
 ]
 
 describe('the drift table', () => {
@@ -60,4 +61,45 @@ describe('the drift table', () => {
     })
     expect(driftEntryOf({ code: 'no-map' }).detail).toBeNull()
   })
+
+  it.each([
+    {
+      code: 'header-key-bold',
+      level: 'quiet',
+      message: 'A header line has a bold key.',
+      detail: 'Status, Parent',
+      withDetail: 'A header line has a bold key: Status, Parent.',
+      hint: 'A header line is a plain "Key: value" line before the first ## heading.',
+    },
+    {
+      code: 'map-file-ambiguous',
+      level: 'loud',
+      message: 'The effort has more than one map file.',
+      detail: 'MAP.md, map.md; read map.md',
+      withDetail: 'The effort has more than one map file: MAP.md, map.md; read map.md.',
+      hint: 'An effort keeps one map file, map.md.',
+    },
+    {
+      code: 'map-status-unknown',
+      level: 'quiet',
+      message:
+        "The map's Status line starts with a word this version does not read; the map reads as open.",
+      detail: '01',
+      withDetail:
+        "The map's Status line starts with a word this version does not read; the map reads as open: 01.",
+      hint: 'Only a Status line that starts with DONE or destination reached closes a local map.',
+    },
+  ] as const)(
+    '$code: words the local tracker reader raises',
+    ({ code, level, message, detail, withDetail, hint }) => {
+      expect(driftEntryOf({ code })).toEqual({ code, level, message, detail: null, hint })
+      expect(driftEntryOf({ code, detail })).toEqual({
+        code,
+        level,
+        message: withDetail,
+        detail,
+        hint,
+      })
+    },
+  )
 })

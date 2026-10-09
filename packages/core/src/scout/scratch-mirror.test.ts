@@ -3,7 +3,8 @@ import { Effect } from 'effect'
 
 import { mirrorRepo, mirrorTruth, type FileTruth } from '../../fixtures/scratch-mirror/seed.ts'
 import { FileSystem } from '../file-system.ts'
-import { collectLocal, readLocalTracker } from './local.ts'
+import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
+import { scoutColumns, truthColumns } from './readings.ts'
 
 const ROOT = '/home/ana/mirror'
 const repo = mirrorRepo(ROOT)
@@ -107,4 +108,38 @@ describe('the scratch mirror', () => {
     expect(disagreeing).toHaveLength(11)
     for (const file of disagreeing) expect(file.kind).not.toBe('note')
   })
+})
+
+describe('the local reader on the scratch mirror', () => {
+  const files = FileSystem.inMemory(repo)
+  const efforts = Effect.runSync(readLocalEfforts(ROOT).pipe(Effect.provide(files)))
+
+  it.each(truth)('agrees with the truth of $path', (file) => {
+    expect(scoutColumns(efforts, file.path)).toEqual(truthColumns(file))
+  })
+
+  it.effect('shows the 20 open maps in directory order and hides the 15 closed ones', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* readLocalTracker(ROOT).pipe(Effect.provide(files), Effect.orDie)
+      const open = maps.filter((map) => map.reading.state === 'open').map((map) => map.path)
+      expect(open).toHaveLength(20)
+      expect(snapshot.maps.map((map) => (map.ref.tracker === 'local' ? map.ref.path : ''))).toEqual(
+        open,
+      )
+      expect(snapshot.maps.map((map) => map.number)).toEqual(
+        open.map((path) => Number(/effort-(\d+)/.exec(path)![1])),
+      )
+      const hidden = new Set(
+        maps.filter((map) => map.reading.state === 'closed').map((map) => effortOf(map.path)),
+      )
+      expect(hidden.size).toBe(15)
+      for (const map of snapshot.maps) {
+        for (const ticket of map.tickets) {
+          expect(hidden.has(effortOf(ticket.ref.tracker === 'local' ? ticket.ref.path : ''))).toBe(
+            false,
+          )
+        }
+      }
+    }),
+  )
 })
