@@ -18,8 +18,8 @@ export type ResolutionPlacement =
 
 /** The careful reading of one ticket file: what a reader of the whole file concludes. */
 export interface TicketReading {
-  /** Null where the reading is unsettled. */
-  readonly state: 'open' | 'claimed' | 'closed' | null
+  /** What the file's own lines declare: a ticket closes only when nothing in its state is open. */
+  readonly state: 'open' | 'claimed' | 'closed'
   /** The triage role the file names, on its Status line or a `Labels:` line. */
   readonly role:
     | 'needs-triage'
@@ -55,8 +55,8 @@ export interface TicketReading {
 
 /** The careful reading of one map file. */
 export interface MapReading {
-  /** Null where the reading is unsettled. */
-  readonly state: 'open' | 'closed' | null
+  /** What its own Status line declares; a map with none, or with `route walked`, is open. */
+  readonly state: 'open' | 'closed'
   /** The ticket numbers its Decisions so far links, in order. */
   readonly decisions: ReadonlyArray<number>
 }
@@ -66,8 +66,11 @@ interface Common {
   readonly path: string
   /** The catalogued form the file stands for. */
   readonly form: string
-  /** Fields the careful reading leaves open until #134 settles them; each is null in `reading`. */
-  readonly unsettled?: { readonly fields: ReadonlyArray<string>; readonly why: string }
+  /**
+   * Evidence elsewhere in the tracker (the map's prose, a heading, a second state on the line)
+   * that contradicts the state the file declares. It never changes the reading (#134).
+   */
+  readonly disagreements?: ReadonlyArray<string>
 }
 
 export type FormTruth =
