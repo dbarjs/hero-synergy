@@ -169,3 +169,4 @@ _Avoid_: feature request, enhancement
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
+- "Status" is a session's registry status (busy, idle, waiting). On a local tracker the `Status:` line carries a ticket's state, its claim or its triage role: say "state" for open or closed, and "Status line" for the line itself.
