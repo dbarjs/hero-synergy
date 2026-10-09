@@ -38,6 +38,7 @@
     "build": "vp pack && vp build",
     "typecheck": "vue-tsc --noEmit -p webview",
     "test:integration": "vp run build && vscode-test",
+    "capture": "vp run build && node test/capture/capture.mts",
     "package": "vsce package --no-dependencies --allow-unused-files-pattern",
     "publish:marketplace": "sh -c 'vsce publish --packagePath *.vsix --azure-credential --skip-duplicate'",
     "publish:open-vsx": "sh -c 'ovsx publish --packagePath *.vsix --trusted-publishing --skip-duplicate'"

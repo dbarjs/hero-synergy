@@ -1,0 +1,53 @@
+name: Capture
+
+# The README shots and the loop, taken by `vp run capture` on Linux and on macOS, whose fonts may
+# render better. Runs on demand, and on a pull request that changes the capture run itself; the
+# result is an artifact per OS, never a commit.
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - packages/vscode/test/capture/**
+      - .github/workflows/capture.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: capture (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux
+            os: ubuntu-latest
+          - name: macos
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: voidzero-dev/setup-vp@v1.21.1
+        with:
+          node-version-file: .node-version
+          cache: true
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - if: runner.os == 'macOS'
+        run: brew install ffmpeg
+      - run: vp run -r build
+      # Linux has no display; the script runs itself under xvfb-run.
+      - run: vp run --filter hero-synergy capture
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: capture-${{ matrix.name }}
+          path: packages/vscode/out-capture
+          if-no-files-found: error
