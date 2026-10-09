@@ -8,6 +8,7 @@ import {
   referencedTickets,
   resolution,
   splitItems,
+  statusClaims,
   triageRole,
   typeAndMode,
 } from './truth.ts'
@@ -47,6 +48,22 @@ describe('triageRole', () => {
     expect(triageRole(header('Status: wontfix'))).toBe('wontfix')
     expect(triageRole(header('Labels: wayfinder:task, ready-for-agent'))).toBe('ready-for-agent')
     expect(triageRole(header('Status: closed (resolved)'))).toBeNull()
+  })
+})
+
+describe('statusClaims', () => {
+  it('reads a claim as the first word, or as the one word after `open` and a dash or parenthesis', () => {
+    expect(statusClaims(header('Status: claimed'))).toBe(true)
+    expect(statusClaims(header('Status: open — claimed 2026-01-02 (HITL: live)'))).toBe(true)
+    expect(statusClaims(header('Status: open (claimed by the agent)'))).toBe(true)
+  })
+
+  it('reads no claim deeper in the annotation, nor on a closed line', () => {
+    expect(statusClaims(header('Status: open — ready-for-human (claimed 2026-01-02)'))).toBe(false)
+    expect(statusClaims(header('Status: closed (claimed 2026-01-01, resolved 2026-01-02)'))).toBe(
+      false,
+    )
+    expect(statusClaims(header('Status: open'))).toBe(false)
   })
 })
 
