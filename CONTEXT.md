@@ -25,11 +25,11 @@ A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.m
 _Avoid_: board, plan, epic
 
 **Ticket**:
-A child issue of a map holding one question, typed by a `wayfinder:<type>` label: research, prototype, grilling or task.
+A child issue of a map holding one question, typed by a `wayfinder:<type>` label (or, on a local tracker, a `Type:` or `Label:` header line): research, prototype, grilling or task.
 _Avoid_: card, story
 
 **AFK ticket**:
-A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent, unless it is marked ready for a human. A ticket with no type is not one.
+A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent, unless it is marked HITL or ready for a human. A ticket with no type is not one.
 _Avoid_: autonomous ticket, unattended ticket
 
 **Frontier**:
@@ -39,6 +39,14 @@ _Avoid_: backlog, ready list
 **Claim**:
 A ticket marked as taken, made by the session before any work: an assignee on GitHub, a `Status: claimed` line on a local tracker.
 _Avoid_: lock, reservation
+
+**Header line**:
+A `Key: value` line before a local ticket's or map's first H2, with a plain or bold key: the only place the scout reads a local item's type, blockers, map, claim and state.
+_Avoid_: front matter, metadata
+
+**Blocker**:
+A ticket another ticket waits on: the tracker's blocked-by link, or on a local tracker the reference at the start of an item of a `Blocked by:` or `Blocks:` header line. A note after the reference is never read; the blocker's state is its own.
+_Avoid_: dependency, prerequisite
 
 **Neighbourhood**:
 A ticket's immediate neighbours: what it waits on (its blockers, wherever they live) and what it clears the way for (the tickets of its map that wait on it, found by inverting the blockers). Derived on every render, never stored.
