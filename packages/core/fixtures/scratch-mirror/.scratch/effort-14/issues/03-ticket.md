@@ -38,7 +38,7 @@ Built on the working tree, lorem committed (the user lorem). Lorem (lorem) lorem
    - **Lorem** (from 02's notes): the lorem `lorem`/`lorem` lorem.
    - **Lorem**: lorem `lorem` lorem. Its `status` lorem — "`status` is a lorem of the 2025-05-07 drop" — lorem ticket.
    - **Lorem**: lorem pendente lorem.
-2. **Lorem** — [`lorem`](../../../path/to/lorem.md). The lorem.
+2. **Lorem 100** — [`lorem/lorem/0061-lorem.md`](../../../path/to/lorem.md). The lorem.
    - **Context**: the lorem `Lorem` lorem this session: `lorem(...)` lorem `*Lorem`lorem (lorem). Lorem `lorem`, lorem.
    - **Decisions 1–5**: the lorem, `lorem` lorem.
    - Lorem ipsum.

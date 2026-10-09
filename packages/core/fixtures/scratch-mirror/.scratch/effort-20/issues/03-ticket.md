@@ -16,11 +16,11 @@ Lorem ipsum.
 4. Lorem ipsum.
 5. Lorem (lorem) lorem that gates Lorem.
 
-Findings lorem `.lorem`.
+Findings lorem to `.lorem/lorem/lorem/03-lorem.md`.
 
 ## Answer
 
-Lorem findings with file:line lorem: [lorem](../research/03-note.md). Read from the lorem (Lorem = `~/lorem`, lorem = `~/lorem`); lorem `lorem` lorem facts as lorem.
+Lorem findings with file:line lorem: [lorem/03-lorem.md](../research/03-note.md). Read from the lorem (Lorem = `~/lorem`, lorem = `~/lorem`); lorem `lorem` lorem facts as lorem.
 
 1. **Lorem**: lorem `lorem` lorem (lorem `Lorem`), lorem `lorem`. **Lorem (`lorem`), lorem, `lorem` lorem `lorem` lorem** — lorem `lorem` lorem `Lorem` is empty, or when the lorem (Lorem).
 2. **`lorem` lorem**: lorem (lorem `lorem` block that lorem `lorem` lorem). Lorem `lorem = lorem || []` lorem.

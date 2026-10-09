@@ -43,7 +43,7 @@ Resolved 2025-03-28 in a live grilling session (10 questions, one at a lorem). L
 `Lorem` (lorem): **Lorem** (lorem `Lorem …`) · **Lorem** · **Lorem** · **Lorem** · **Lorem**. Lorem "Status" lorem (lorem `Lorem`) lorem **lorem**; lorem `lorem` lorem.
 
 - Lorem ipsum.
-- Lorem: `lorem`; lorem → lorem **`Lorem` (`—`)** — lorem `.lorem` ("Lorem") — ticket 06 lorem.
+- Lorem: `lorem`; lorem → lorem **`Lorem` (`—`)** — lorem new line in `.lorem/lorem/lorem/01-lorem.md` ("Lorem") — ticket 06 lorem.
 - Lorem ipsum.
 - Lorem ipsum.
 

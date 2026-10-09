@@ -27,7 +27,7 @@ Done 2025-05-06, working tree only (uncommitted — the user lorem). `#`/`Lorem.
 2. **Lorem** — `Lorem`: `lorem`/`lorem` lorem (lorem) lorem `#`/`Lorem.` lorem comment above the lorem. `Lorem` lorem (never passed lorem).
 3. **Lorem** — lorem `lorem` ("lorem…"): lorem `#` lorem `Lorem.` lorem `Lorem`/`Lorem` lorem (`Lorem` lorem `Lorem` label are lorem). `Lorem` lorem % lorem.
 4. **Proof** — lorem `lorem` lorem (`lorem` + lorem `lorem`): **lorem** (`lorem`). Lorem → "Lorem" → lorem → lorem `# | Lorem | Lorem. | Lorem. (Lorem$) | Lorem (Lorem$) | Lorem | (lorem)`, lorem" → "Lorem" → lorem → lorem (`lorem`). Lorem (lorem one) and the ticket is Lorem.
-5. **Lorem** — Lorem (lorem); Lorem (2025-05-06)" line (Lorem = Lorem). Lorem `lorem` notes the lorem labels of the lorem are superseded (lorem); lorem `lorem` lorem `#`/`Lorem.` lorem "`>lorem ⇒ Lorem` lorem (ticket 01 lorem). Lorem in-session: an lorem (`lorem`, lorem) — lorem.
+5. **Lorem** — Lorem (lorem); Lorem (2025-05-06)" line (Lorem = Lorem). Lorem `lorem` notes the lorem labels of the lorem are superseded (lorem); lorem `lorem` lorem `#`/`Lorem.` lorem "`>lorem ⇒ Lorem` lorem (ticket 01 lorem). Lorem in-session: an lorem (`0014-lorem.md`, lorem) — lorem.
 6. **Gates** — `lorem` lorem; `lorem` lorem / **lorem** lorem (lorem), **lorem % lorem** (lorem %, lorem %); `lorem` **lorem %** (lorem `Lorem` lorem); `lorem` lorem (lorem `lorem`/`lorem` lorem).
 
 Frontier after this ticket: **03 only** (lorem acceptance, HITL).

@@ -2,7 +2,7 @@
 
 Lorem ipsum.
 `lorem` "Lorem" (lorem). Ticket:
-Lorem ipsum.
+`../../lorem/02-lorem.md`.
 
 Lorem ipsum.
 

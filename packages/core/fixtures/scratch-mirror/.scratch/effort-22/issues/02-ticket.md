@@ -18,13 +18,13 @@ Lorem ipsum.
 4. Lorem ipsum.
 5. Lorem map to each lorem (lorem `lorem` lorem).
 
-Lorem `lorem` + lorem `lorem` lorem findings (lorem) lorem `lorem`. Lorem.
+Lorem `lorem` + lorem `lorem` lorem findings (lorem) as `lorem/02-lorem.md`. No lorem.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-15)
 
-Lorem findings: [lorem](../assets/02-note.md), lorem [lorem](../assets/02-note.png).
+Lorem findings: [lorem/02-lorem.md](../assets/02-note.md), lorem [lorem](../assets/02-note.png).
 
 - Lorem ipsum.
 - Lorem ipsum.

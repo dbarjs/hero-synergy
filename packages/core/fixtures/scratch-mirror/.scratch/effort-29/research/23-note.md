@@ -112,4 +112,4 @@ Lorem ipsum.
 - Lorem (2025-03-13, via `lorem`): lorem — **lorem 2025-03-15, 0 open**; 5.1.0 lorem (4 open); open-issue lorem (no 5.x blockers on lorem); lorem (lorem)
 - Lorem (lorem `lorem`, 2025-03-13): lorem spec — 5/5 lorem/`*/*`-lorem verification, lorem pass; lorem (`lorem`, lorem)
 - Lorem: `lorem`, `lorem`, `lorem` (lorem ^lorem `>=20.12`), committed `lorem/**` (lorem), lorem `#/lorem` lorem (lorem)
-- Lorem: [lorem](02-note.md) (2025-03-12 lorem)
+- Lorem: [02-note.md](02-note.md) (2025-03-12 lorem)

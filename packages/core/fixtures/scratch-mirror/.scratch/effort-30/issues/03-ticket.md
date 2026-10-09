@@ -42,7 +42,7 @@ Resolution: files lorem + smoke lorem as a comment, `Status: closed`, map line.
 
 **Lorem.** Lorem `lorem` lorem; `lorem` lorem `lorem` (lorem). Lorem `lorem` (lorem) — lorem `lorem`; `lorem` lorem; **lorem failed** and lorem (lorem). Lorem `{ lorem (lorem), lorem (lorem) }` — a failed lorem `[]` (lorem `lorem`/`lorem ?? []`). Lorem `lorem` lorem `Lorem/{lorem}` (lorem `lorem`), lorem `lorem` (lorem → lorem); lorem…" lorem (Lorem). Lorem `lorem` (lorem: `lorem = lorem || lorem || lorem`) lorem `lorem` lorem.
 
-**Lorem.** `lorem` (lorem), `lorem` (lorem), lorem `Lorem` (+ `Lorem`/`Lorem` lorem `Lorem`) lorem `lorem`. Lorem (`lorem`, lorem), lorem notes on Lorem (`lorem`) lorem **Lorem** lorem, `lorem` Lorem (§Lorem `lorem`).
+**Lorem.** `lorem` (lorem), `lorem` (lorem), lorem `Lorem` (+ `Lorem`/`Lorem` lorem `Lorem`) lorem `lorem`. Lorem 100 (`lorem/lorem/0058-lorem.md`, lorem), lorem notes on Lorem 100 (`0011-lorem.md`) and 100, Lorem **Lorem** lorem, `lorem` Lorem (§Lorem `lorem`).
 
 **Findings lorem.** (lorem) Lorem **lorem** (lorem → `Lorem`, status 0): lorem (lorem `lorem`), lorem empty Lorem — the smoke lorem context with a lorem `lorem` lorem `lorem.__lorem__.lorem`. (lorem) Lorem the smoke lorem `lorem` (lorem `lorem` lorem `.lorem/**`) lorem. (lorem) Lorem `lorem` (lorem `lorem` lorem).
 

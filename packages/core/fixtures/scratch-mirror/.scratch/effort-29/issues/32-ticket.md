@@ -12,7 +12,7 @@ Map: [Lorem + @lorem](../MAP.md)
 Lorem from ticket 31 lorem on 2025-03-20: `@lorem-{lorem}` lorem `lorem` → **lorem** (lorem #lorem). Lorem:
 
 1. Lorem [../lorem/](../research/31-folder/README.md) with the lorem (findings §lorem) lorem.
-2. Lorem the §6 checklist of [../lorem](../research/31-note.md): lorem (lorem `@lorem` + `@lorem`, lorem `@lorem`, lorem ≥ lorem), `lorem` lorem → `lorem().lorem()`, lorem, §lorem (lorem), lorem verification (`lorem` + `lorem` + lorem + `lorem` + `lorem` smoke), lorem (Lorem).
+2. Lorem the §6 checklist of [../lorem/31-lorem.md](../research/31-note.md): lorem (lorem `@lorem` + `@lorem`, lorem `@lorem`, lorem ≥ lorem), `lorem` lorem → `lorem().lorem()`, lorem, §lorem (lorem), lorem verification (`lorem` + `lorem` + lorem + `lorem` + `lorem` smoke), lorem (Lorem).
 
 Lorem (user, 2025-03-20): the lorem ~lorem `lorem` (lorem) — lorem `lorem` lorem `lorem` (lorem `lorem@lorem` lorem) lorem.
 

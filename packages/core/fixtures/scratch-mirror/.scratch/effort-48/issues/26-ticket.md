@@ -11,7 +11,7 @@ Map: [Lorem](../MAP.md)
 
 Lorem (2025-04-04, lorem): "lorem (lorem, `lorem`, Lorem `lorem`): lorem **lorem** lorem; `Lorem` → **lorem** (`Lorem`, lorem); lorem (`lorem`, `lorem`, `lorem`, `lorem`, `lorem…`, `100`) all resolved, so the Lorem.", `Lorem` lorem `Lorem` lorem, `Lorem` lorem.
 
-Lorem (lorem session, lorem): lorem **lorem** — Lorem (`lorem`): lorem a **100** (no empty-100 lorem), lorem `lorem` lorem `Lorem` lorem (`lorem`) lorem `>= lorem` / lorem (`status` 0) as `lorem` = lorem **lorem** lorem (lorem). `lorem` lorem `lorem`. `lorem` lorem, `:lorem`/`:lorem` lorem. The spec (`lorem` lorem) lorem **lorem** lorem **lorem** lorem.
+Lorem (lorem session, lorem): lorem **lorem** — Lorem 100 (`lorem/lorem/0011-lorem.md`): the lorem a **100** (no empty-100 lorem), lorem `lorem` lorem `Lorem` lorem (`lorem`) lorem `>= lorem` / lorem (`status` 0) as `lorem` = lorem **lorem** lorem (lorem). `lorem` lorem `lorem`. `lorem` lorem, `:lorem`/`:lorem` lorem. The spec (`lorem` lorem) lorem **lorem** lorem **lorem** lorem.
 
 Lorem: **lorem now answers 100 lorem** (lorem), lorem. The ticket lorem" (lorem empty) from "100 on lorem" (lorem), lorem.
 

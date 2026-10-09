@@ -8,7 +8,7 @@ Map: ../Lorem
 
 ## Question
 
-Findings in [lorem](../assets/02-note.md): the shipped Lorem `Lorem` lorem (Lorem `lorem` lorem), lorem `lorem` lorem `Lorem=lorem` (lorem `lorem`) lorem `lorem` — Lorem and the recommendation:
+Findings in [lorem/02-lorem.md](../assets/02-note.md): the shipped Lorem `Lorem` lorem (Lorem `lorem` lorem), lorem `lorem` lorem `Lorem=lorem` (lorem `lorem`) lorem `lorem` — Lorem and the recommendation:
 
 1. Lorem ipsum.
 2. Lorem `Lorem=lorem` lorem `lorem` lorem `lorem ??= "lorem"` lorem `lorem`. Lorem (lorem ≈lorem → lorem) — lorem **lorem** in the resolution lorem `.lorem` line and scope the lorem.

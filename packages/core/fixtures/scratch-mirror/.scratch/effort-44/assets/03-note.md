@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Research lorem for ticket [../lorem](../issues/03-ticket.md). Resolved 2025-03-19 by the research subagent from lorem sources (lorem `lorem`, Lorem `lorem`, lorem `lorem` lorem `lorem`, lorem). Lorem; every claim lorem `lorem`.
+Research lorem for ticket [../lorem/03-lorem.md](../issues/03-ticket.md). Resolved 2025-03-19 by the research subagent from lorem sources (lorem `lorem`, Lorem `lorem`, lorem `lorem` lorem `lorem`, lorem). Lorem; every claim lorem `lorem`.
 
 Lorem facts that lorem (lorem, read 2025-03-19):
 

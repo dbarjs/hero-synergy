@@ -16,7 +16,7 @@ Lorem **lorem** (2025-03-19) lorem sources (lorem `lorem` lorem). Lorem facts to
 4. Lorem ipsum.
 5. **Lorem** lorem issues; Lorem (`@lorem` lorem) lorem `lorem` lorem `lorem` lorem `lorem` lorem (lorem `lorem` lorem `lorem`, `lorem`, `lorem`); Lorem `--lorem` lorem (`lorem` / `lorem`) — lorem.
 
-Lorem `lorem`: lorem (lorem → lorem → lorem → lorem?), lorem (lorem), and a "blocking lorem (empty if none). Read-only: lorem `lorem/`, lorem.
+Lorem as `lorem/01-lorem.md`: a lorem (lorem → lorem → lorem → lorem?), lorem (lorem), and a "blocking lorem (empty if none). Read-only: lorem `lorem/`, lorem.
 
 ## Comments
 
@@ -29,4 +29,4 @@ Lorem `lorem`: lorem (lorem → lorem → lorem → lorem?), lorem (lorem), and 
 - Lorem ipsum.
 - **Blocking lorem.** Lorem (lorem) lorem: (lorem) `lorem` lorem but its `build` block is dropped and `lorem` lorem `./`; `lorem` lorem → lorem; (lorem) lorem `lorem` lorem `lorem` lorem `lorem`; (lorem) lorem `lorem` (lorem) lorem `lorem` lorem `lorem`; lorem #lorem (lorem `/lorem/` lorem) lorem `.lorem` lorem.
 - Lorem ipsum.
-- Lorem: [../lorem](../assets/01-note.md)
+- Lorem: [../lorem/01-lorem.md](../assets/01-note.md)

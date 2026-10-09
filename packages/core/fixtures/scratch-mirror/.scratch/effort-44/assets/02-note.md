@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Research lorem [../lorem](../issues/02-ticket.md) — resolved 2025-03-19 by the research subagent. Read-only research: lorem `lorem` lorem.
+Research lorem for [../lorem/02-lorem.md](../issues/02-ticket.md) — resolved 2025-03-19 by the research subagent. Read-only research: lorem `lorem` lorem.
 
 Lorem the claims below were lorem (lorem, 2025-03-19): `lorem`/`@lorem` **lorem** (lorem 2025-03-19 06:44 Lorem `lorem` lorem, so ticket 01 lorem **10.5.8** (2025-03-14) or lorem); `lorem` **lorem** lorem `lorem` (lorem); `@lorem` lorem (lorem: `lorem`, `lorem *` — **lorem**, lorem); `lorem` **1.62.1** (2025-02-28, Lorem **lorem**); `lorem` **3.0.0** (2025-02-22, lorem `lorem >=lorem`, `lorem >=lorem`); `@lorem` **0.24.4** (2024-12-13, lorem `lorem ^lorem`).
 

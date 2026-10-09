@@ -15,13 +15,13 @@ Lorem **lorem** lorem (lorem `lorem`) lorem `lorem` (lorem) lorem `/lorem/`. Res
 3. Lorem ipsum.
 4. Lorem ipsum.
 
-Lorem ipsum.
+Lorem as `lorem/03-lorem.md`, lorem `.lorem` + `lorem` lorem (lorem). Lorem `lorem/`, lorem.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-19)
 
-Lorem: [../lorem](../assets/03-note.md).
+Lorem: [../lorem/03-lorem.md](../assets/03-note.md).
 
 - **Lorem = `lorem@3.0.0`** (2025-02-22, lorem `lorem>=lorem`, `lorem>=lorem`; lorem `lorem`). **`lorem()` lorem `lorem` lorem**; lorem pass a *lorem* lorem `lorem(lorem)` (`lorem`, Lorem) lorem `lorem(lorem)` (Lorem) lorem — **lorem**, `lorem` lorem `lorem`, `lorem()` lorem (lorem; `lorem` lorem). Lorem `lorem(...)` lorem → **pass `lorem(lorem)` lorem**. Lorem = `lorem({ lorem }) { lorem(...) }` (lorem); lorem `lorem` lorem **lorem** (lorem).
 - Lorem ipsum.

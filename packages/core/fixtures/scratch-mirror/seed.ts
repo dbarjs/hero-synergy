@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import type { FileTruth } from './tools/truth.ts'
 
-export type { FileTruth, MapTruth, NoteTruth, TicketTruth, TicketType } from './tools/truth.ts'
+export type { FileTruth } from './tools/truth.ts'
 
 const FIXTURE = dirname(fileURLToPath(import.meta.url))
 
@@ -22,10 +22,7 @@ export function mirrorRepo(root: string): Record<string, string> {
   return files
 }
 
-/** The careful reading of every Markdown file under the mirror's `.scratch`, by repo-relative path. */
+/** The careful reading of every Markdown file under the mirror's `.scratch`, in path order. */
 export function mirrorTruth(): ReadonlyArray<FileTruth> {
-  const truth = JSON.parse(readFileSync(join(FIXTURE, 'truth.json'), 'utf8')) as {
-    files: FileTruth[]
-  }
-  return truth.files
+  return JSON.parse(readFileSync(join(FIXTURE, 'truth.json'), 'utf8')) as FileTruth[]
 }

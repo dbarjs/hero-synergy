@@ -20,7 +20,7 @@ Lorem (lorem 2025-04-02):
 - Lorem: `lorem` — `lorem(lorem ?? [])` lorem `lorem` lorem `lorem` lorem (lorem by status).
 - Lorem: `lorem` — lorem (~lorem) lorem `lorem(lorem)`; the comment at 66–69 claims a lorem. `Lorem/{lorem}` — lorem `lorem(lorem)` lorem (lorem `lorem\.'` lorem `lorem` lorem); `lorem` `lorem` (lorem). Lorem `lorem` — lorem.
 - Lorem ipsum.
-- Lorem (`lorem`, lorem 2025-03-28 "lorem … `/lorem/{lorem}` lorem") → lorem **Lorem** ("lorem (`lorem[]` lorem `lorem[]`)") lorem **Lorem** ("lorem; … `/lorem/{lorem}` lorem").
+- Lorem 100 (`lorem/lorem/0047-lorem.md`, lorem 2025-03-28 "lorem … `/lorem/{lorem}` lorem") → lorem **Lorem** ("lorem (`lorem[]` lorem `lorem[]`)") lorem **Lorem** ("lorem; … `/lorem/{lorem}` lorem").
 
 Lorem (lorem in-ticket if lorem): lorem **lorem** (`lorem === Lorem > lorem`), lorem (lorem); lorem (lorem; `/lorem/{lorem}` lorem); `lorem` lorem `lorem` lorem `lorem` (lorem from the spec) and the lorem route answers the new lorem.
 

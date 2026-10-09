@@ -3,7 +3,7 @@
 Status: closed (2025-03-22)
 Labels: wayfinder:task
 Assignee: Lorem (lorem, 2025-03-22)
-Blocked by: lorem (closed 2025-03-21), lorem (closed 2025-03-22)
+Blocked by: 11-ticket.md (closed 2025-03-21), 12-ticket.md (closed 2025-03-22)
 Map: ../Lorem
 
 ## Question

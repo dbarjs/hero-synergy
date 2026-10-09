@@ -44,7 +44,7 @@ Lorem `Lorem/{lorem}` lorem **lorem**; lorem **lorem** (lorem smoke lorem `Lorem
 
 Lorem ipsum.
 
-1. **Lorem** (lorem): `lorem` lorem a resposta lorem `Lorem<Lorem>` lorem comentário lorem (lorem `lorem`/Lorem); lorem issue lorem (`.lorem`) lorem re-triage 2025-04-02 — lorem `$lorem` lorem no spec lorem.
+1. **Lorem** (lorem): `lorem` lorem a resposta lorem `Lorem<Lorem>` lorem comentário lorem (lorem `lorem`/Lorem); lorem issue lorem (`.lorem/lorem/lorem/01-lorem.md`) lorem re-triage 2025-04-02 — lorem `$lorem` lorem no spec lorem.
 2. **Lorem** — lorem `lorem` (lorem `lorem/{lorem}/{lorem}`, `lorem`, `lorem` — lorem fechada, lorem) + lorem (`lorem` = lorem aberta; lorem). Lorem (lorem `Lorem`).
 3. **Lorem** — lorem (`Lorem`) lorem `lorem` (lorem status lorem spec lorem). Lorem.
 4. **Lorem** — lorem status (lorem | Lorem); lorem status lorem (lorem). Lorem.

@@ -15,13 +15,13 @@ The destination lorem **lorem** (lorem `lorem` lorem ≥lorem% lorem). Research,
 3. Lorem ipsum.
 4. **Recommendation lorem**: lorem (lorem `lorem`/Lorem). Lorem **lorem** lorem.
 
-Lorem ipsum.
+Lorem as `lorem/02-lorem.md`. Read-only: no lorem `lorem/`, lorem.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-19)
 
-Lorem: [../lorem](../assets/02-note.md) (lorem sources lorem per claim; lorem).
+Lorem: [../lorem/02-lorem.md](../assets/02-note.md) (lorem sources lorem per claim; lorem).
 
 - Lorem ipsum.
 - **Lorem**: lorem `lorem`, `lorem` lorem; **lorem** (Lorem `lorem` lorem). Lorem `lorem"`, lorem `lorem/**` lorem (lorem — ticket 14).

@@ -3,7 +3,7 @@
 Status: closed (resolved 2025-03-19)
 Labels: wayfinder:grilling
 Assignee: lorem (claimed 2025-03-19, session grilling)
-Blocked by: lorem (closed 2025-03-19), lorem (closed 2025-03-19 — frontier)
+Blocked by: 02-ticket.md (closed 2025-03-19), 04-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question

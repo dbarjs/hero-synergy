@@ -15,13 +15,13 @@ Lorem facts of this lorem; research each from lorem sources (Lorem `lorem`/lorem
 3. Lorem ipsum.
 4. **`__Lorem__` lorem**: `lorem` lorem `lorem.__Lorem__ = lorem()`; lorem `lorem`. Lorem needs (`lorem` lorem `Lorem`, `lorem`, `lorem`), lorem `lorem` lorem `lorem` lorem (lorem `lorem()`).
 
-Lorem ipsum.
+Lorem as `lorem/04-lorem.md`, lorem `lorem` lorem (lorem `lorem` lorem): lorem `lorem/`, lorem.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-19)
 
-Lorem findings with file:line lorem: [../lorem](../assets/04-note.md).
+Lorem findings with file:line lorem: [../lorem/04-lorem.md](../assets/04-note.md).
 
 - **Lorem `lorem` lorem** (lorem `lorem` lorem, `lorem` lorem, `lorem` = lorem, `lorem: './'`) — lorem `lorem` **lorem `lorem`** (lorem `lorem` lorem + `/lorem` lorem `lorem`), lorem `lorem` lorem (ticket 05).
 - **Lorem**: `@lorem` lorem `lorem` map, `lorem/` → `lorem` lorem **lorem `lorem('./lorem')`** (lorem `lorem`, lorem `lorem`; lorem `lorem` Lorem), lorem; **`lorem` lorem `lorem`** → lorem; `@lorem` lorem `lorem` (lorem `lorem()` lorem); lorem `lorem` lorem `.lorem`.

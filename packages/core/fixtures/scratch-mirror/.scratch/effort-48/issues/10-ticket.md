@@ -14,7 +14,7 @@ Lorem (intake 2025-04-02) that the lorem" **lorem** (Lorem `lorem`, "Lorem") lor
 - lorem (lorem `100:100`) and its label ("Lorem");
 - Lorem ipsum.
 
-lorem (lorem → lorem), lorem. Then map each to the lorem `Lorem` lorem, `lorem` lorem, `lorem="lorem"` lorem (Lorem, `lorem`; lorem `lorem` lorem, `.lorem/`); Lorem `lorem`/`lorem`/`lorem`. Lorem `Lorem="…"` (lorem) lorem (`lorem`: lorem `lorem="lorem="lorem"`, lorem `lorem="lorem="lorem"`).
+lorem (lorem → lorem), lorem. Then map each to the lorem `Lorem` lorem, `lorem` lorem, `lorem="lorem"` lorem (Lorem 100, `lorem/lorem/0009-lorem.md`; the Lorem `lorem` lorem, `.lorem/`); Lorem `lorem`/`lorem`/`lorem`. Lorem `Lorem="…"` (lorem) lorem (`lorem`: lorem `lorem="lorem="lorem"`, lorem `lorem="lorem="lorem"`).
 
 Lorem `lorem` lorem `lorem`; lorem `lorem` lorem (`../lorem`) lorem findings to `../lorem` (lorem it); the resolution comment below lorem and [11](11-ticket.md) lorem.
 

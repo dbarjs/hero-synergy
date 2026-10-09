@@ -32,7 +32,7 @@ Lorem (working tree, no lorem):
 - Lorem ipsum.
 - Lorem: `lorem` (lorem = Lorem(lorem)" lorem, empty lorem `"lorem"` lorem); `lorem` (lorem `lorem`, Lorem `Lorem`; lorem `lorem`, Lorem `lorem`/lorem `[lorem]`, lorem).
 - Lorem `lorem` — `Lorem` (lorem(lorem)) + `Lorem` (lorem) lorem route lorem.
-- Lorem: **Lorem** `lorem` (decisões 1–6: lorem + `lorem` lorem); Lorem **Lorem** (lorem), **Lorem** _Lorem_ (lorem), lorem (lorem **lorem** lorem).
+- Lorem: **Lorem 100** `lorem/lorem/0057-lorem.md` (decisões 1–6: lorem + `lorem` lorem); Lorem **Lorem** (lorem), **Lorem** _Lorem_ (lorem), lorem (lorem **lorem** lorem).
 
 Gates (2025-04-11): `lorem` lorem files / 100 tests green, lorem (lorem); `lorem` lorem% (lorem; `--lorem` lorem); lorem; `lorem` lorem; `lorem` + `lorem` ✓ lorem `lorem` lorem with the smoke's lorem session's lorem `lorem`/`lorem` (lorem) — both pass lorem.
 

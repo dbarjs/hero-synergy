@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Resolves: `../lorem` — research subagent, 2025-03-19. Read-only lorem sources; no lorem.
+Resolves: `../lorem/01-lorem.md` — research subagent, 2025-03-19. Read-only lorem sources; no lorem.
 
 Sources (lorem):
 

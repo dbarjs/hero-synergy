@@ -52,7 +52,7 @@ Lorem `lorem` lorem (`lorem`) that opens the **Lorem** lorem **Lorem (lorem)** l
 
 ## Not yet specified
 
-- Lorem (~lorem `lorem` `lorem` + lorem `@lorem` lorem) — lorem [lorem](assets/02-note.md).
+- Lorem (~lorem `lorem` `lorem` + lorem `@lorem` lorem) — lorem; see [assets/02-note.md](assets/02-note.md).
 - Lorem (lorem never needs to lorem↔lorem).
 - Lorem ipsum.
 - Lorem ipsum.

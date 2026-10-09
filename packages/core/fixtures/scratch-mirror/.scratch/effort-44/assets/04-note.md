@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Ticket: [../lorem](../issues/04-ticket.md) · Researched 2025-03-19 (research subagent, read-only; Lorem **lorem** lorem facts lorem `lorem` lorem `@lorem`; lorem facts from the 3.0.0 lorem).
+Ticket: [../lorem/04-lorem.md](../issues/04-ticket.md) · Researched 2025-03-19 (research subagent, read-only; Lorem **lorem** lorem facts lorem `lorem` lorem `@lorem`; lorem facts from the 3.0.0 lorem).
 
 Lorem sources read: `lorem/@lorem` lorem (`lorem`, `lorem/`, `lorem/`, `lorem/`, `lorem/`), `lorem/@lorem` lorem, `lorem/@lorem` lorem, `lorem/@lorem` lorem (`lorem`), `lorem` lorem, `lorem` lorem (`lorem`, `lorem/*`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, `lorem`, Lorem), Lorem + `lorem@lorem` `lorem/*`, `lorem@lorem`.
 

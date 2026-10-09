@@ -17,13 +17,13 @@ Lorem route is the lorem **lorem** lorem `/lorem/{lorem}/lorem/` (Lorem), lorem 
 4. Lorem ipsum.
 5. Lorem `_lorem` lorem (`lorem`, `lorem`, `lorem`) — lorem (`lorem`, `lorem`, lorem) lorem ticket lorem.
 
-Resolution: a findings file `../lorem` (sources with lorem → what it opens → lorem it needs → lorem), a resolution comment here, `Status: closed <date>`, and a lorem to the map's **Decisions so far**.
+Resolution: a findings file `../lorem/01-lorem.md` (sources with lorem → what it opens → lorem it needs → lorem), a resolution comment here, `Status: closed <date>`, and a lorem to the map's **Decisions so far**.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-04-05)
 
-Findings with lorem sources: [../lorem](../assets/01-note.md) (lorem `lorem`).
+Findings with lorem sources: [../lorem/01-lorem.md](../assets/01-note.md) (lorem `lorem`).
 
 - Lorem ipsum.
 - Lorem ipsum.

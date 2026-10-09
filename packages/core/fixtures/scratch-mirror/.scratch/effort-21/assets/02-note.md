@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Research lorem for ticket `../lorem` (lorem 2025-03-19, research subagent). Lorem `lorem`: lorem (lorem), @lorem, @lorem `lorem`; `lorem` lorem `lorem` lorem (lorem in the session lorem `lorem`/`lorem`/`lorem`/`lorem`).
+Research lorem for ticket `../lorem/02-lorem.md` (lorem 2025-03-19, research subagent). Lorem `lorem`: lorem (lorem), @lorem, @lorem `lorem`; `lorem` lorem `lorem` lorem (lorem in the session lorem `lorem`/`lorem`/`lorem`/`lorem`).
 
 Lorem = `lorem`; lorem = Lorem `lorem(lorem)` (`lorem | lorem` lorem ~lorem% lorem); lorem = Lorem `lorem(lorem)` (lorem `lorem` lorem). Lorem = `--lorem` + lorem to `sources` (lorem map: "lorem"); lorem `//#lorem <lorem>` lorem (lorem `?lorem` lorem").
 

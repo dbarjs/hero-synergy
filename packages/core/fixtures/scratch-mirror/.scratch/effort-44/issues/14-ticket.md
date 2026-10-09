@@ -3,7 +3,7 @@
 Status: open
 Labels: wayfinder:task, ready-for-human
 Assignee: (unclaimed)
-Blocked by: lorem (closed 2025-03-19 — frontier)
+Blocked by: 06-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question

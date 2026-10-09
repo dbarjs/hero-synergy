@@ -2,7 +2,7 @@
 
 Status: ready-for-human
 
-Lorem. Decision lorem: `lorem`. Lorem → **Lorem**, **Lorem**.
+Lorem. Decision lorem: `lorem/lorem/0021-lorem.md`. Lorem → **Lorem**, **Lorem**.
 
 ## Problem
 
