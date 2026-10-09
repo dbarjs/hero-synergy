@@ -33,6 +33,15 @@ export function cropRect(rect: Rect, window: { width: number; height: number }, 
   return { x: left, y: top, width: even(right - left), height: even(bottom - top) }
 }
 
+/**
+ * One Activity Bar icon with its badge: a square as wide as the bar, centred on the icon. The
+ * listing shows it at the bar's width, beside the Focus pane.
+ */
+export function iconSquare(icon: Rect, bar: Rect): Rect {
+  const side = bar.width
+  return { x: bar.x, y: icon.y + icon.height / 2 - side / 2, width: side, height: side }
+}
+
 export interface Frame {
   /** The frame's file name, relative to the list. */
   readonly file: string

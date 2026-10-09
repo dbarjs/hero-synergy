@@ -5,6 +5,7 @@ import {
   contactSheet,
   cropRect,
   gifArgs,
+  iconSquare,
   mp4Args,
   trimFrames,
   unionRect,
@@ -46,6 +47,25 @@ describe('cropRect', () => {
       y: 840,
       width: 214,
       height: 60,
+    })
+  })
+})
+
+describe('iconSquare', () => {
+  it('is as wide as the bar and centred on the icon', () => {
+    expect(
+      iconSquare({ x: 6, y: 226, width: 32, height: 32 }, { x: 0, y: 35, width: 44, height: 840 }),
+    ).toEqual({ x: 0, y: 220, width: 44, height: 44 })
+  })
+
+  it('crops to the 44 × 44 the listing shows, once on whole pixels', () => {
+    const bar = { x: 0, y: 35, width: 44, height: 840 }
+    const square = iconSquare({ x: 6, y: 226.5, width: 32, height: 32 }, bar)
+    expect(cropRect(square, { width: 1440, height: 900 })).toEqual({
+      x: 0,
+      y: 220,
+      width: 44,
+      height: 44,
     })
   })
 })
