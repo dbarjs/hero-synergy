@@ -3,16 +3,25 @@
   "displayName": "Hero Synergy",
   "version": "0.1.2",
   "private": true,
-  "description": "Unofficial cockpit for mattpocock/skills: wayfinder maps, frontier tickets and named Claude Code sessions in VS Code terminals.",
+  "description": "See your wayfinder frontier and start each ticket as a named Claude Code session, with live status.",
   "categories": [
-    "Other"
+    "AI"
   ],
   "keywords": [
     "agent",
+    "agent skills",
+    "ai",
+    "claude",
     "claude code",
+    "github issues",
+    "issue tracker",
+    "matt pocock",
     "mattpocock",
+    "sessions",
     "skills",
-    "wayfinder"
+    "terminal",
+    "wayfinder",
+    "worktree"
   ],
   "homepage": "https://github.com/dbarjs/hero-synergy#readme",
   "bugs": {
@@ -24,6 +33,7 @@
     "url": "git+https://github.com/dbarjs/hero-synergy.git",
     "directory": "packages/vscode"
   },
+  "qna": false,
   "publisher": "dbarjs",
   "files": [
     "dist",
@@ -39,7 +49,7 @@
     "typecheck": "vue-tsc --noEmit -p webview",
     "test:integration": "vp run build && vscode-test",
     "capture": "vp run build && node test/capture/capture.mts",
-    "package": "vsce package --no-dependencies --allow-unused-files-pattern",
+    "package": "vsce package --no-dependencies --no-gitHubIssueLinking --allow-unused-files-pattern",
     "publish:marketplace": "sh -c 'vsce publish --packagePath *.vsix --azure-credential --skip-duplicate'",
     "publish:open-vsx": "sh -c 'ovsx publish --packagePath *.vsix --trusted-publishing --skip-duplicate'"
   },
@@ -165,6 +175,7 @@
     "color": "#0F0B30",
     "theme": "dark"
   },
+  "preview": true,
   "engines": {
     "vscode": "^1.105.0"
   }
