@@ -1,4 +1,4 @@
-# Returns, take 7
+# Returns, take 11
 
 Status: closed
 
@@ -6,7 +6,10 @@ Status: closed
 
 Do returned seeds go back on the shelf the same day?
 
+## Answer
+
+Yes, the same day.
+
 ## Comments
 
-**Resolution — 2025-05-05**
-yes, after a dry check.
+- 2025-05-07 (wren): done.
