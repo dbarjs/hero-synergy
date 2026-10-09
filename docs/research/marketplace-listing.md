@@ -471,7 +471,7 @@ From the [Visual Studio Code brand guidelines](https://code.visualstudio.com/bra
 
 - **Hosting:** `raw.githubusercontent.com` serves MP4 as `application/octet-stream`, and Chromium plays it. Keep the file outside `packages/vscode/media`.
 
-**For [#116](https://github.com/dbarjs/hero-synergy/issues/116), the loop of the real UI:**
+**For [#116 Capture the real Cockpit in screenshots and a loop](https://github.com/dbarjs/hero-synergy/issues/116):**
 
 - **GIF, animated WebP and APNG all pass vsce and play on all three surfaces.** Prefer **animated WebP**: in the lab it was 43% smaller than GIF and 68% smaller than APNG for the same clip. Use GIF only if WebP shows artifacts. If APNG is used, name it `.png` so GitHub serves `image/png`. A silent MP4 in `<video>` is smaller still (211 KB in the lab), but it plays for only some Marketplace visitors: a direct visitor gets a paused player. An animated image plays for everyone.
 
@@ -479,7 +479,7 @@ From the [Visual Studio Code brand guidelines](https://code.visualstudio.com/bra
 
 - **Give every frame an opaque background,** because nothing can swap images by theme. Record one loop that reads on white and on dark editor backgrounds.
 
-**For [#119](https://github.com/dbarjs/hero-synergy/issues/119), the READMEs and where media lives:**
+**For [#119 Prototype the two READMEs and the social card](https://github.com/dbarjs/hero-synergy/issues/119):**
 
 - **Write the listing README to the common subset:** Markdown, Markdown tables, `<p align="center">`, `<img width>`, `<details>`/`<summary>`, `<br>`.
   - **Not:** `<picture>`/`srcset`, `#gh-dark-mode-only`, `<kbd>` (use code spans), `style`/`<style>`, inline `<svg>`, SVG images other than trusted badges, `> [!NOTE]` alerts, `data:` images, or `http:` URLs.
@@ -500,7 +500,7 @@ From the [Visual Studio Code brand guidelines](https://code.visualstudio.com/bra
 
 - **Optional:** `"qna": false` removes the Marketplace's Q & A tab and leaves Issues as the one place for questions.
 
-**For [#121](https://github.com/dbarjs/hero-synergy/issues/121), shipping through a release:**
+**For [#121 Land the front door and release it](https://github.com/dbarjs/hero-synergy/issues/121):**
 
 - **Pin with `$GITHUB_SHA`:** `release.yml` packages on `$GITHUB_SHA` and only creates the `v<version>` tag after the registry step. A URL pinned to `$GITHUB_SHA` resolves the moment the extension is published; a tag URL 404s until the GitHub-release step runs. If base URLs are used, pass `$GITHUB_SHA` in CI and keep a local fallback.
 
