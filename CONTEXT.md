@@ -48,6 +48,10 @@ _Avoid_: front matter, metadata
 A ticket another ticket waits on: the tracker's blocked-by link, or on a local tracker the reference at the start of an item of a `Blocked by:` or `Blocks:` header line. A note after the reference is never read; the blocker's state is its own.
 _Avoid_: dependency, prerequisite
 
+**Resolution**:
+A closed ticket's answer, exactly one: on GitHub its last comment; on a local tracker its `## Answer` section, else its last Resolution heading or label, else its last comment.
+_Avoid_: answer (only the local section's name), outcome
+
 **Neighbourhood**:
 A ticket's immediate neighbours: what it waits on (its blockers, wherever they live) and what it clears the way for (the tickets of its map that wait on it, found by inverting the blockers). Derived on every render, never stored.
 _Avoid_: dependency graph, dependants
