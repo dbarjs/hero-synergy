@@ -10,12 +10,14 @@ export default defineConfig({
     semi: false,
     singleQuote: true,
     // Changesets writes the changelogs, the seed is frozen, `adc init` owns the devcontainer file,
-    // and a fixture tracker keeps its files exactly as a real tracker writes them.
+    // and a fixture tracker keeps its files exactly as a real tracker writes them. The scratch
+    // mirror's truth is generated with it.
     ignorePatterns: [
       '**/CHANGELOG.md',
       'docs/seed.md',
       '.devcontainer/devcontainer.json',
       'packages/*/fixtures/**/.scratch/**',
+      'packages/core/fixtures/scratch-mirror/truth.json',
     ],
   },
   lint: {
