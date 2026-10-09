@@ -38,6 +38,7 @@ import {
   cropRect,
   type Frame,
   gifArgs,
+  iconSquare,
   mp4Args,
   type Rect,
   type Shot,
@@ -46,6 +47,7 @@ import {
   webpArgs,
   webpEncoder,
 } from './media.mts'
+import { type CapturedFile, KEPT } from './refresh.mts'
 
 const extensionDir = path.resolve(import.meta.dirname, '../..')
 const cachePath = path.join(extensionDir, '.vscode-test')
@@ -194,6 +196,13 @@ async function main(): Promise<void> {
         await scene.badgeArea(),
       ),
     )
+    shots.push(
+      await scene.shoot(
+        'badge-icon.png',
+        'The Hero Synergy icon and its badge alone, as the listing shows them',
+        await scene.badgeIcon(),
+      ),
+    )
 
     await scene.openFocus(SCENE.launched)
     shots.push(
@@ -284,6 +293,9 @@ async function main(): Promise<void> {
     ),
   )
   console.log(`${shots.length} files in ${outDir}`)
+  // `vp run refresh-media` copies these; a run without one of them is no run to copy from.
+  const missing = KEPT.filter((file) => !shots.some((shot) => shot.file === file))
+  if (missing.length > 0) throw new Error(`The capture made no ${missing.join(', ')}`)
 }
 
 async function sizeWindow(app: ElectronApplication, page: Page): Promise<void> {
@@ -633,7 +645,15 @@ class Scene {
     return { x: bar.x, y: bar.y, width: bar.width, height: item.y + item.height * 3 - bar.y }
   }
 
-  async shoot(file: string, caption: string, rect: Rect): Promise<Shot> {
+  async badgeIcon(): Promise<Rect> {
+    const item = '.activitybar .action-item:has([aria-label^="Hero Synergy"])'
+    return iconSquare(
+      await this.rectOf(`${item} .action-label`),
+      await this.rectOf('.part.activitybar'),
+    )
+  }
+
+  async shoot(file: CapturedFile, caption: string, rect: Rect): Promise<Shot> {
     await this.page.waitForTimeout(300)
     const clip = cropRect(rect, WINDOW)
     await this.page.screenshot({ path: path.join(outDir, file), clip, animations: 'disabled' })
@@ -738,7 +758,7 @@ function encodeLoop(frames: Frame[], crop: Rect, framesDir: string): Shot[] {
   writeFileSync(list, concatList(frames, 1_500))
   const width = Math.min(crop.width, 1200)
   const encoder = webpEncoder(execFileSync('ffmpeg', ['-hide_banner', '-encoders']).toString())
-  const outputs: Array<[string, string[]]> = [
+  const outputs: Array<[CapturedFile, string[]]> = [
     ['launch.mp4', mp4Args({ list, width: crop.width, fps: 30 }, path.join(outDir, 'launch.mp4'))],
     ...(encoder === null
       ? []
@@ -746,7 +766,7 @@ function encodeLoop(frames: Frame[], crop: Rect, framesDir: string): Shot[] {
           [
             'launch.webp',
             webpArgs({ list, width, fps: 15 }, path.join(outDir, 'launch.webp'), encoder),
-          ] as [string, string[]],
+          ] as [CapturedFile, string[]],
         ]),
     ['launch.gif', gifArgs({ list, width, fps: 12 }, path.join(outDir, 'launch.gif'))],
   ]

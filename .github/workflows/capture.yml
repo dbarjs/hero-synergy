@@ -1,13 +1,16 @@
 name: Capture
 
 # The README shots and the loop, taken by `vp run capture` on Linux and on macOS, whose fonts may
-# render better. Runs on demand, and on a pull request that changes the capture run itself; the
-# result is an artifact per OS, never a commit.
+# render better. Runs on demand, and on a pull request that changes the capture run or the Cockpit's
+# UI; the result is an artifact per OS, never a commit. `vp run refresh-media` copies the macOS
+# shots the READMEs keep into docs/media/, by hand, in the same PR (#128).
 on:
   workflow_dispatch:
   pull_request:
     paths:
       - packages/vscode/test/capture/**
+      - packages/vscode/src/**
+      - packages/vscode/webview/src/**
       - .github/workflows/capture.yml
 
 permissions:
@@ -51,3 +54,5 @@ jobs:
           name: capture-${{ matrix.name }}
           path: packages/vscode/out-capture
           if-no-files-found: error
+      - if: always() && runner.os == 'macOS' && github.event_name == 'pull_request'
+        run: node packages/vscode/test/capture/summary.mts packages/vscode/out-capture >> "$GITHUB_STEP_SUMMARY"
