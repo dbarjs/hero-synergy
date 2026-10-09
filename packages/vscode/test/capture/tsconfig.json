@@ -1,0 +1,9 @@
+{
+  "extends": "../../../../tsconfig.json",
+  "compilerOptions": {
+    // `dom`: the callbacks handed to Playwright's `evaluate` run in the browser.
+    "lib": ["es2023", "dom"],
+    "types": ["node"]
+  },
+  "include": ["*.mts", "../fixtures/workspace.d.mts"]
+}
