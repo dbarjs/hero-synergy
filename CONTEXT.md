@@ -37,8 +37,12 @@ The open, unblocked, unclaimed tickets of a map. The first one in map order is n
 _Avoid_: backlog, ready list
 
 **Claim**:
-A ticket marked as taken, made by the session before any work: an assignee on GitHub, a `Status: claimed` line on a local tracker.
+A ticket marked as taken, made by the session before any work: an assignee on GitHub; locally, a `claimed` Status line, `claimed` after `open` on it, or a name on an open ticket's `Assignee:` line. A closed ticket is never claimed.
 _Avoid_: lock, reservation
+
+**Triage role**:
+The triage label on a ticket or issue file: needs-triage, needs-info, ready-for-agent, ready-for-human or wontfix. Shown with the ticket; it never changes the frontier.
+_Avoid_: status, stage
 
 **Header line**:
 A `Key: value` line before a local ticket's or map's first H2, with a plain or bold key: the only place the scout reads a local item's type, blockers, map, claim and state.
