@@ -1,5 +1,11 @@
 # hero-synergy
 
+## 0.1.3
+
+### Patch Changes
+
+- [#152](https://github.com/dbarjs/hero-synergy/pull/152) [`dd4b5e9`](https://github.com/dbarjs/hero-synergy/commit/dd4b5e96be8af03cdb0c29a3ae4a8476c2654d71) Thanks [@dbarjs](https://github.com/dbarjs)! - Rewrite the Marketplace page. It opens on what Hero Synergy does, "See your wayfinder frontier and start each ticket as a named Claude Code session, with live status.", and on screenshots of the real Cockpit: the Tree with live statuses, ▶ starting a session, the Focus pane, the Detail and the Activity Bar badge. It then goes from install to your first ticket session. The extension is now listed under AI, marked Preview while it is 0.x, and found by more keywords, such as `claude`, `github issues` and `worktree`. The Q & A tab is gone: report a problem through "Report issue", which opens the repository's Issues.
+
 ## 0.1.2
 
 ### Patch Changes

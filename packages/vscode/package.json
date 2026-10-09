@@ -1,7 +1,7 @@
 {
   "name": "hero-synergy",
   "displayName": "Hero Synergy",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "private": true,
   "description": "See your wayfinder frontier and start each ticket as a named Claude Code session, with live status.",
   "categories": [
