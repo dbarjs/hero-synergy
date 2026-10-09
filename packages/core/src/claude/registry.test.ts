@@ -65,6 +65,28 @@ describe('the registry of a newer Claude Code', () => {
     expect(read.value[0]).toMatchObject({ sessionId: 'a', kind: 'background', status: 'idle' })
   })
 
+  test('keeps a background session that has a state and no status, as unknown, with no warning', () => {
+    // As 2.1.292 printed it for a session started with `--bg`.
+    const read = readRegistry(
+      JSON.stringify([
+        {
+          id: '40432f0d',
+          cwd: '/work/repo',
+          kind: 'background',
+          startedAt: 1791342902115,
+          sessionId: '40432f0d-c739-4ced-9cad-f00c73e9bf92',
+          name: 'a background map',
+          state: 'blocked',
+        },
+        { sessionId: 'b', name: '#2 y', status: 'busy' },
+      ]),
+    )
+    expect(read.warnings).toEqual([])
+    expect(read.value.map((entry) => entry.name)).toEqual(['a background map', '#2 y'])
+    expect(read.value[0]).toMatchObject({ kind: 'background', status: 'unknown' })
+    expect(registryStatusWord(read.value[0]!)).toBe('unknown')
+  })
+
   test('maps a waiting session with an unknown or missing detail to needs approval', () => {
     const [unknown, missing] = readRegistry(
       JSON.stringify([

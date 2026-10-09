@@ -12,7 +12,8 @@ import { attempt, type Decoded, decoder, parseJson, warn } from './decode.ts'
 const Entry = Schema.Struct({
   sessionId: Schema.String,
   name: Schema.String,
-  status: Schema.String,
+  // Absent on some background sessions, which carry `state` instead (seen on 2.1.292).
+  status: Schema.optionalKey(Schema.String),
   waitingFor: Schema.optionalKey(Schema.String),
   cwd: Schema.optionalKey(Schema.String),
   kind: Schema.optionalKey(Schema.String),
@@ -22,7 +23,7 @@ const Entry = Schema.Struct({
 
 const decodeEntry = decoder(Entry)
 
-/** `unknown` is a status word Claude Code added after this reader; the entry is kept and flagged. */
+/** `unknown` is a status word Claude Code added after this reader, flagged, or no status word at all. The entry is kept either way. */
 export type RegistryStatus = 'busy' | 'idle' | 'waiting' | 'unknown'
 
 export interface RegistryEntry {
@@ -62,7 +63,8 @@ export function readRegistry(stdout: string): Decoded<ReadonlyArray<RegistryEntr
     }
     const { status, waitingFor, cwd, kind, pid, startedAt, sessionId, name } = decoded.value
     const known = STATUSES.find((word) => word === status)
-    if (known === undefined) {
+    // No status at all is not a new word: the entry is kept as unknown, with nothing to flag.
+    if (known === undefined && status !== undefined) {
       warnings.push(warn('registry-status-unknown', status))
     }
     entries.push({
