@@ -28,6 +28,10 @@ _Avoid_: board, plan, epic
 A child issue of a map holding one question, typed by a `wayfinder:<type>` label (or, on a local tracker, a `Type:` or `Label:` header line): research, prototype, grilling or task.
 _Avoid_: card, story
 
+**Unmapped issue**:
+A tracker issue that is not a ticket of any map: on a local tracker, an issue file in an effort with no map, or one whose `Parent:` line names a PRD. Shown by effort, never on a frontier, hidden once closed.
+_Avoid_: orphan, stray ticket
+
 **AFK ticket**:
 A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent, unless it is marked HITL or ready for a human. A ticket with no type is not one.
 _Avoid_: autonomous ticket, unattended ticket
