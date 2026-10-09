@@ -1,6 +1,6 @@
 {
   "name": "@hero-synergy/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Wayfinder map model, tracker adapters and scout for hero-synergy.",
   "license": "MIT",
