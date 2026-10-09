@@ -62,19 +62,18 @@ describe('the local-forms fixture', () => {
     }
   })
 
-  it('leaves every unsettled field null and names the ticket that settles it', () => {
-    const unsettled = forms.filter((form) => form.unsettled !== undefined)
-    expect(unsettled.length).toBeGreaterThan(0)
-    for (const form of unsettled) {
-      expect(form.unsettled!.why, form.path).toContain('#134')
-      for (const field of form.unsettled!.fields) {
-        expect(form.reading, form.path).not.toBeNull()
-        expect((form.reading as unknown as Record<string, unknown>)[field], form.path).toBeNull()
-      }
-    }
-    for (const form of forms) {
-      if (form.unsettled === undefined && form.kind !== 'note')
-        expect(form.reading.state, form.path).not.toBeNull()
+  it('gives every ticket and map a state', () => {
+    for (const form of forms)
+      if (form.kind !== 'note') expect(form.reading.state, form.path).not.toBeNull()
+  })
+
+  it('lists a disagreement only beside a declared state, never as one', () => {
+    const disagreeing = forms.filter((form) => form.disagreements !== undefined)
+    expect(disagreeing.length).toBeGreaterThan(0)
+    for (const form of disagreeing) {
+      expect(form.kind, form.path).not.toBe('note')
+      expect(form.disagreements!.length, form.path).toBeGreaterThan(0)
+      for (const disagreement of form.disagreements!) expect(disagreement, form.path).not.toBe('')
     }
   })
 })

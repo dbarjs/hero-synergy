@@ -926,12 +926,8 @@
     "form": "a map with no Status line",
     "kind": "map",
     "reading": {
-      "state": null,
+      "state": "open",
       "decisions": [1]
-    },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A map with no Status line: the survey read them open, closed and in progress; #134 settles it."
     }
   },
   {
@@ -1026,12 +1022,8 @@
     "form": "map Status `**route walked …** — …`",
     "kind": "map",
     "reading": {
-      "state": null,
+      "state": "open",
       "decisions": [1]
-    },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `route walked` map Status line: the survey read one closed and one in progress; #134 settles it."
     }
   },
   {
@@ -1280,13 +1272,10 @@
     "form": "a map with no Status line whose prose closes a range of tickets their own files never close",
     "kind": "map",
     "reading": {
-      "state": null,
+      "state": "open",
       "decisions": [1]
     },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A map with no Status line; #134 settles it."
-    }
+    "disagreements": ["`## Destination reached` calls issues 02–05 closed; 02, 03 and 05 say open"]
   },
   {
     "path": ".scratch/prd-in-map/PRD.md",
@@ -1316,7 +1305,7 @@
     "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "open",
       "role": "ready-for-human",
       "assignee": null,
       "type": null,
@@ -1327,17 +1316,14 @@
       "blocks": [],
       "resolution": null
     },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
-    }
+    "disagreements": ["the map's prose calls it closed"]
   },
   {
     "path": ".scratch/prd-in-map/issues/03-labels.md",
     "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "open",
       "role": "ready-for-human",
       "assignee": null,
       "type": null,
@@ -1348,10 +1334,7 @@
       "blocks": [],
       "resolution": null
     },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
-    }
+    "disagreements": ["the map's prose calls it closed"]
   },
   {
     "path": ".scratch/prd-in-map/issues/04-lock.md",
@@ -1375,7 +1358,7 @@
     "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "open",
       "role": "ready-for-agent",
       "assignee": null,
       "type": null,
@@ -1386,10 +1369,7 @@
       "blocks": [],
       "resolution": null
     },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
-    }
+    "disagreements": ["the map's prose calls it closed"]
   },
   {
     "path": ".scratch/resolutions/issues/01-returns-1.md",
@@ -2311,7 +2291,7 @@
     "form": "Status line: `ready-for-human`",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "open",
       "role": "ready-for-human",
       "assignee": null,
       "type": null,
@@ -2321,10 +2301,6 @@
       "blockedBy": [],
       "blocks": [],
       "resolution": null
-    },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `ready-for-human` Status line: the survey read these closed, open or in progress; #134 settles it."
     }
   },
   {
@@ -2332,7 +2308,7 @@
     "form": "Status line: `ready-for-human (charted <date> by <NN>'s resolution — HITL; fully unblocked <date>: <NN> closed)`",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "open",
       "role": "ready-for-human",
       "assignee": null,
       "type": null,
@@ -2342,10 +2318,6 @@
       "blockedBy": [],
       "blocks": [],
       "resolution": null
-    },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A `ready-for-human` Status line: the survey read these closed, open or in progress; #134 settles it."
     }
   },
   {
@@ -2460,7 +2432,7 @@
     "form": "one Status line holding a DONE half and an OPEN half",
     "kind": "ticket",
     "reading": {
-      "state": null,
+      "state": "claimed",
       "role": null,
       "assignee": "agent",
       "type": null,
@@ -2471,10 +2443,7 @@
       "blocks": [],
       "resolution": null
     },
-    "unsettled": {
-      "fields": ["state"],
-      "why": "A Status line with a DONE half and an OPEN half; #134 settles it."
-    }
+    "disagreements": ["the Status line holds two states, DONE and OPEN"]
   },
   {
     "path": ".scratch/types/issues/01-lending-1.md",
