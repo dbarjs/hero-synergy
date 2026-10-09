@@ -55,6 +55,10 @@ describe('the manifest the registries show', () => {
     expect(width).toBeGreaterThanOrEqual(128)
   })
 
+  it('shows the Marketplace banner in Midnight, the darkest color of the logo', () => {
+    expect(manifest.galleryBanner).toEqual({ color: '#0F0B30', theme: 'dark' })
+  })
+
   it('packages only the built extension, the webview, the plugin, the media and the legal files', () => {
     expect(manifest.files).toEqual([
       'dist',

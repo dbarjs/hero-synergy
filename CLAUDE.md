@@ -16,6 +16,10 @@ Single-context: one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/age
 
 Ticket sessions run in their own git worktree (`claude -w`), never in the shared checkout. Glossary and ADR edits reach `main` like this, in the worktree: `pnpm install` and `pnpm exec vp run build` (core's types come from its `dist/`, so `vp check` fails in an unbuilt worktree), edit, `pnpm exec vp check --fix`, commit on the worktree branch, `git pull --rebase origin main`, then `git push origin HEAD:main` when the ticket closes. Resolve a rebase conflict in the session; don't open a PR for docs. Prototype work stays on `prototype/<name>`, research findings on `research/<name>`, both pushed. See [ADR 0003](docs/adr/0003-the-cockpit-launches-and-watches.md).
 
+## Brand
+
+The logo, its files and its colors are in `docs/brand.md`. Read it before adding or changing an icon, an image or a color.
+
 <!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web

@@ -1,12 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none">
-  <rect width="256" height="256" rx="48" fill="#fdf3e3"/>
-  <g stroke="#1f2a44" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M84 214V50"/>
-    <path d="M84 56h98l-26 38 26 38H84" fill="#f2a93b"/>
-    <path d="M60 214h48"/>
-  </g>
-  <g stroke="#1f2a44" stroke-width="8" stroke-linecap="round">
-    <path d="M200 44v22M189 55h22"/>
-    <path d="M206 168v16M198 176h16"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Hero Synergy">
+  <title>Hero Synergy</title>
+  <defs>
+    <linearGradient id="hs-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#30258C"/>
+      <stop offset="1" stop-color="#0F0B30"/>
+    </linearGradient>
+    <radialGradient id="hs-aura">
+      <stop offset="0" stop-color="#8E6BFF" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#8E6BFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="hs-glow">
+      <stop offset="0" stop-color="#FFF6D6" stop-opacity=".95"/>
+      <stop offset=".45" stop-color="#FFD66B" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#FFD66B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hs-gold-l" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF0B8"/>
+      <stop offset="1" stop-color="#FFC94A"/>
+    </linearGradient>
+    <linearGradient id="hs-gold-d" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFC94A"/>
+      <stop offset="1" stop-color="#E08A00"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="url(#hs-bg)"/>
+  <circle cx="22" cy="26" r="1.1" fill="#fff" opacity="0.7"/>
+  <circle cx="104" cy="24" r="0.9" fill="#fff" opacity="0.55"/>
+  <circle cx="108" cy="98" r="1.2" fill="#fff" opacity="0.6"/>
+  <circle cx="20" cy="92" r="0.9" fill="#fff" opacity="0.5"/>
+  <circle cx="90" cy="112" r="0.8" fill="#fff" opacity="0.45"/>
+  <circle cx="64" cy="64" r="54" fill="url(#hs-aura)"/>
+  <circle cx="64" cy="64" r="42" fill="none" stroke="#A9B6FF" stroke-opacity=".5" stroke-width="3"/>
+  <circle cx="34.3" cy="34.3" r="2.6" fill="#C7D0FF"/>
+  <circle cx="93.7" cy="34.3" r="2.6" fill="#C7D0FF"/>
+  <circle cx="93.7" cy="93.7" r="2.6" fill="#C7D0FF"/>
+  <circle cx="34.3" cy="93.7" r="2.6" fill="#C7D0FF"/>
+  <circle cx="64" cy="17" r="16" fill="url(#hs-glow)"/>
+  <path d="M64,15 L58.7,58.7 L64,64 Z" fill="url(#hs-gold-l)"/>
+  <path d="M64,15 L69.3,58.7 L64,64 Z" fill="url(#hs-gold-d)"/>
+  <path d="M88,64 L69.3,58.7 L64,64 Z" fill="#CBD3FF"/>
+  <path d="M88,64 L69.3,69.3 L64,64 Z" fill="#7E89DD"/>
+  <path d="M64,113 L69.3,69.3 L64,64 Z" fill="#EEF0FF"/>
+  <path d="M64,113 L58.7,69.3 L64,64 Z" fill="#A3ADEF"/>
+  <path d="M40,64 L58.7,69.3 L64,64 Z" fill="#CBD3FF"/>
+  <path d="M40,64 L58.7,58.7 L64,64 Z" fill="#7E89DD"/>
+  <circle cx="64" cy="64" r="5.5" fill="#15104A" stroke="#FFD66B" stroke-width="2.2"/>
+  <path d="M64,8 Q65.1,13.9 71,15 Q65.1,16.1 64,22 Q62.9,16.1 57,15 Q62.9,13.9 64,8 Z" fill="#fff"/>
 </svg>

@@ -160,6 +160,10 @@
     "workspace"
   ],
   "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#0F0B30",
+    "theme": "dark"
+  },
   "engines": {
     "vscode": "^1.105.0"
   }
