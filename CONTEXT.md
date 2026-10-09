@@ -79,6 +79,10 @@ _Avoid_: corruption, invalid map
 One coded point about the tracker or about the machine. _Drift_ is about the tracker: a map or ticket off the current conventions. _Health_ is about the machine: Claude Code, the skills, the registry. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when something old or odd was still read correctly.
 _Avoid_: error, lint
 
+**Isolated environment**:
+A window whose extension host runs inside a container the Cockpit can recognise: a Dev Containers or Codespaces remote, or a Docker or Podman marker file that isn't a toolbx or distrobox. It says where the session runs, not what it can reach: the container's own config decides that.
+_Avoid_: sandbox, safe environment
+
 **Session**:
 One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
