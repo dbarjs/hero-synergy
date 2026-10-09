@@ -44,6 +44,7 @@ import {
   trimFrames,
   unionRect,
   webpArgs,
+  webpEncoder,
 } from './media.mts'
 
 const extensionDir = path.resolve(import.meta.dirname, '../..')
@@ -736,11 +737,20 @@ function encodeLoop(frames: Frame[], crop: Rect, framesDir: string): Shot[] {
   const list = path.join(framesDir, 'frames.ffconcat')
   writeFileSync(list, concatList(frames, 1_500))
   const width = Math.min(crop.width, 1200)
+  const encoder = webpEncoder(execFileSync('ffmpeg', ['-hide_banner', '-encoders']).toString())
   const outputs: Array<[string, string[]]> = [
     ['launch.mp4', mp4Args({ list, width: crop.width, fps: 30 }, path.join(outDir, 'launch.mp4'))],
-    ['launch.webp', webpArgs({ list, width, fps: 15 }, path.join(outDir, 'launch.webp'))],
+    ...(encoder === null
+      ? []
+      : [
+          [
+            'launch.webp',
+            webpArgs({ list, width, fps: 15 }, path.join(outDir, 'launch.webp'), encoder),
+          ] as [string, string[]],
+        ]),
     ['launch.gif', gifArgs({ list, width, fps: 12 }, path.join(outDir, 'launch.gif'))],
   ]
+  if (encoder === null) console.log('loop: this ffmpeg has no WebP encoder, so no launch.webp')
   return outputs.map(([file, args]) => {
     execFileSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', ...args], { stdio: 'inherit' })
     console.log(`loop ${file}`)

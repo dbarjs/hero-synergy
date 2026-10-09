@@ -9,6 +9,7 @@ import {
   trimFrames,
   unionRect,
   webpArgs,
+  webpEncoder,
 } from './media.mts'
 
 describe('unionRect', () => {
@@ -140,6 +141,27 @@ describe('the loop encodings', () => {
     const webp = webpArgs(loop, 'a.webp').join(' ')
     expect(webp).toContain('-c:v libwebp_anim')
     expect(webp).toContain('-loop 0')
+  })
+})
+
+describe('webpEncoder', () => {
+  const encoders = (...names: string[]) =>
+    [
+      'Encoders:',
+      ' V..... = Video',
+      ' ------',
+      ...names.map((name) => ` V....D ${name}  ${name} encoder`),
+    ].join('\n')
+
+  it('prefers libwebp_anim, falls back to libwebp, and finds none in a build without WebP', () => {
+    expect(webpEncoder(encoders('libx264', 'libwebp_anim', 'libwebp'))).toBe('libwebp_anim')
+    expect(webpEncoder(encoders('libx264', 'libwebp'))).toBe('libwebp')
+    expect(webpEncoder(encoders('libx264', 'gif', 'apng'))).toBeNull()
+  })
+
+  it('puts the chosen encoder in the arguments', () => {
+    const args = webpArgs({ list: 'l', width: 10, fps: 1 }, 'a.webp', 'libwebp').join(' ')
+    expect(args).toContain('-c:v libwebp ')
   })
 })
 

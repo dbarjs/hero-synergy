@@ -126,8 +126,23 @@ export function gifArgs({ list, width, fps }: LoopEncoding, out: string): string
   ]
 }
 
+/**
+ * The WebP encoder this ffmpeg has, from the output of `ffmpeg -encoders`: `libwebp_anim` where it
+ * is built in, else `libwebp`, which also writes an animation; null when it has neither (Homebrew's).
+ */
+export function webpEncoder(encoders: string): 'libwebp_anim' | 'libwebp' | null {
+  const names = new Set(encoders.split('\n').map((line) => line.trim().split(/\s+/)[1]))
+  if (names.has('libwebp_anim')) return 'libwebp_anim'
+  if (names.has('libwebp')) return 'libwebp'
+  return null
+}
+
 /** An animated WebP: the same loop as the GIF, in full color and a fraction of the size. */
-export function webpArgs({ list, width, fps }: LoopEncoding, out: string): string[] {
+export function webpArgs(
+  { list, width, fps }: LoopEncoding,
+  out: string,
+  encoder: 'libwebp_anim' | 'libwebp' = 'libwebp_anim',
+): string[] {
   return [
     '-y',
     '-f',
@@ -139,7 +154,7 @@ export function webpArgs({ list, width, fps }: LoopEncoding, out: string): strin
     '-vf',
     `${scale(width)},fps=${fps}`,
     '-c:v',
-    'libwebp_anim',
+    encoder,
     '-lossless',
     '0',
     '-quality',
