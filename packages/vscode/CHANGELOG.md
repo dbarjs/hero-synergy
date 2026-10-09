@@ -1,5 +1,11 @@
 # hero-synergy
 
+## 0.1.1
+
+### Patch Changes
+
+- [`057a0f4`](https://github.com/dbarjs/hero-synergy/commit/057a0f463c3275361357dd100e352ccfed75758b) Thanks [@dbarjs](https://github.com/dbarjs)! - Give Hero Synergy its own logo, the Wayfinder Seal: a compass whose north needle is a star. It replaces the flag placeholder in the Marketplace, the Extensions view and the activity bar.
+
 ## 0.1.0
 
 ### Minor Changes

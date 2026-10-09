@@ -1,6 +1,6 @@
 {
   "name": "@hero-synergy/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Query wayfinder maps and launch Claude Code sessions from the terminal.",
   "license": "MIT",
