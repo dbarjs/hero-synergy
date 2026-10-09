@@ -21,7 +21,7 @@ The compact block under the selected tree row: state, claim, session status and 
 _Avoid_: popover, inspector
 
 **Map**:
-A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.md` on a local tracker) that indexes one effort's decisions.
+A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.md` in any casing on a local tracker) that indexes one effort's decisions. A local map is closed when its Status line starts with `DONE` or `destination reached`; a closed map is hidden.
 _Avoid_: board, plan, epic
 
 **Ticket**:
