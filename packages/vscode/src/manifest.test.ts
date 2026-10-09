@@ -26,15 +26,39 @@ describe('the manifest the registries show', () => {
     expect(manifest.scripts.package).toContain('--no-dependencies')
   })
 
-  it('is listed under Other with the agreed keywords', () => {
-    expect(manifest.categories).toEqual(['Other'])
+  it('says the one line, listed under AI with the agreed keywords (#117)', () => {
+    expect(manifest.description).toBe(
+      'See your wayfinder frontier and start each ticket as a named Claude Code session, with live status.',
+    )
+    expect(manifest.categories).toEqual(['AI'])
     expect(manifest.keywords.toSorted()).toEqual([
       'agent',
+      'agent skills',
+      'ai',
+      'claude',
       'claude code',
+      'github issues',
+      'issue tracker',
+      'matt pocock',
       'mattpocock',
+      'sessions',
       'skills',
+      'terminal',
       'wayfinder',
+      'worktree',
     ])
+  })
+
+  it('is marked preview while the version is 0.x', () => {
+    expect(manifest.preview).toBe(manifest.version.startsWith('0.'))
+  })
+
+  it('has no Q & A tab, so strangers go to Issues (#146)', () => {
+    expect(manifest.qna).toBe(false)
+  })
+
+  it('leaves #<number> in the README as text, not an issue link', () => {
+    expect(manifest.scripts.package).toContain('--no-gitHubIssueLinking')
   })
 
   it('points bugs and the homepage at the repository', () => {
@@ -171,6 +195,16 @@ describe('the extension README', () => {
     expect(targets.length).toBeGreaterThan(0)
     for (const target of targets) expect(target).toMatch(/^https:\/\//)
     expect(readme).not.toMatch(/<img[^>]+src="(?!https:\/\/)/)
+  })
+
+  it('pins every image to a release tag, never a branch', () => {
+    const sources = [...readme.matchAll(/<img[^>]+src="([^"]+)"/g)].map((match) => match[1] ?? '')
+    expect(sources.length).toBeGreaterThan(0)
+    for (const source of sources) {
+      expect(source).toMatch(
+        /^https:\/\/raw\.githubusercontent\.com\/dbarjs\/hero-synergy\/v\d+\.\d+\.\d+\/docs\/media\//,
+      )
+    }
   })
 })
 

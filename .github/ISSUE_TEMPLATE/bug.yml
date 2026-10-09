@@ -1,0 +1,35 @@
+name: Bug report
+description: Something in Hero Synergy doesn't work as it should.
+labels: [needs-triage]
+body:
+  - type: markdown
+    attributes:
+      value: For a security problem, don't open an issue. Report it privately as the security policy says.
+  - type: input
+    id: version
+    attributes: { label: Hero Synergy version, description: 'In the Extensions view.' }
+    validations: { required: true }
+  - type: input
+    id: vscode
+    attributes: { label: VS Code version, description: 'Help → About.' }
+    validations: { required: true }
+  - type: input
+    id: claude
+    attributes: { label: Claude Code version, description: '`claude --version`' }
+    validations: { required: true }
+  - type: dropdown
+    id: os
+    attributes:
+      label: Where VS Code runs
+      options: [macOS, Linux, Dev container or SSH remote, Windows (WSL), Windows (native)]
+    validations: { required: true }
+  - type: dropdown
+    id: tracker
+    attributes:
+      label: Tracker
+      options: [GitHub, Local markdown, Other]
+  - type: textarea
+    id: what
+    attributes:
+      { label: What happened, description: 'And what you expected instead. Screenshots welcome.' }
+    validations: { required: true }
