@@ -1,5 +1,11 @@
 # hero-synergy
 
+## 0.1.2
+
+### Patch Changes
+
+- [#111](https://github.com/dbarjs/hero-synergy/pull/111) [`5c494a6`](https://github.com/dbarjs/hero-synergy/commit/5c494a6f314182acb4b08fbeef0a7ddf5d860a1d) Thanks [@dbarjs](https://github.com/dbarjs)! - Stop warning that Claude Code listed a session this version cannot read when a background session has a `state` and no `status`. The session is kept in the registry with status unknown, and nothing is flagged.
+
 ## 0.1.1
 
 ### Patch Changes

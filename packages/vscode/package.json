@@ -1,7 +1,7 @@
 {
   "name": "hero-synergy",
   "displayName": "Hero Synergy",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Unofficial cockpit for mattpocock/skills: wayfinder maps, frontier tickets and named Claude Code sessions in VS Code terminals.",
   "categories": [
