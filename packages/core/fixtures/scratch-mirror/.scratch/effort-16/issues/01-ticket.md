@@ -2,7 +2,7 @@
 
 Status: done
 
-Lorem: `lorem`, `lorem`. Lorem: `lorem`. Confirmed lorem: `lorem` (lorem→Lorem).
+Lorem: `lorem`, `lorem`. Lorem: `lorem/lorem/0010-lorem.md`. Confirmed lorem: `lorem` (lorem→Lorem).
 
 ## Problem
 

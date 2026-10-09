@@ -3,12 +3,12 @@
 Status: closed (resolved 2025-03-19)
 Labels: wayfinder:task, ready-for-agent
 Assignee: Lorem (agent session, claimed 2025-03-19)
-Blocked by: lorem (closed), lorem (closed 2025-03-19), lorem (closed 2025-03-19 — frontier)
+Blocked by: 01-ticket.md (closed), 03-ticket.md (closed 2025-03-19), 07-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question
 
-Lorem (`~/lorem`, working tree — no lorem), lorem `Lorem`, lorem from ticket 01's findings (`lorem`):
+Lorem (`~/lorem`, working tree — no lorem), lorem `Lorem`, lorem from ticket 01's findings (`lorem/01-lorem.md`):
 
 1. `lorem()` context: lorem `lorem` lorem (`{lorem}/lorem`) lorem `lorem = Lorem`.
 2. Lorem (per ticket 01's lorem) — lorem `lorem.__Lorem__ = lorem.__Lorem__ || { lorem: "…" }` (lorem), lorem `<lorem="…">` (lorem per ticket 01), and `<lorem="{{ lorem }}" lorem="{{ lorem }}"></lorem>`; lorem `lorem` lorem ticket 01's recommendation (lorem).

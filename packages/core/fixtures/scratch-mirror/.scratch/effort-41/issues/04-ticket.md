@@ -29,6 +29,6 @@ Done — the lorem of the destination is reached; the map stays open for the Lor
   - `lorem,100` — ticket 01's lorem (lorem `lorem` lorem).
   - `lorem–22` — ticket 02's lorem comment lorem.
   - `lorem` lorem (ticket 01).
-- **Lorem**: Lorem confirmed lorem (2025-03-20 lorem `lorem`). `Lorem` lorem: `lorem` lorem **Lorem** lorem **Lorem** lorem **Lorem (lorem)** lorem spec lorem `lorem` lorem `Lorem`/`Lorem` (lorem, out of scope); lorem. (Lorem `.lorem/` lorem `lorem` lorem from that spec — lorem.)
+- **Lorem**: Lorem confirmed lorem (2025-03-20 lorem in `lorem/lorem/0019-lorem.md`). `Lorem` lorem: `lorem` lorem **Lorem** lorem **Lorem** lorem **Lorem (lorem)** lorem spec lorem `lorem` lorem `Lorem`/`Lorem` (lorem, out of scope); lorem. (Lorem `.lorem/` lorem `lorem` lorem from that spec — lorem.)
 - **Gates, all green**: `lorem` lorem; `lorem` lorem files / 100 tests passed with lorem; `lorem` lorem% (lorem%); `lorem` (lorem) + `lorem` (lorem) lorem.
 - Lorem are working-tree only — the user lorem.

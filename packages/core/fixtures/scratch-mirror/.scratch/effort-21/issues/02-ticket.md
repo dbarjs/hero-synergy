@@ -16,13 +16,13 @@ Lorem ipsum.
 4. Lorem `lorem` lorem (lorem) — lorem (Lorem `/\lorem\lorem/` lorem?) that blocks lorem `lorem` lorem.
 5. Recommendation: `lorem` lorem (lorem) lorem (lorem `lorem`-lorem), lorem `lorem()` (lorem) lorem.
 
-Lorem findings as `lorem` in this map's lorem the working tree as lorem (lorem `lorem/` lorem).
+Lorem findings as `lorem/02-lorem.md` in this map's lorem the working tree as lorem (lorem `lorem/` lorem).
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-19)
 
-Lorem [`../lorem`](../assets/02-note.md). Lorem:
+Lorem in [`../lorem/02-lorem.md`](../assets/02-note.md). Lorem:
 
 - **The shipped Lorem**: `Lorem` lorem (lorem smoke), lorem `lorem` (lorem), lorem `lorem` `Lorem=lorem` (lorem, `lorem`) lorem `lorem` lorem (lorem `lorem`; lorem `Lorem=lorem`). Lorem: `lorem: { "lorem"' }` lorem `.lorem` lorem (+ `lorem ??= "lorem"` lorem `lorem`). Lorem, opens the lorem.
 - **Lorem** (lorem): shipped 2,100,100 / lorem (lorem); Lorem; **Lorem + `lorem` (lorem) lorem**; + lorem. `lorem"` lorem (lorem).

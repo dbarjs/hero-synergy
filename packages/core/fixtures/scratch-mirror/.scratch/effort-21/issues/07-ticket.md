@@ -8,7 +8,7 @@ Map: ../Lorem
 
 ## Question
 
-Lorem `lorem` lorem for it (findings: [lorem](../assets/01-note.md) §1/§3). Lorem by the research:
+Lorem `lorem` lorem for it (findings: [lorem/01-lorem.md](../assets/01-note.md) §1/§3). Lorem by the research:
 
 - Lorem ipsum.
 - (lorem) **Lorem `Lorem['Lorem']`** — lorem (Lorem `…/lorem`) lorem; needs a lorem and a comment.
@@ -35,4 +35,4 @@ Recommendation to lorem to the human: (a) if an lorem ticket is lorem (lorem) lo
 
 Lorem ipsum.
 
-Ticket 05 lorem `lorem['Lorem']` lorem [lorem](../assets/01-note.md) "Lorem".
+Ticket 05 lorem `lorem['Lorem']` lorem in [lorem/01-lorem.md](../assets/01-note.md) "Lorem".

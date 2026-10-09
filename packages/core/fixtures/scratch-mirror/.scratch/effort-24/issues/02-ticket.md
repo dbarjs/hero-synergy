@@ -24,7 +24,7 @@ Resolution: the lorem answers as a resolution comment, `Status: closed`, the map
 
 ### Resolution (grilling with the user, 2025-04-09)
 
-Lorem questions, one at a lorem by the user (research lorem `../lorem` lorem):
+Lorem questions, one at a lorem by the user (research lorem `../lorem/01-lorem.md` as lorem):
 
 1. **Destination** — the Lorem **lorem** (`lorem(lorem)` = `/lorem/{lorem}/lorem/{lorem}/`). Lorem; **lorem** (lorem `lorem` lorem). Lorem tree lorem.
 2. **Lorem** — Lorem: `Lorem` lorem `lorem` (lorem `lorem…lorem()` lorem `Lorem` lorem `lorem`) lorem `lorem` (`lorem`), lorem `lorem`. Lorem (`lorem`) lorem **lorem** — lorem (lorem). Lorem by this map.

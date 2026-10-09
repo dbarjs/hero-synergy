@@ -18,7 +18,7 @@ Lorem with the user (HITL — the lorem 02 session lorem):
 2. Lorem ipsum.
 3. `Lorem/{lorem}` — lorem (lorem on the map) or lorem?
 
-Resolution = the lorem `.lorem`; lorem in `## Answer`.
+Resolution = the lorem new line for `.lorem/lorem/lorem/01-lorem.md`; lorem in `## Answer`.
 
 ## Comments
 

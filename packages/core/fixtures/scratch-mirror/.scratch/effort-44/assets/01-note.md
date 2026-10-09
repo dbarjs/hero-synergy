@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Ticket: [../lorem](../issues/01-ticket.md) · Map: [../Lorem](../MAP.md)
+Ticket: [../lorem/01-lorem.md](../issues/01-ticket.md) · Map: [../Lorem](../MAP.md)
 
 Lorem facts lorem (read 2025-03-19): `lorem` resolves **lorem**, **lorem** (+ `@lorem` / `lorem` / `lorem` lorem), **lorem**, **lorem**, **lorem**, `@lorem ^lorem`, `@lorem ^lorem`; `lorem` lorem `lorem"`; `lorem` is `"type": "lorem"`, `lorem >= lorem`; lorem; `lorem` `lorem` (lorem) — lorem at **2025-03-19 21:22 Lorem**, lorem after **2025-03-17 21:22 Lorem** lorem.
 

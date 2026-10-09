@@ -27,7 +27,7 @@ Lorem (lorem, 2025-05-03 — lorem in-ticket if lorem):
 
 Lorem (lorem session, 2025-05-03) — lorem:
 
-- `lorem` lorem `<Lorem="lorem="lorem">{lorem}</Lorem>` — lorem **lorem** lorem `<lorem>` lorem `lorem` lorem `.lorem(lorem…lorem)` lorem (`lorem`) lorem (lorem = lorem = lorem): `lorem`, [Sweep lorem](../effort-16/issues/01-ticket.md) — lorem 2025-04-02 comment lorem `Lorem` lorem (lorem `lorem` lorem)". Lorem.
+- `lorem` lorem `<Lorem="lorem="lorem">{lorem}</Lorem>` — lorem **lorem** lorem `<lorem>` lorem `lorem` lorem `.lorem(lorem…lorem)` lorem (`lorem`) lorem (lorem = lorem = lorem): `lorem/lorem/0010-lorem.md`, [Sweep lorem](../effort-16/issues/01-ticket.md) — lorem 2025-04-02 comment lorem `Lorem` lorem (lorem `lorem` lorem)". Lorem.
 - Lorem ipsum.
 - **Lorem**: lorem is still pending (`lorem` → `—`, `lorem`), lorem `—` → lorem; `lorem` lorem (`lorem`). Lorem comment lorem" (lorem) — lorem.
 - Lorem ipsum.

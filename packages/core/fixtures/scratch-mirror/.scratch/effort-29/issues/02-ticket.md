@@ -29,4 +29,4 @@ Lorem (lorem spec is lorem); lorem **Lorem** lorem (lorem `lorem ^lorem`; lorem 
 
 Lorem question 3: **lorem** — lorem `lorem(lorem?)` lorem `lorem` lorem `(info) => Lorem | Lorem<Lorem>` (lorem), lorem @lorem `lorem'`. Lorem `lorem: '*'` lorem (lorem) lorem (lorem) — lorem.
 
-Lorem: `lorem/{lorem}` (committed, Lorem `lorem`) + lorem `lorem/{lorem}`. Lorem, and sources: [../lorem](../research/02-note.md).
+Lorem: `lorem/{lorem}` (committed, Lorem `lorem`) + lorem `lorem/{lorem}`. Lorem, and sources: [../lorem/02-lorem.md](../research/02-note.md).

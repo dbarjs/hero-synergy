@@ -3,7 +3,7 @@
 Status: closed (resolved 2025-03-21)
 Labels: wayfinder:prototype
 Assignee: lorem (claimed 2025-03-21, session lorem)
-Blocked by: lorem (closed 2025-03-19), lorem (closed 2025-03-19), lorem (closed 2025-03-19 — frontier)
+Blocked by: 01-ticket.md (closed 2025-03-19), 03-ticket.md (closed 2025-03-19), 04-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question

@@ -28,7 +28,7 @@ Lorem every session lorem gates new code at ≥lorem% lorem / ≤lorem% lorem (l
 - Lorem ipsum.
 - Lorem ipsum.
 - **Lorem**: `lorem` (lorem 100, route `/lorem`), `Lorem`.
-- **Lorem**: `Lorem` (Lorem … lorem"); `lorem` lorem (lorem) lorem (lorem) lorem; `.lorem` lorem (lorem route) and the lorem 02 session.
+- **Lorem**: `Lorem` (Lorem … lorem"); `lorem/lorem/0047-lorem.md` lorem (lorem) lorem (lorem) lorem; `.lorem/lorem/lorem/01-lorem.md` items 5 (lorem route) and the lorem 02 session.
 - **Lorem**: Lorem `Lorem` (`lorem`) — lorem (lorem `lorem`; lorem `lorem` lorem **lorem** lorem). Lorem is [ticket 01](issues/01-ticket.md).
 
 **Lorem (lorem in-ticket if lorem):**
@@ -60,7 +60,7 @@ Lorem every session lorem gates new code at ≥lorem% lorem / ≤lorem% lorem (l
 ## Out of scope
 
 - Lorem **lorem** lorem (`/lorem/{lorem}/lorem`, `Lorem`, lorem) — lorem and map (`.lorem/`).
-- Lorem `.lorem` (lorem) — lorem `—` lorem; this map only lorem (lorem).
+- Lorem in `.lorem/lorem/lorem/01-lorem.md` (lorem) — lorem `—` lorem; this map only lorem (lorem).
 - Lorem ipsum.
 - Lorem ipsum.
 - Lorem ipsum.

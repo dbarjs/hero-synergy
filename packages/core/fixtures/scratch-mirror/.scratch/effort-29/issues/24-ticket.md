@@ -24,4 +24,4 @@ Findings file under `../research/`, lorem from this ticket.
 
 ### Resolution (2025-03-13)
 
-Lorem, `lorem` lorem `lorem` lorem `lorem` (`lorem: [lorem]` lorem; `@lorem` lorem `Lorem` lorem confirmed by a lorem), lorem (lorem `../lorem/`). Lorem — `lorem: [lorem]` lorem `lorem()` lorem" — so the answer lorem if ticket 23 lorem, `lorem`'lorem `lorem` lorem `--lorem` lorem `Lorem` (lorem) lorem `Lorem` (lorem) lorem `lorem/{lorem}.lorem` lorem `lorem` lorem (lorem). Lorem `lorem` lorem from the same spec in one `lorem` lorem, and sources: [lorem](../research/24-note.md).
+Lorem, `lorem` lorem `lorem` lorem `lorem` (`lorem: [lorem]` lorem; `@lorem` lorem `Lorem` lorem confirmed by a lorem), lorem (lorem `../lorem/`). Lorem — `lorem: [lorem]` lorem `lorem()` lorem" — so the answer lorem if ticket 23 lorem, `lorem`'lorem `lorem` lorem `--lorem` lorem `Lorem` (lorem) lorem `Lorem` (lorem) lorem `lorem/{lorem}.lorem` lorem `lorem` lorem (lorem). Lorem `lorem` lorem from the same spec in one `lorem` lorem, and sources: [lorem/24-lorem.md](../research/24-note.md).

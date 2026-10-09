@@ -16,13 +16,13 @@ Lorem `Lorem` (lorem `~/lorem`, `lorem/`) lorem `<lorem>` lorem (lorem, `lorem` 
 4. Lorem ipsum.
 5. Lorem ipsum.
 
-Lorem findings as `lorem` in this map's lorem.
+Lorem findings as `lorem/01-lorem.md` in this map's lorem.
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-19)
 
-Findings with file:line lorem [`../lorem`](../assets/01-note.md) (lorem). Summary:
+Findings with file:line lorem in [`../lorem/01-lorem.md`](../assets/01-note.md) (lorem). Summary:
 
 - **Lorem**: lorem blocks lorem (`lorem`); lorem `lorem['Lorem']` / `lorem['Lorem']` (`lorem`). Lorem `lorem()` lorem `lorem` (lorem `lorem` lorem; `{% lorem %}` lorem). Lorem **lorem** `__Lorem__` lorem (confirmed). Lorem **lorem** needs a decision: lorem `Lorem` + lorem (lorem), lorem `Lorem` (lorem).
 - **Lorem**: `{% lorem" %}` lorem `<lorem>` (`lorem`); lorem `{% lorem" %}` (`lorem`), lorem **lorem** (`Lorem`) → lorem if the block lorem `lorem` lorem (+ lorem). Lorem → lorem `<lorem>` (lorem); `lorem` (lorem `lorem`) lorem.

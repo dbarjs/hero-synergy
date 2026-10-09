@@ -3,7 +3,7 @@
 Status: closed (resolved 2025-03-19)
 Labels: wayfinder:task, ready-for-agent
 Assignee: Lorem (agent session, claimed 2025-03-19)
-Blocked by: lorem (closed 2025-03-19 — frontier)
+Blocked by: 03-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question
@@ -13,7 +13,7 @@ Lorem `lorem`, lorem decisions in the map:
 1. **Lorem**: lorem `lorem/*` (lorem, `lorem`, `Lorem`, `lorem`, lorem) lorem (`lorem/` — lorem `#/` lorem). Lorem `lorem?: () => lorem` (lorem close X per Lorem `lorem` — Lorem close, lorem) lorem `lorem?: (lorem) => lorem` (lorem `lorem`). **Lorem** — its tests stay green lorem (lorem).
 2. **Lorem**: lorem `Lorem` (lorem `lorem` lorem open/close Lorem `Lorem`) lorem `<Lorem>`. Lorem `lorem` lorem `lorem` / `lorem` lorem (Lorem) — the shipped lorem (lorem).
 3. **Lorem**: lorem `lorem`; lorem `Lorem` + lorem `Lorem` lorem tree (no `Lorem`, lorem). Lorem (Lorem `lorem()`); lorem `lorem` lorem `lorem` lorem.
-4. **Lorem `lorem`**: `#/lorem → #/lorem → #/lorem` lorem `lorem("@lorem")` (lorem) lorem (lorem [lorem](../assets/02-note.md)). Lorem: (lorem) lorem `#/lorem` lorem `lorem` + `lorem().lorem` (lorem `lorem` lorem); (lorem) lorem `lorem` (lorem) — lorem. **Recommendation: (a)**; lorem in the resolution and Lorem, `lorem` lorem pass and the lorem `lorem/**`.
+4. **Lorem `lorem`**: `#/lorem → #/lorem → #/lorem` lorem `lorem("@lorem")` (lorem) lorem (see [lorem/02-lorem.md](../assets/02-note.md)). Lorem: (lorem) lorem `#/lorem` lorem `lorem` + `lorem().lorem` (lorem `lorem` lorem); (lorem) lorem `lorem` (lorem) — lorem. **Recommendation: (a)**; lorem in the resolution and Lorem, `lorem` lorem pass and the lorem `lorem/**`.
 5. **Lorem**: `lorem` → `lorem(lorem)` lorem `lorem` lorem `lorem` lorem (lorem: `/lorem`, lorem). Lorem `#lorem` lorem `lorem()` lorem `lorem` lorem `__Lorem__.lorem` (empty on lorem) — lorem `/lorem/*` (lorem).
 6. Lorem, `lorem` lorem, `lorem` lorem `lorem` lorem (lorem; `lorem` lorem). Gates: lorem green; lorem `lorem` and open both lorem (lorem smoke lorem) — lorem.
 

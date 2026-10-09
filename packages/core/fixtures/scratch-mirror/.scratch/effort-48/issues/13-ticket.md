@@ -39,7 +39,7 @@ Lorem ipsum.
 - `lorem` — lorem (`lorem`); lorem stay `—` for [14](14-ticket.md).
 - Lorem: `lorem` — `lorem` (`lorem` + lorem `lorem` lorem) lorem `lorem` (+lorem); lorem `Lorem` lorem (lorem) lorem `lorem`/`lorem`; lorem; `lorem` lorem `lorem` (lorem). `Lorem` lorem → lorem comment lorem.
 - Lorem: `lorem` (lorem and empty lorem), `Lorem` (`lorem()` lorem = `—`, lorem).
-- Lorem `Lorem` Lorem **Lorem** / **Lorem** / **Lorem**; Lorem 2025-04-02 lorem (lorem) lorem; `.lorem` lorem".
+- Lorem `Lorem` Lorem **Lorem** / **Lorem** / **Lorem**; Lorem 2025-04-02 lorem (lorem) lorem; `.lorem/lorem/lorem/01-lorem.md` items 1 and lorem".
 
 Proof:
 

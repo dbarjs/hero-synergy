@@ -1,6 +1,6 @@
 # Lorem ipsum
 
-Lorem (`lorem/`) lorem spec, lorem (`Lorem`, lorem `lorem`). Lorem; only type lorem. Decisions and lorem: `lorem`.
+Lorem (`lorem/`) lorem spec, lorem (`Lorem`, lorem `lorem`). Lorem; only type lorem. Decisions and lorem: `lorem/lorem/0009-lorem.md`.
 
 ## Lorem → lorem
 

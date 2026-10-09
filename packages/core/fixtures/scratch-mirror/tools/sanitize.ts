@@ -6,7 +6,7 @@
  *
  * Kept: the words of `vocabulary.ts`, Markdown structure and punctuation, ticket numbers (one
  * or two digits), dates moved by `--shift-days`, and the links between files with their
- * targets renamed. Replaced: every other word, collapsed to one placeholder per run; a line
+ * targets renamed, bare `NN-<slug>.md` names included. Replaced: every other word, collapsed to one placeholder per run; a line
  * left with nothing kept collapses to `Lorem ipsum.`; larger numbers become `100`; URLs off
  * GitHub's hero-synergy and skills repos become `https://example.com/`. Effort directories
  * become `effort-NN` in their sorted order, `NN-<slug>` names become `NN-ticket`, `NN-folder`
@@ -47,6 +47,9 @@ const PATTERN = new RegExp(
   ].join('|'),
   'gu',
 )
+
+/** A bare file name or path of a numbered file (`05-ledger.md`), renamed like a link target. */
+const TICKET_FILE = /^(?:[\p{L}\p{N}._-]+\/)*\d+-[\p{L}\p{N}._-]+\.md$/u
 
 /** A kept piece is hard when it carries state (a signal word, a date, a link), soft otherwise. */
 type Piece =
@@ -144,6 +147,10 @@ const pieces = (text: string, context: LineContext): Piece[] => {
       out.push({ kind: 'kept', text: shiftDmy(groups.dmy, context.shiftDays), hard: true })
     } else {
       const token = groups.token!
+      if (TICKET_FILE.test(token)) {
+        out.push({ kind: 'kept', text: context.relink(token), hard: true })
+        continue
+      }
       const kept = classifyToken(token)
       out.push(
         kept === null

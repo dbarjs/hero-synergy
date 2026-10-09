@@ -47,7 +47,7 @@ Files:
 
 - `lorem` — lorem comment (why: Lorem `lorem` lorem → lorem).
 - `lorem` — lorem" (lorem). Lorem (`lorem'`), green after the lorem.
-- `lorem` — lorem block at the lorem (Lorem) + lorem (lorem) lorem.
+- `lorem/lorem/0027-lorem.md` — lorem block at the lorem (Lorem) + lorem (lorem) lorem.
 - `lorem` — lorem comment "a lorem".
 - `lorem` `lorem()` lorem; `lorem\|lorem` confirmed no lorem (lorem).
 

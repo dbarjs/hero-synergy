@@ -15,13 +15,13 @@ Lorem `lorem` lorem" (`lorem–100`), and the summary lorem `Lorem` lorem `Lorem
 2. Lorem" block still lorem?
 3. Lorem ipsum.
 
-Lorem recommendation for [ticket 02](02-ticket.md): the `lorem` lorem. Findings lorem [`../lorem`](../assets/01-note.md). Lorem: ticket 02 lorem (lorem `lorem` lorem) lorem".
+Lorem recommendation for [ticket 02](02-ticket.md): the `lorem` lorem. Findings lorem in [`../lorem/01-lorem.md`](../assets/01-note.md). Lorem: ticket 02 lorem (lorem `lorem` lorem) lorem".
 
 ## Comments
 
 ### Resolution (research subagent, 2025-03-28)
 
-Findings with lorem [`../lorem`](../assets/01-note.md) (lorem `lorem`; Lorem). Summary:
+Findings with lorem in [`../lorem/01-lorem.md`](../assets/01-note.md) (lorem `lorem`; Lorem). Summary:
 
 - **Lorem `lorem`**: **lorem** lorem (lorem `lorem`): lorem = **Lorem\*** (lorem) + **Lorem\*** (lorem, `lorem`); lorem = "Lorem\*" lorem (lorem, `lorem` — lorem) + lorem empty lorem `lorem` lorem.
 - **Lorem `lorem`** (lorem `lorem`): lorem" block **still lorem** "Lorem" (lorem, `lorem`, lorem") lorem `Lorem`. Lorem (lorem).

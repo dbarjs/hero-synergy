@@ -3,7 +3,7 @@
 Status: closed (2025-03-19)
 Labels: wayfinder:task, ready-for-agent
 Assignee: lorem
-Blocked by: lorem (closed 2025-03-19 — frontier)
+Blocked by: 06-ticket.md (closed 2025-03-19 — frontier)
 Map: ../Lorem
 
 ## Question

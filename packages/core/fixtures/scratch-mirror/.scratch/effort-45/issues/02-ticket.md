@@ -34,7 +34,7 @@ Resolution: files lorem + smoke lorem as a comment, `Status: closed`, map line, 
 
 Lorem ipsum.
 
-**Lorem.** Lorem (2025-04-10, Lorem); Lorem **Lorem** lorem **Lorem** lorem issue item 10 lorem (`.lorem` — lorem); lorem comments that lorem.
+**Lorem.** Lorem (2025-04-10, Lorem); Lorem **Lorem** lorem **Lorem** lorem issue item 10 lorem (`.lorem/lorem/lorem/01-lorem.md` — lorem); lorem comments that lorem.
 
 **Gates.** lorem; `lorem` lorem files / 100 tests green with lorem (lorem); `lorem` lorem% (lorem); `lorem` + `lorem` green (100 files lorem).
 

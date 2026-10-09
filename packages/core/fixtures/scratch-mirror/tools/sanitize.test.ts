@@ -63,6 +63,12 @@ describe('sanitizeText', () => {
     expect(sanitizeText('done 02/01/2026', context).text).toBe('done 12/01/2026')
   })
 
+  it('relinks a bare numbered file name, as a blocker line writes it', () => {
+    expect(sanitizeText('Blocked by: 03-ledger-sync.md (closed)', context).text).toBe(
+      'Blocked by: <03-ledger-sync.md> (closed)',
+    )
+  })
+
   it('relinks a relative target and replaces a URL off the allowed hosts', () => {
     expect(sanitizeText('[03](03-ledger.md)', context).text).toBe('[03](<03-ledger.md>)')
     expect(sanitizeText('see https://intranet.example.org/x', context).text).toBe(

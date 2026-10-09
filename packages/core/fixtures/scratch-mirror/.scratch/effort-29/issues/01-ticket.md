@@ -24,7 +24,7 @@ Answer = facts with sources + a recommendation on the @lorem question, lorem as 
 
 ### Resolution (2025-03-12)
 
-Findings in [../lorem](../research/01-note.md). Lorem answers:
+Findings in [../lorem/01-lorem.md](../research/01-note.md). Lorem answers:
 
 1. `@lorem` lorem **lorem** (lorem 0.16.2, 2023-04-11) — lorem **`@lorem`** (lorem) is the recommendation: v1.1.7 (2025-02-07), lorem, **Lorem** lorem (lorem), lorem `lorem('lorem'|'lorem'|'lorem')`.
 2. Lorem ipsum.
