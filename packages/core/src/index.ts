@@ -19,6 +19,21 @@ export {
   toSpec,
   workTicket,
 } from './claude/actions.ts'
+export {
+  BYPASS_ARGS,
+  type BypassHealthInput,
+  type BypassMode,
+  type BypassPolicy,
+  type BypassTarget,
+  bypassAllowed,
+  bypasses,
+  bypassHealth,
+  bypassModeOf,
+  bypassModes,
+  isAfkTicket,
+  NO_BYPASS,
+  notIsolatedDetail,
+} from './claude/bypass.ts'
 export type { Decoded } from './claude/decode.ts'
 export {
   commandOf,
@@ -66,6 +81,18 @@ export {
   skillOfDetail,
   type VersionRun,
 } from './claude/health.ts'
+export {
+  collectIsolationFacts,
+  type ContainerMarker,
+  containerMarkers,
+  type IsolatedRemoteName,
+  isolatedRemoteNames,
+  type Isolation,
+  type IsolationFacts,
+  type IsolationSignal,
+  isolationOf,
+  TOOLBOX_MARKER,
+} from './claude/isolation.ts'
 export {
   type ClaudeVersion,
   claudeVersionFloor,
@@ -186,6 +213,13 @@ export {
   type TrackerHeading,
   type TrackerKind,
 } from './scout/tracker-doc.ts'
+export {
+  DEFAULT_TRIAGE_LABELS,
+  readTriageLabels,
+  TRIAGE_LABELS_PATH,
+  type TriageLabels,
+  triageLabelsOf,
+} from './scout/triage-labels.ts'
 export { groupByTicket, ticketOfName } from './session/registry-sessions.ts'
 export {
   CLAIM_PENDING_TEXT,
@@ -204,6 +238,7 @@ export {
   isRunning,
   type Listed,
   listedOf,
+  BYPASS_NO_STATUS_HINT,
   NO_STATUS_HINT,
   needsYou,
   needsYouNow,

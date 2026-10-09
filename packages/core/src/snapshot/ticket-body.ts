@@ -21,6 +21,8 @@ export interface TicketBody {
   readonly type: { readonly value: TicketType | null; readonly raw: string } | null
   /** The value of a `Status:` line. */
   readonly status: string | null
+  /** The labels a `Labels:` line names, comma- or space-separated, backticks dropped; null with no line. */
+  readonly labels: ReadonlyArray<string> | null
   /** Whether a `## Question` heading is there. */
   readonly hasQuestion: boolean
   /** The text under `## Answer`, which holds a local ticket's resolution. */
@@ -39,6 +41,7 @@ export function readTicketBody(body: string): TicketBody {
   let blockedBy: TicketBody['blockedBy'] = null
   let type: TicketBody['type'] = null
   let status: string | null = null
+  let labels: ReadonlyArray<string> | null = null
 
   // The lines live at the top of the body, before any section.
   for (const raw of lines(found[0]?.text ?? '')) {
@@ -54,6 +57,8 @@ export function readTicketBody(body: string): TicketBody {
     }
     const statusLine = /^Status:\s*(.+?)\s*$/i.exec(line)
     if (statusLine?.[1] !== undefined && status === null) status = statusLine[1]
+    const labelsLine = /^Labels:\s*(.*)$/i.exec(line)
+    if (labelsLine?.[1] !== undefined && labels === null) labels = readLabels(labelsLine[1])
   }
 
   return {
@@ -62,6 +67,7 @@ export function readTicketBody(body: string): TicketBody {
     blockedBy,
     type,
     status,
+    labels,
     hasQuestion: question !== undefined,
     answer: answer === undefined || answer.text === '' ? null : answer.text,
   }
@@ -81,4 +87,11 @@ function readBlockers(value: string): TicketBody['blockedBy'] {
     else slugs.push(token)
   }
   return { numbers, slugs }
+}
+
+function readLabels(value: string): ReadonlyArray<string> {
+  return value
+    .split(/[\s,]+/)
+    .map((token) => token.replace(/`/g, '').trim())
+    .filter((token) => token !== '')
 }

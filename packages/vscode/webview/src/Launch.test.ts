@@ -28,7 +28,13 @@ beforeAll(async () => {
 })
 
 const BASE = { sessionId: null, finished: [] }
-const starting: SessionState = { ...BASE, kind: 'starting', terminal: 1, hint: false }
+const starting: SessionState = {
+  ...BASE,
+  kind: 'starting',
+  terminal: 1,
+  hint: false,
+  bypassed: false,
+}
 const live = (status: SessionStatus | null = null): SessionState => ({
   ...BASE,
   kind: 'live',
