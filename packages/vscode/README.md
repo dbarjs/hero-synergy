@@ -54,10 +54,37 @@ The status comes from Claude Code's own list of live sessions, and from a small 
 
 ## Settings
 
-| Setting                                 | Default | What it does                                                                       |
-| --------------------------------------- | ------- | ---------------------------------------------------------------------------------- |
-| `heroSynergy.sessions.terminalLocation` | `panel` | Open ticket sessions in the terminal panel (`panel`) or in editor tabs (`editor`). |
-| `heroSynergy.claude.path`               | empty   | Location of the `claude` executable. Empty resolves `claude` on `PATH`.            |
+| Setting                                                  | Default | What it does                                                                                                                   |
+| -------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `heroSynergy.sessions.terminalLocation`                  | `panel` | Open ticket sessions in the terminal panel (`panel`) or in editor tabs (`editor`).                                             |
+| `heroSynergy.claude.path`                                | empty   | Location of the `claude` executable. Empty resolves `claude` on `PATH`.                                                        |
+| `heroSynergy.sessions.bypassPermissions`                 | `off`   | Start sessions with `--permission-mode bypassPermissions`: `off`, `afkTickets` or `allSessions`. See Bypass permissions below. |
+| `heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated` | `true`  | Bypass only in an isolated environment. Elsewhere sessions keep their prompts and the Health row says why.                     |
+
+`heroSynergy.claude.path` and both bypass settings are read from your user settings only, so a repository's `.vscode/settings.json` cannot change them.
+
+## Bypass permissions
+
+An AFK ticket is meant to be worked by the agent alone, but a session stops at every permission prompt. In a container you trust, the Cockpit can start those sessions with `--permission-mode bypassPermissions`. The flag is part of the command, so the Focus pane shows it and Copy command copies it.
+
+**What each mode covers.**
+
+- `off` (the default): never.
+- `afkTickets`: every ticket Action (Work ticket, Launch fresh, Resume, Resume by name) on an AFK ticket. A ticket is AFK when it is labelled `ready-for-agent`, or when it is a research or task ticket not labelled `ready-for-human`. Prototype and grilling tickets, and tickets with no type, keep their prompts. The label names come from your repo's `docs/agents/triage-labels.md` when it renames them. Resume passes the flag again, because Claude Code drops the mode on `--resume`.
+- `allSessions`: every ticket Action on every ticket, and Chart a map, To spec, Run skill… and Setup.
+
+The installs never carry the flag. A changed setting applies to the next launch; running sessions are left alone.
+
+**The isolation gate.** With `heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated` on (the default), the flag is added only in an isolated environment: a Dev Containers or Codespaces window, or a window whose extension host runs in a Docker or Podman container (`/.dockerenv`, `/run/.containerenv`). A toolbx or distrobox container doesn't count, because it shares your home, SSH agent and D-Bus. A local window, WSL, Remote-SSH to a plain host and a Remote Tunnel don't count either, and environment variables never do. Outside an isolated environment a quiet Health note says what the Cockpit saw, such as "Remote-SSH, no container marker".
+
+Isolated means "in a container", not "sandboxed". A repository's `devcontainer.json` can mount your home directory or the Docker socket into the container. Judge the container yourself before you turn bypass on.
+
+**What still stops a bypassed session.**
+
+- The first bypassed session asks you, once, to accept bypass mode. Until you accept it in the terminal, the session shows "starting", and after 15 s its hint names the bypass dialog. The Cockpit never accepts it for you, and never writes `~/.claude`.
+- Claude Code refuses bypass mode as root, and the session exits as soon as it starts. A loud Health warning says so when the window runs as root. Run the window as a non-root user, such as a devcontainer's `remoteUser`.
+- An administrator's `disableBypassPermissionsMode` setting silently turns a bypassed session back into a prompting one. The Cockpit doesn't detect it.
+- Ask rules, deny rules, `AskUserQuestion` and `rm` on a critical path still stop a bypassed session, so it can still show waiting or needs approval.
 
 ## Commands
 

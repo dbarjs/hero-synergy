@@ -131,6 +131,18 @@ export const HEALTH_TABLE: Readonly<Record<HealthCode, Copy>> = {
       `mattpocock-skills: a plugin that holds a needed skill is off${quoted(detail)}`,
     hint: 'Enable the plugin with `claude plugin enable`.',
   },
+  'bypass-not-isolated': {
+    level: 'quiet',
+    message: (detail) =>
+      `Bypass permissions is on, but this window is not an isolated environment${parenthesised(detail)}, so sessions keep their permission prompts.`,
+    hint: 'Reopen the folder in a Dev Container, or turn off heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated.',
+  },
+  'bypass-refused-as-root': {
+    level: 'loud',
+    message: () =>
+      'Claude Code refuses bypass permissions as root, so bypassed sessions exit as soon as they start.',
+    hint: "Run the window as a non-root user (a devcontainer's `remoteUser`), or set heroSynergy.sessions.bypassPermissions to off.",
+  },
 }
 
 /** A health warning as it was raised, with what was seen when the detail is only a summary. */

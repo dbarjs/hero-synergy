@@ -162,3 +162,21 @@ export function registerRefreshTriggers(
     )
   }
 }
+
+/** The settings whose change re-plans every Action and the Health row. */
+export const BYPASS_SETTINGS = [
+  'heroSynergy.sessions.bypassPermissions',
+  'heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated',
+] as const
+
+/** Calls back when either bypass setting changes, so the planned commands never lag behind. */
+export function registerSettingsTrigger(
+  context: vscode.ExtensionContext,
+  onBypassChange: () => void,
+): void {
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (BYPASS_SETTINGS.some((setting) => event.affectsConfiguration(setting))) onBypassChange()
+    }),
+  )
+}

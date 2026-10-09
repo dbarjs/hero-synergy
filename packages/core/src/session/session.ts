@@ -80,6 +80,8 @@ export type SessionState =
       readonly terminal: number | null
       /** Whether 15 s passed with no status event. */
       readonly hint: boolean
+      /** Whether the launch carried the bypass flag, so the hint names the bypass dialog too. */
+      readonly bypassed: boolean
     })
   | (Common & {
       readonly kind: 'live'
@@ -112,7 +114,7 @@ export type SessionState =
 
 export type SessionInput =
   /** ▶ ran: a new terminal is being made. The ticket's remembered id and finished ids carry over. */
-  | { readonly type: 'launched'; readonly at: number }
+  | { readonly type: 'launched'; readonly at: number; readonly bypassed?: boolean }
   /** VS Code made the terminal. */
   | { readonly type: 'terminal'; readonly terminal: number }
   /** 15 s passed since the terminal was made. */
@@ -137,6 +139,10 @@ export type SessionInput =
 
 export const NO_STATUS_HINT =
   'no status yet, the session may be waiting at the trust dialog, open the terminal'
+
+/** The hint of a bypassed launch: Claude Code's one-time bypass dialog leaves no registry entry either. */
+export const BYPASS_NO_STATUS_HINT =
+  'no status yet, the session may be waiting at the trust or bypass-permissions dialog, open the terminal'
 
 /** How long a terminal may run without a status event before the hint shows. */
 export const HINT_AFTER_MS = 15_000
@@ -347,6 +353,7 @@ export function reduceSession(
         kind: 'starting',
         terminal: null,
         hint: false,
+        bypassed: input.bypassed ?? false,
         sessionId: state?.sessionId ?? null,
         finished: state?.finished ?? NO_FINISHED,
       }
@@ -362,6 +369,7 @@ export function reduceSession(
           kind: 'starting',
           terminal: input.terminal,
           hint: false,
+          bypassed: false,
           sessionId: null,
           finished: NO_FINISHED,
         }
@@ -504,7 +512,10 @@ export function sessionView(
   if (state === undefined) return { kind: 'none' }
   switch (state.kind) {
     case 'starting':
-      return { kind: 'starting', hint: state.hint ? NO_STATUS_HINT : null }
+      return {
+        kind: 'starting',
+        hint: state.hint ? (state.bypassed ? BYPASS_NO_STATUS_HINT : NO_STATUS_HINT) : null,
+      }
     case 'live': {
       const { status, since } = shownStatus(state)
       const unknown = statusUnknown(state, registryUnreadable)

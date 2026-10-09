@@ -67,6 +67,8 @@ const Ticket = Schema.Struct({
   ref: Ref,
   state: TicketState,
   type: Schema.NullOr(TicketType),
+  /** The tracker's labels: GitHub's, or a local ticket's `Labels:` line; empty when it carries none. */
+  labels: Schema.Array(Schema.String),
   claim: Schema.NullOr(Claim),
   blockedBy: Schema.Array(Blocker),
   body: Schema.String,
@@ -138,4 +140,4 @@ export const encodeSnapshot: (snapshot: Snapshot) => SnapshotJson = Schema.encod
  * The shape of a stored snapshot. Bump it whenever the schema above changes, so
  * a cache written under the old shape is ignored instead of decoded.
  */
-export const snapshotSchemaVersion = 1
+export const snapshotSchemaVersion = 2

@@ -3,6 +3,7 @@ import { existsSync, watch } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import { bypassModeOf } from '@hero-synergy/core'
 import { Effect, Layer } from 'effect'
 import * as vscode from 'vscode'
 
@@ -235,6 +236,14 @@ export const hostEnvironmentLive = (
         ? 'editor'
         : 'panel',
     ),
+    bypassSettings: Effect.sync(() => ({
+      mode: bypassModeOf(configuration().get<string>('sessions.bypassPermissions', 'off')),
+      onlyWhenIsolated:
+        configuration().get<boolean>('sessions.bypassPermissionsOnlyWhenIsolated', true) !== false,
+    })),
+    remoteName: vscode.env.remoteName ?? null,
+    root: process.getuid?.() === 0,
+    sandboxEnv: process.env.IS_SANDBOX === '1' || process.env.CLAUDE_CODE_BUBBLEWRAP !== undefined,
     pluginPath: vscode.Uri.joinPath(context.extensionUri, 'claude-plugin').fsPath,
     eventsFile: (repoRoot) =>
       vscode.Uri.joinPath(

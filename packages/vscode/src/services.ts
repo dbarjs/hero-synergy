@@ -1,4 +1,4 @@
-import type { TerminalExit } from '@hero-synergy/core'
+import type { BypassMode, TerminalExit } from '@hero-synergy/core'
 import { Context, Effect, Layer } from 'effect'
 
 import type { OpenTarget } from './view-model.ts'
@@ -339,6 +339,12 @@ export class Clipboard extends Context.Service<Clipboard, ClipboardShape>()(
     })
 }
 
+/** The two bypass settings, as read. */
+export interface BypassSettings {
+  readonly mode: BypassMode
+  readonly onlyWhenIsolated: boolean
+}
+
 export interface HostEnvironmentShape {
   /** `process.platform`. */
   readonly platform: string
@@ -356,6 +362,14 @@ export interface HostEnvironmentShape {
   readonly claudeSetting: Effect.Effect<string>
   /** `heroSynergy.sessions.terminalLocation`, read each time. */
   readonly terminalLocation: Effect.Effect<TerminalLocation>
+  /** `heroSynergy.sessions.bypassPermissions` and `…OnlyWhenIsolated`, from the user's settings only (machine scope). */
+  readonly bypassSettings: Effect.Effect<BypassSettings>
+  /** `vscode.env.remoteName`; null in a local window. Fixed while the window is open. */
+  readonly remoteName: string | null
+  /** The extension host runs as uid 0; false on Windows. */
+  readonly root: boolean
+  /** `IS_SANDBOX=1` or `CLAUDE_CODE_BUBBLEWRAP` is set in the extension host's environment. */
+  readonly sandboxEnv: boolean
   /** The full path of the extension's `claude-plugin` directory. */
   readonly pluginPath: string
   /** The status events file for a repo, one per repo identity. */
@@ -378,6 +392,10 @@ export class HostEnvironment extends Context.Service<HostEnvironment, HostEnviro
       pathVariable: '',
       claudeSetting: Effect.succeed(''),
       terminalLocation: Effect.succeed<TerminalLocation>('panel'),
+      bypassSettings: Effect.succeed<BypassSettings>({ mode: 'off', onlyWhenIsolated: true }),
+      remoteName: null,
+      root: false,
+      sandboxEnv: false,
       pluginPath: '/ext/claude-plugin',
       eventsFile: () => '/storage/events/repo.jsonl',
       ...overrides,

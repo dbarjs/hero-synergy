@@ -1,0 +1,5 @@
+---
+'hero-synergy': minor
+---
+
+Launch AFK sessions with permissions bypassed in an isolated environment. Two new settings, both off until you turn them on and read from your user settings only: `heroSynergy.sessions.bypassPermissions` (`off`, `afkTickets` or `allSessions`) and `heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated` (on by default). Under `afkTickets`, Work ticket, Launch fresh, Resume and Resume by name start research and task tickets, and any ticket labelled `ready-for-agent`, with `--permission-mode bypassPermissions`; the Focus pane shows the flag and Copy command copies it. By default the flag is added only in a Dev Containers or Codespaces window, or in a Docker or Podman container that isn't toolbx or distrobox. Elsewhere a quiet Health note says why sessions keep their prompts, and a loud warning says when the window runs as root, where Claude Code refuses bypass. A bypassed session that sits in "starting" says it may be waiting at Claude Code's bypass dialog, which the Cockpit never accepts for you.

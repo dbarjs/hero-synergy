@@ -56,6 +56,8 @@ export const healthCodes = [
   'skill-missing',
   'skill-installed-twice',
   'plugin-disabled',
+  'bypass-not-isolated',
+  'bypass-refused-as-root',
 ] as const
 
 export type HealthCode = (typeof healthCodes)[number]

@@ -82,6 +82,7 @@ interface Draft {
   readonly ref: Ref
   readonly state: TicketState
   readonly type: TicketType | null
+  readonly labels: ReadonlyArray<string>
   readonly claim: Claim | null
   readonly body: string
   readonly resolution: Resolution | null
@@ -171,6 +172,7 @@ export function readSnapshot(collected: Collected): Snapshot {
       ref: draft.ref,
       state: draft.state,
       type: draft.type,
+      labels: draft.labels,
       claim: draft.claim,
       blockedBy,
       body: draft.body,
@@ -331,6 +333,7 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
     ref: ticket.ref,
     state,
     type,
+    labels: onGitHub ? ticket.labels : (body.labels ?? ticket.labels),
     claim,
     body: ticket.body,
     resolution,

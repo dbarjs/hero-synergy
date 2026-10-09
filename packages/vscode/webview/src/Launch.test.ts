@@ -28,7 +28,13 @@ beforeAll(async () => {
 })
 
 const BASE = { sessionId: null, finished: [] }
-const starting: SessionState = { ...BASE, kind: 'starting', terminal: 1, hint: false }
+const starting: SessionState = {
+  ...BASE,
+  kind: 'starting',
+  terminal: 1,
+  hint: false,
+  bypassed: false,
+}
 const live = (status: SessionStatus | null = null): SessionState => ({
   ...BASE,
   kind: 'live',
@@ -51,6 +57,7 @@ const ended = (detail: string): SessionState => ({
 })
 
 const launchable = (sessions: Record<string, SessionState> = {}): Launching => ({
+  ...NOT_LAUNCHING,
   sessions: new Map(Object.entries(sessions)),
   claude: { kind: 'found', claude: { path: '/opt/claude', source: 'setting', shim: false } },
   wayfinder: '/wayfinder',
@@ -176,6 +183,15 @@ describe('a ticket with a session', () => {
     expect(row?.find('.session').attributes('title')).toContain('trust dialog')
   })
 
+  it('names the bypass dialog on hover for a bypassed launch that is quiet', () => {
+    const quiet = { ...starting, hint: true, bypassed: true } as SessionState
+    const row = rowOf(render(launchable({ [PALETTE]: quiet })), '#1 Palette')
+    expect(row?.find('.session').text()).toBe('starting · no status yet')
+    expect(row?.find('.session').attributes('title')).toContain(
+      'trust or bypass-permissions dialog',
+    )
+  })
+
   it('says ended with the detail on hover and offers ▶ again', () => {
     const row = rowOf(render(launchable({ [PALETTE]: ended('exited with code 3') })), '#1 Palette')
     expect(row?.find('.session').text()).toBe('ended · exited with code 3')
@@ -295,6 +311,14 @@ describe('the command in the Focus pane', () => {
     const wrapper = render(launchable({ [PALETTE]: quiet }), PALETTE)
     expect(wrapper.find('.pane .session .hint').text()).toBe(
       'no status yet, the session may be waiting at the trust dialog, open the terminal',
+    )
+  })
+
+  it('shows the bypass hint in the pane for a bypassed launch', () => {
+    const quiet = { ...starting, hint: true, bypassed: true } as SessionState
+    const wrapper = render(launchable({ [PALETTE]: quiet }), PALETTE)
+    expect(wrapper.find('.pane .session .hint').text()).toBe(
+      'no status yet, the session may be waiting at the trust or bypass-permissions dialog, open the terminal',
     )
   })
 
