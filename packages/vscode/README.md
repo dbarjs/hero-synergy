@@ -48,7 +48,7 @@ The Detail is an editor tab that follows the Tree's selection. For a map, it sho
 
 Every ticket with a session shows its status and how long it has had it: starting, working, waiting for you, needs approval, failed, or ended and why. A session that is waiting for you, needs approval or has failed **needs you**: it counts on the Activity Bar badge, and its map moves to the top of the Tree.
 
-<img src="https://raw.githubusercontent.com/dbarjs/hero-synergy/prototype/readme/docs/media/focus-pane-session.png" width="480" alt="The Tree with #5 working, #6 needs approval and #7 waiting for you, and the Focus pane of #7 showing its session waiting for you for 21 seconds."> <img src="https://raw.githubusercontent.com/dbarjs/hero-synergy/prototype/readme/docs/media/badge.png" width="44" alt="The Hero Synergy icon in the Activity Bar with a badge of 2.">
+<img src="https://raw.githubusercontent.com/dbarjs/hero-synergy/prototype/readme/docs/media/focus-pane-session.png" width="480" alt="The Tree with #5 working, #6 needs approval and #7 waiting for you, and the Focus pane of #7 showing its session waiting for you for 21 seconds."> <img src="https://raw.githubusercontent.com/dbarjs/hero-synergy/prototype/readme/docs/media/badge-icon.png" width="44" alt="The Hero Synergy icon in the Activity Bar with a badge of 2.">
 
 The status comes from Claude Code's own list of live sessions, and from a small hooks plugin the Cockpit passes to the sessions it starts, which reports when a session fails or ends. The tracker alone says whether a ticket is claimed; the session alone says whether it is alive. When they disagree, the row says so, for example "not claimed on the tracker".
 
