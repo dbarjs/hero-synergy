@@ -18,6 +18,7 @@ import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
 import { type Cockpit, DISMISSED_KEY, EXPANDED_KEY, makeCockpit, SELECTED_KEY } from './cockpit.ts'
 import type { DetailView, MapNode, ViewModel } from './protocol.ts'
 import {
+  type BypassSettings,
   Clipboard,
   CollectProgress,
   type EventsWatcherRecorder,
@@ -1063,7 +1064,7 @@ describe('the Cockpit keeps the last snapshot', () => {
         yield* cockpit.show
         const storage = yield* Storage
         expect(yield* storage.get(CACHE_KEY)).toMatchObject({
-          last: { folders: [ROOT], key: `local|${ROOT}|v1` },
+          last: { folders: [ROOT], key: `local|${ROOT}|v2` },
         })
       }),
     ),
@@ -1477,6 +1478,7 @@ describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
         expect(logged).toEqual([
           'Visual Studio Code (desktop) 1.105.0 on linux',
           `claude resolved to ${CLAUDE} (heroSynergy.claude.path)`,
+          'not an isolated environment: local window',
         ])
         expect(runs()).toBe(0)
       }),
@@ -1490,6 +1492,7 @@ describe('the Cockpit controller with no claude, or no wayfinder skill', () => {
         expect(logged).toEqual([
           'Visual Studio Code (desktop) 1.105.0 on linux',
           'claude not resolved: claude was not found on PATH. Set heroSynergy.claude.path to its location.',
+          'not an isolated environment: local window',
         ])
       }),
     ),
@@ -3472,6 +3475,396 @@ describe('the Cockpit controller reporting health', () => {
           setup.recordings![setup.recordings!.length - 1] = printsVersion('2.1.210\n')
           yield* cockpit.refresh
           expect(logged.filter((line) => line.startsWith('health ')).length).toBe(2)
+        }),
+      )
+    })
+  })
+})
+
+describe('the Cockpit controller bypassing permissions', () => {
+  const AUDIT = 'map:3:ticket:3'
+  const FLAG = '--permission-mode bypassPermissions'
+  const DEV_CONTAINER = { remoteName: 'dev-container' } as const
+
+  const bypassing = (
+    mode: BypassSettings['mode'],
+    overrides: Partial<HostEnvironmentShape> = {},
+    onlyWhenIsolated = true,
+  ): Setup => {
+    const setup = withSkillsInstalled(ALL_SKILLS)
+    return {
+      ...setup,
+      environment: {
+        ...setup.environment,
+        bypassSettings: Effect.succeed({ mode, onlyWhenIsolated }),
+        ...overrides,
+      },
+    }
+  }
+  const healthOf = (viewModel: ViewModel | undefined) =>
+    viewModel?.kind === 'loading' ? null : (viewModel?.health ?? null)
+  const codes = (viewModel: ViewModel | undefined) =>
+    healthOf(viewModel)?.entries.map((entry) => entry.code) ?? []
+  const commandOf = (published: ViewModel[], key: string) =>
+    ticketRowOf(published.at(-1), key)?.action?.command
+
+  it.effect(
+    'bypasses the AFK ticket and not the HITL one under afkTickets, in a dev container',
+    () =>
+      withCockpit(
+        bypassing('afkTickets', DEV_CONTAINER),
+        ({ cockpit, published, terminals, copied }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(commandOf(published, AUDIT)).toMatch(
+              /^claude --permission-mode bypassPermissions -n '#3 Contrast audit' /,
+            )
+            expect(commandOf(published, PALETTE)).not.toContain(FLAG)
+            expect(codes(published.at(-1))).toEqual([])
+
+            // The shown command, Copy command and the spawned argv are one.
+            const shown = commandOf(published, AUDIT)
+            yield* cockpit.receive({ type: 'copy', key: AUDIT })
+            expect(copied).toEqual([shown])
+            yield* cockpit.receive({ type: 'launch', key: AUDIT })
+            yield* cockpit.receive({ type: 'launch', key: PALETTE })
+            const [audit, palette] = terminals.opened
+            expect(audit?.shellArgs.slice(0, 2)).toEqual(['--permission-mode', 'bypassPermissions'])
+            expect(renderCommand(['claude', ...(audit?.shellArgs ?? [])])).toBe(shown)
+            expect(palette?.shellArgs).not.toContain('--permission-mode')
+          }),
+      ),
+  )
+
+  it.effect('keeps plain Actions interactive under afkTickets', () =>
+    withCockpit(bypassing('afkTickets', DEV_CONTAINER), ({ cockpit, published, terminals }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(finishedMapOf(published.at(-1)).finished.action?.command).not.toContain(FLAG)
+        yield* cockpit.chartMap
+        expect(terminals.opened[0]?.shellArgs).toEqual(['-n', 'Chart a map', '/wayfinder'])
+      }),
+    ),
+  )
+
+  it.effect('bypasses every ticket and every plain Action under allSessions', () =>
+    withCockpit(
+      { ...bypassing('allSessions', DEV_CONTAINER), choose: () => '/grill-me' },
+      ({ cockpit, published, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.show
+          expect(commandOf(published, PALETTE)).toContain(`claude ${FLAG} `)
+          expect(commandOf(published, AUDIT)).toContain(`claude ${FLAG} `)
+          expect(finishedMapOf(published.at(-1)).finished.action?.command).toBe(
+            `claude ${FLAG} '/to-spec .scratch/archive-search/map.md'`,
+          )
+          yield* cockpit.chartMap
+          yield* cockpit.runSkill
+          expect(terminals.opened.map((spec) => spec.shellArgs)).toEqual([
+            ['--permission-mode', 'bypassPermissions', '-n', 'Chart a map', '/wayfinder'],
+            ['--permission-mode', 'bypassPermissions', '/grill-me'],
+          ])
+        }),
+    ),
+  )
+
+  it.effect('never bypasses the installs, even under allSessions', () =>
+    withCockpit(
+      {
+        // A repo with no skills and no tracker doc: the installs are what it leads with.
+        files: { [`${ROOT}/README.md`]: '# billing\n', [CLAUDE]: '#!/bin/sh\n' },
+        recordings: [inRepo(ROOT, ROOT), pluginList('[]')],
+        environment: {
+          claudeSetting: Effect.succeed(CLAUDE),
+          bypassSettings: Effect.succeed({ mode: 'allSessions', onlyWhenIsolated: false }),
+        },
+      },
+      ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.show
+          const shown = published.at(-1)
+          const start = shown?.kind === 'maps' || shown?.kind === 'message' ? shown.start : null
+          expect(start?.actions.map((action) => action.id)).toEqual([
+            'install-plugin',
+            'install-npx',
+          ])
+          for (const action of start?.actions ?? []) expect(action.command).not.toContain(FLAG)
+        }),
+    ),
+  )
+
+  it.effect('carries the flag on Resume by name and Resume by id of an AFK ticket', () =>
+    withCockpit(
+      bypassing('afkTickets', DEV_CONTAINER),
+      ({ cockpit, published, terminals, fs, watcher }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.show
+          // Ended with no id: Resume by name.
+          yield* cockpit.receive({ type: 'launch', key: AUDIT })
+          terminals.close(1, { reason: 'user', code: null })
+          yield* Effect.yieldNow
+          yield* cockpit.receive({ type: 'select', key: AUDIT })
+          expect(selectionActions(published.at(-1))[0]).toMatchObject({
+            id: 'resume-by-name',
+            command: `claude ${FLAG} --resume '#3 Contrast audit'`,
+          })
+          yield* cockpit.receive({ type: 'launch', key: AUDIT, action: 'resume-by-name' })
+          expect(terminals.opened[1]?.shellArgs).toEqual([
+            '--permission-mode',
+            'bypassPermissions',
+            '--resume',
+            '#3 Contrast audit',
+          ])
+
+          // Ended with an id: Resume by id passes the flag again, since --resume drops it.
+          terminals.close(2, { reason: 'user', code: null })
+          yield* Effect.yieldNow
+          yield* cockpit.receive({ type: 'launch', key: AUDIT, action: 'launch-fresh' })
+          const before = yield* fs.readFile(EVENTS).pipe(Effect.orElseSucceed(() => ''))
+          yield* fs
+            .writeFile(EVENTS, before + eventLine('3', 'SessionStart', 'sess-3', 'startup'))
+            .pipe(Effect.orDie)
+          watcher.change()
+          for (let i = 0; i < 20; i++) yield* Effect.yieldNow
+          terminals.close(3, { reason: 'user', code: null })
+          yield* Effect.yieldNow
+          yield* cockpit.receive({ type: 'select', key: AUDIT })
+          expect(selectionActions(published.at(-1))[0]).toMatchObject({
+            id: 'resume',
+            command: `claude ${FLAG} --resume sess-3 -n '#3 Contrast audit' --plugin-dir /ext/claude-plugin`,
+          })
+        }),
+    ),
+  )
+
+  it.effect('keeps the prompts outside an isolated environment, with a quiet note saying why', () =>
+    withCockpit(bypassing('afkTickets', { remoteName: 'ssh-remote' }), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+        expect(healthOf(published.at(-1))?.entries).toEqual([
+          expect.objectContaining({
+            code: 'bypass-not-isolated',
+            level: 'quiet',
+            detail: 'Remote-SSH, no container marker',
+            hint: 'Reopen the folder in a Dev Container, or turn off heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated.',
+          }),
+        ])
+      }),
+    ),
+  )
+
+  it.effect('counts a Docker or Podman marker as isolated, and not one in toolbx', () =>
+    Effect.gen(function* () {
+      for (const marker of ['/.dockerenv', '/run/.containerenv']) {
+        const setup = bypassing('afkTickets')
+        yield* withCockpit(
+          { ...setup, files: { ...setup.files, [marker]: '' } },
+          ({ cockpit, published }) =>
+            Effect.gen(function* () {
+              yield* cockpit.activated
+              yield* cockpit.show
+              expect(commandOf(published, AUDIT), marker).toContain(FLAG)
+              expect(codes(published.at(-1)), marker).toEqual([])
+            }),
+        )
+      }
+      const setup = bypassing('afkTickets')
+      yield* withCockpit(
+        { ...setup, files: { ...setup.files, '/run/.containerenv': '', '/run/.toolboxenv': '' } },
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+            expect(healthOf(published.at(-1))?.entries[0]?.detail).toBe(
+              'local window, a toolbx or distrobox container',
+            )
+          }),
+      )
+    }),
+  )
+
+  it.effect('adds the flag anywhere, with no note, once the isolation gate is off', () =>
+    withCockpit(bypassing('afkTickets', {}, false), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(commandOf(published, AUDIT)).toContain(FLAG)
+        expect(healthOf(published.at(-1))).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('adds nothing and says nothing while the setting is off', () =>
+    withCockpit(bypassing('off', { root: true }), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+        expect(healthOf(published.at(-1))).toBeNull()
+      }),
+    ),
+  )
+
+  it.effect('warns loudly as root with no sandbox variable, and still adds the flag', () =>
+    Effect.gen(function* () {
+      yield* withCockpit(
+        bypassing('afkTickets', { ...DEV_CONTAINER, root: true }),
+        ({ cockpit, published, terminals }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            const health = healthOf(published.at(-1))
+            expect(health).toMatchObject({ loud: true, label: 'Health · 1 warning' })
+            expect(health?.entries[0]).toMatchObject({
+              code: 'bypass-refused-as-root',
+              level: 'loud',
+            })
+            expect(health?.entries[0]?.hint).not.toContain('IS_SANDBOX')
+            const shown = commandOf(published, AUDIT)
+            expect(shown).toContain(FLAG)
+            yield* cockpit.receive({ type: 'launch', key: AUDIT })
+            expect(renderCommand(['claude', ...(terminals.opened[0]?.shellArgs ?? [])])).toBe(shown)
+          }),
+      )
+      yield* withCockpit(
+        bypassing('afkTickets', { ...DEV_CONTAINER, root: true, sandboxEnv: true }),
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(healthOf(published.at(-1))).toBeNull()
+          }),
+      )
+    }),
+  )
+
+  it.effect('plans the commands and the Health row again when a setting changes', () => {
+    let settings: BypassSettings = { mode: 'off', onlyWhenIsolated: true }
+    return withCockpit(
+      bypassing('off', { bypassSettings: Effect.sync(() => settings) }),
+      ({ cockpit, published, terminals }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.show
+          // A running session is left alone by the change.
+          yield* cockpit.receive({ type: 'launch', key: PALETTE })
+          expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+          expect(healthOf(published.at(-1))).toBeNull()
+
+          settings = { mode: 'afkTickets', onlyWhenIsolated: true }
+          const count = published.length
+          yield* cockpit.settingsChanged
+          expect(published.length).toBe(count + 1)
+          expect(codes(published.at(-1))).toEqual(['bypass-not-isolated'])
+          expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+
+          settings = { mode: 'afkTickets', onlyWhenIsolated: false }
+          yield* cockpit.settingsChanged
+          expect(healthOf(published.at(-1))).toBeNull()
+          expect(commandOf(published, AUDIT)).toContain(FLAG)
+          expect(ticketRowOf(published.at(-1), PALETTE)?.session?.kind).toBe('starting')
+
+          // The next launch takes the new setting.
+          yield* cockpit.receive({ type: 'launch', key: AUDIT })
+          expect(terminals.opened[1]?.shellArgs.slice(0, 2)).toEqual([
+            '--permission-mode',
+            'bypassPermissions',
+          ])
+
+          // An unchanged read publishes nothing.
+          const settled = published.length
+          yield* cockpit.settingsChanged
+          expect(published.length).toBe(settled)
+        }),
+    )
+  })
+
+  it.effect('names the bypass dialog in the hint of a bypassed launch, and only there', () =>
+    withCockpit(bypassing('afkTickets', DEV_CONTAINER), ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        yield* cockpit.receive({ type: 'launch', key: AUDIT })
+        yield* cockpit.receive({ type: 'launch', key: PALETTE })
+        yield* TestClock.adjust('15 seconds')
+        expect(ticketRowOf(published.at(-1), AUDIT)?.session).toEqual({
+          kind: 'starting',
+          hint: 'no status yet, the session may be waiting at the trust or bypass-permissions dialog, open the terminal',
+        })
+        expect(ticketRowOf(published.at(-1), PALETTE)?.session).toEqual({
+          kind: 'starting',
+          hint: 'no status yet, the session may be waiting at the trust dialog, open the terminal',
+        })
+      }),
+    ),
+  )
+
+  it.effect("reads the repo's triage labels and a local ticket's Labels line", () => {
+    const setup = bypassing('afkTickets', DEV_CONTAINER)
+    const palette = `${ROOT}/.scratch/cockpit-colors/issues/01-palette.md`
+    const audit = `${ROOT}/.scratch/cockpit-colors/issues/03-contrast-audit.md`
+    const files = {
+      ...setup.files,
+      // A HITL type labelled for an agent, under a renamed label; a task marked for a human.
+      [palette]: setup.files![palette]!.replace('Type: prototype', 'Type: prototype\nLabels: afk'),
+      [audit]: setup.files![audit]!.replace('Type: task', 'Type: task\nLabels: human-only'),
+      [`${ROOT}/docs/agents/triage-labels.md`]:
+        '| Role | Label |\n| --- | --- |\n| `ready-for-agent` | `afk` |\n| `ready-for-human` | `human-only` |\n',
+    }
+    return withCockpit({ ...setup, files }, ({ cockpit, published }) =>
+      Effect.gen(function* () {
+        yield* cockpit.activated
+        yield* cockpit.show
+        expect(commandOf(published, PALETTE)).toContain(FLAG)
+        expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+      }),
+    )
+  })
+
+  it.effect('keeps a dismissed not-isolated note dismissed only where it was dismissed', () => {
+    const global = new Map<string, unknown>()
+    const dismissFirst = (published: ViewModel[], cockpit: Cockpit) => {
+      const key = healthOf(published.at(-1))?.entries[0]?.dismissKey
+      if (key === undefined) throw new Error('expected an entry to dismiss')
+      return cockpit.receive({ type: 'dismiss-health', dismissKey: key })
+    }
+    return Effect.gen(function* () {
+      yield* withCockpit(
+        { ...bypassing('afkTickets', { remoteName: 'ssh-remote' }), global },
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            yield* dismissFirst(published, cockpit)
+            expect(healthOf(published.at(-1))).toBeNull()
+          }),
+      )
+      // The same folder over Remote-SSH again: still dismissed.
+      yield* withCockpit(
+        { ...bypassing('afkTickets', { remoteName: 'ssh-remote' }), global },
+        ({ cockpit, published }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(healthOf(published.at(-1))).toBeNull()
+          }),
+      )
+      // A local window is somewhere else: the note is back.
+      yield* withCockpit({ ...bypassing('afkTickets'), global }, ({ cockpit, published }) =>
+        Effect.gen(function* () {
+          yield* cockpit.activated
+          yield* cockpit.show
+          expect(healthOf(published.at(-1))?.entries[0]?.detail).toBe(
+            'local window, no container marker',
+          )
         }),
       )
     })

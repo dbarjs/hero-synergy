@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vite-plus/test'
+import { bypassModes } from '@hero-synergy/core'
 
 const packageDir = fileURLToPath(new URL('..', import.meta.url))
 const read = (file: string) => readFileSync(`${packageDir}${file}`, 'utf8')
@@ -96,10 +97,12 @@ describe('the manifest the registries show', () => {
     expect(existsSync(`${packageDir}LICENSE`)).toBe(true)
   })
 
-  it('declares the two settings and no others', () => {
+  it('declares the four settings and no others', () => {
     const properties = manifest.contributes.configuration.properties
     expect(Object.keys(properties).toSorted()).toEqual([
       'heroSynergy.claude.path',
+      'heroSynergy.sessions.bypassPermissions',
+      'heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated',
       'heroSynergy.sessions.terminalLocation',
     ])
     expect(properties['heroSynergy.sessions.terminalLocation']).toMatchObject({
@@ -112,6 +115,23 @@ describe('the manifest the registries show', () => {
     expect(properties['heroSynergy.claude.path']).toMatchObject({
       type: 'string',
       default: '',
+      scope: 'machine',
+    })
+    // Both bypass settings are machine-scoped too: a cloned repository can neither turn bypass on
+    // nor loosen the isolation gate.
+    expect(properties['heroSynergy.sessions.bypassPermissions']).toMatchObject({
+      type: 'string',
+      enum: [...bypassModes],
+      default: 'off',
+      scope: 'machine',
+    })
+    expect(properties['heroSynergy.sessions.bypassPermissions'].enumDescriptions).toHaveLength(3)
+    expect(properties['heroSynergy.sessions.bypassPermissions'].markdownDescription).toContain(
+      'Claude Code asks you once, in the first bypassed session, to accept bypass mode.',
+    )
+    expect(properties['heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated']).toMatchObject({
+      type: 'boolean',
+      default: true,
       scope: 'machine',
     })
     for (const setting of Object.values<{ markdownDescription?: string }>(properties)) {

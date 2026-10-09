@@ -159,6 +159,28 @@
           "default": "",
           "scope": "machine",
           "markdownDescription": "Location of the `claude` executable. Leave empty to resolve `claude` on `PATH`. Only your user settings are read, so a repository cannot point the Cockpit at a program of its own."
+        },
+        "heroSynergy.sessions.bypassPermissions": {
+          "type": "string",
+          "enum": [
+            "off",
+            "afkTickets",
+            "allSessions"
+          ],
+          "enumDescriptions": [
+            "Never bypass permissions.",
+            "Bypass for AFK tickets: research and task tickets, and any ticket labelled `ready-for-agent`.",
+            "Bypass for every Claude Code session the Cockpit launches."
+          ],
+          "default": "off",
+          "scope": "machine",
+          "markdownDescription": "Start sessions with `--permission-mode bypassPermissions`, so they run without permission prompts. Claude Code asks you once, in the first bypassed session, to accept bypass mode. Only your user settings are read, so a repository cannot turn this on."
+        },
+        "heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated": {
+          "type": "boolean",
+          "default": true,
+          "scope": "machine",
+          "markdownDescription": "Bypass permissions only in an isolated environment: a Dev Containers or Codespaces window, or a Docker or Podman container. Elsewhere sessions keep their prompts and the Cockpit shows a warning. Only your user settings are read."
         }
       }
     }

@@ -1,12 +1,18 @@
 import {
+  type BypassPolicy,
+  type BypassTarget,
+  bypasses,
   chartMap,
+  DEFAULT_TRIAGE_LABELS,
   installPlugin,
   installWithNpx,
+  isAfkTicket,
   isFinished,
   isRunning,
   type Launch,
   type LaunchContext,
   launchFresh,
+  NO_BYPASS,
   placeOf,
   resumeEnded,
   runSkill,
@@ -16,6 +22,7 @@ import {
   type Ticket,
   type TicketType,
   toSpec,
+  type TriageLabels,
   type WayfinderMap,
   workTicket,
   type WorktreeState,
@@ -50,6 +57,10 @@ export interface Launching {
   readonly worktrees: ReadonlyMap<number, WorktreeState>
   /** The registry could not be read: the sessions it reported show status unknown. */
   readonly registryUnreadable: boolean
+  /** The bypass settings and whether the window is isolated: which Actions carry the flag. */
+  readonly bypass: BypassPolicy
+  /** The repo's `ready-for-agent` and `ready-for-human` label strings, for the AFK ticket rule. */
+  readonly triage: TriageLabels
 }
 
 /** Nothing resolved and nothing running: what a Tree shows before the first collect finds out. */
@@ -65,6 +76,8 @@ export const NOT_LAUNCHING: Launching = {
   me: null,
   worktrees: new Map(),
   registryUnreadable: false,
+  bypass: NO_BYPASS,
+  triage: DEFAULT_TRIAGE_LABELS,
 }
 
 const INSTALL_HINT =
@@ -126,6 +139,8 @@ export interface Planned {
   readonly name: string
   /** A codicon id for the terminal. */
   readonly icon: string
+  /** Whether the argv carries the bypass flag; the launch records it for the starting hint. */
+  readonly bypassed: boolean
 }
 
 const claudeReason = (launching: Pick<Launching, 'claude'>): string | null =>
@@ -142,6 +157,8 @@ interface PlanOptions {
   readonly spawn?: Spawn
   readonly name: string
   readonly icon?: string
+  /** Whether `launch` was built with the bypass flag. */
+  readonly bypassed?: boolean
 }
 
 const plan = (
@@ -171,8 +188,13 @@ const plan = (
     spawn: options.spawn ?? 'claude',
     name: options.name,
     icon: options.icon ?? 'terminal',
+    bypassed: options.bypassed ?? false,
   }
 }
+
+/** Whether the settings put the bypass flag on this kind of Action in this window. */
+const bypassFor = (launching: Pick<Launching, 'bypass'>, target: BypassTarget): boolean =>
+  bypasses(launching.bypass, target)
 
 const contextOf = (
   snapshot: Pick<Snapshot, 'repoRoot' | 'tracker'>,
@@ -205,12 +227,22 @@ export function ticketActions(
   const note = snapshot.tracker.kind === 'local' ? SHARED_CHECKOUT_NOTE : null
   const context = contextOf(snapshot, launching)
   const wayfinder = launching.wayfinder
+  // The ticket decides, not the Action: every ticket Action on it bypasses alike, resumes included.
+  const bypassed = bypassFor(launching, {
+    kind: 'ticket',
+    afk: isAfkTicket(ticket, launching.triage),
+  })
   const ticketSession = (id: ActionId, label: 'Work ticket' | 'Launch fresh'): Planned => {
     const target = { map, ticket }
     const launch =
       wayfinder === null
         ? null
-        : (label === 'Work ticket' ? workTicket : launchFresh)(context, { wayfinder }, target)
+        : (label === 'Work ticket' ? workTicket : launchFresh)(
+            context,
+            { wayfinder },
+            target,
+            bypassed,
+          )
     return plan(launching, id, label, {
       launch,
       skill: { name: 'wayfinder', found: wayfinder !== null },
@@ -218,18 +250,20 @@ export function ticketActions(
       tracked: true,
       name,
       icon,
+      bypassed,
     })
   }
 
   if (session?.kind === 'ended') {
     // Resume is by session id, the plugin and env set again; with no id it is by name, a plain terminal.
-    const resuming = resumeEnded(context, ticket, session.sessionId)
+    const resuming = resumeEnded(context, ticket, session.sessionId, bypassed)
     const resume =
       resuming.by === 'name'
         ? plan(launching, 'resume-by-name', 'Resume by name', {
             launch: resuming.launch,
             name,
             icon,
+            bypassed,
           })
         : plan(launching, 'resume', 'Resume', {
             launch: resuming.launch,
@@ -237,6 +271,7 @@ export function ticketActions(
             note,
             name,
             icon,
+            bypassed,
           })
     return [resume, ticketSession('launch-fresh', 'Launch fresh')]
   }
@@ -253,9 +288,11 @@ export function mapActions(
 ): ReadonlyArray<Planned> {
   if (!isFinished(map)) return []
   const command = launching.toSpec
+  const bypassed = bypassFor(launching, { kind: 'plain' })
   return [
     plan(launching, 'to-spec', 'To spec', {
-      launch: command === null ? null : toSpec(snapshot, { toSpec: command }, map),
+      launch: command === null ? null : toSpec(snapshot, { toSpec: command }, map, bypassed),
+      bypassed,
       skill: { name: 'to-spec', found: command !== null },
       name: `To spec #${map.number} ${map.title}`,
     }),
@@ -265,8 +302,10 @@ export function mapActions(
 /** Chart a map: the wayfinder command with no input, in a plain terminal. */
 export function chartMapAction(repoRoot: string, launching: Launching): Planned {
   const command = launching.wayfinder
+  const bypassed = bypassFor(launching, { kind: 'plain' })
   return plan(launching, 'chart-map', 'Chart a map', {
-    launch: command === null ? null : chartMap({ repoRoot }, { wayfinder: command }),
+    launch: command === null ? null : chartMap({ repoRoot }, { wayfinder: command }, bypassed),
+    bypassed,
     skill: { name: 'wayfinder', found: command !== null },
     name: 'Chart a map',
   })
@@ -274,8 +313,10 @@ export function chartMapAction(repoRoot: string, launching: Launching): Planned 
 
 /** Run skill…: one discovered command by itself, in a plain terminal. */
 export function runSkillAction(repoRoot: string, launching: Launching, command: string): Planned {
+  const bypassed = bypassFor(launching, { kind: 'plain' })
   return plan(launching, 'run-skill', 'Run skill…', {
-    launch: runSkill({ repoRoot }, command),
+    launch: runSkill({ repoRoot }, command, bypassed),
+    bypassed,
     name: command,
   })
 }
@@ -316,8 +357,10 @@ export function startOf(repoRoot: string | null, launching: Launching, lack: Lac
 /** Setup: the setup skill by itself, in a plain terminal. */
 export function setupAction(repoRoot: string, launching: Launching): Planned {
   const command = launching.setup
+  const bypassed = bypassFor(launching, { kind: 'plain' })
   return plan(launching, 'setup', 'Setup', {
-    launch: command === null ? null : setup({ repoRoot }, { setup: command }),
+    launch: command === null ? null : setup({ repoRoot }, { setup: command }, bypassed),
+    bypassed,
     skill: { name: 'setup-matt-pocock-skills', found: command !== null },
     name: 'Setup',
   })
