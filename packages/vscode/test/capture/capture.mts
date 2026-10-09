@@ -291,10 +291,24 @@ async function sizeWindow(app: ElectronApplication, page: Page): Promise<void> {
     win.unmaximize()
     win.setContentSize(size.width, size.height)
   }, WINDOW)
-  await page.waitForFunction(
-    (size) => window.innerWidth === size.width && window.innerHeight === size.height,
-    WINDOW,
-  )
+  const fits = await page
+    .waitForFunction(
+      (size) => window.innerWidth === size.width && window.innerHeight === size.height,
+      WINDOW,
+      { timeout: 10_000 },
+    )
+    .then(() => true)
+    .catch(() => false)
+  if (!fits) {
+    // A screen smaller than the window (the macOS runner's) clamps it: shoot the size it got.
+    const got = await page.evaluate(() => ({
+      width: window.innerWidth,
+      height: window.innerHeight,
+    }))
+    console.log(`window is ${got.width} × ${got.height}, not ${WINDOW.width} × ${WINDOW.height}`)
+    WINDOW.width = got.width
+    WINDOW.height = got.height
+  }
 }
 
 class Scene {
