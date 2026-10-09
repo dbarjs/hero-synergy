@@ -28,6 +28,10 @@ _Avoid_: board, plan, epic
 A child issue of a map holding one question, typed by a `wayfinder:<type>` label: research, prototype, grilling or task.
 _Avoid_: card, story
 
+**AFK ticket**:
+A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent, unless it is marked ready for a human. A ticket with no type is not one.
+_Avoid_: autonomous ticket, unattended ticket
+
 **Frontier**:
 The open, unblocked, unclaimed tickets of a map. The first one in map order is next.
 _Avoid_: backlog, ready list
@@ -87,6 +91,10 @@ _Avoid_: sandbox, safe environment
 One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
 
+**Bypassed session**:
+A session the Cockpit launched with Claude Code's permission prompts bypassed. It still stops for ask rules and questions.
+_Avoid_: YOLO mode, skip-permissions, dangerous mode, sandboxed session
+
 **Registry**:
 Claude Code's own list of live sessions on the machine, read with `claude agents --json`: whether a session is alive and whether it is busy, idle or waiting, whoever started it.
 _Avoid_: process list, session store
@@ -141,6 +149,7 @@ _Avoid_: feature request, enhancement
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a ticket has at most one live session.
+- Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
 - An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
 - A session emits status events.
 - A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
