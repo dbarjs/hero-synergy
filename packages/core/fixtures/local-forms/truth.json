@@ -1,0 +1,2541 @@
+[
+  {
+    "path": ".scratch/blockers/issues/01-pick-a-date.md",
+    "form": "a blocker the other blocker forms point at",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/02-book-the-hall.md",
+    "form": "a blocker the other blocker forms point at",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/03-tell-the-members.md",
+    "form": "a blocker the other blocker forms point at",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/04-swap-step-4.md",
+    "form": "`Blocked by: —`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/05-swap-step-5.md",
+    "form": "`Blocked by: — (<prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/06-swap-step-6.md",
+    "form": "`Blocked by: (none — frontier)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/07-swap-step-7.md",
+    "form": "`Blocked by: (nothing — frontier)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/08-swap-step-8.md",
+    "form": "`Blocked by:` empty",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/09-swap-step-9.md",
+    "form": "`Blocked by: [<NN>-<slug>](<NN>-<slug>.md), …`: links whose text is the file slug",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1, 2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/10-swap-step-10.md",
+    "form": "`Blocked by: [<title>](<NN>-<slug>.md)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/11-swap-step-11.md",
+    "form": "`Blocked by: [<NN> — <title>](<NN>-<slug>.md)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [3],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/12-swap-step-12.md",
+    "form": "`Blocked by: [<NN> — <title>](<NN>-<slug>.md) — closed <date> (unblocked)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/13-swap-step-13.md",
+    "form": "`Blocked by: [<title>](<NN>-<slug>.md) (closed <date> — <prose>); …`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1, 2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/14-swap-step-14.md",
+    "form": "`Blocked by: — ([<NN>](<NN>-<slug>.md) closed <date>)`: a none marker naming the closed blocker",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/15-swap-step-15.md",
+    "form": "`Blocked by: — (ticket <NN> closed <date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/16-swap-step-16.md",
+    "form": "`Blocked by: — (unblocked <date> — [<NN>](<NN>-<slug>.md) closed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/17-swap-step-17.md",
+    "form": "`Blocked by: <NN>-<slug>.md (closed <date> — frontier)`: bare file names",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1, 2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/18-swap-step-18.md",
+    "form": "`**Blocked by:** <NN> — <prose>.` with a bold key",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [3],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/19-swap-step-19.md",
+    "form": "`Blocked by: <NN> — <prose>, <NN> — <prose>.`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1, 3],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/20-swap-step-20.md",
+    "form": "`Blocked by: <NN> (closed <date>) — **UNBLOCKED**`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [2],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/21-swap-step-21.md",
+    "form": "`Blocked by: <NN> resolved <date>; frontier — <prose>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/22-swap-step-22.md",
+    "form": "`Blocked by: <NN>, <NN>`, the template's form",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [1, 3],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/23-swap-step-23.md",
+    "form": "no Blocked by line",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/24-swap-step-24.md",
+    "form": "`Blocks: <NN>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [3],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/25-swap-step-25.md",
+    "form": "`Blocks: <NN>, <NN>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [3, 4],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/26-swap-step-26.md",
+    "form": "`Blocks: <NN> (<prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [3],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/27-swap-step-27.md",
+    "form": "`Blocks: [<NN>](<NN>-<slug>.md), …`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [3, 4],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/28-swap-step-28.md",
+    "form": "`Blocks: —`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/29-swap-step-29.md",
+    "form": "`Blocks: — (closes the map)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/blockers/issues/30-swap-step-30.md",
+    "form": "`Blocks: — (does not block <NN>: <prose>)`: a number it does not block",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/01-weekend-watering-1.md",
+    "form": "claim in a dash clause: `open — claimed <date> (HITL: <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "claimed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/02-weekend-watering-2.md",
+    "form": "claim in a dash clause with a role: `open — ready-for-human (claimed <date>, <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "claimed",
+      "role": "ready-for-human",
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/03-weekend-watering-3.md",
+    "form": "`Assignee: —` on an open ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/04-weekend-watering-4.md",
+    "form": "`Assignee:` empty on an open ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/05-weekend-watering-5.md",
+    "form": "`Assignee: (unclaimed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/06-weekend-watering-6.md",
+    "form": "`Assignee: — (unclaimed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/07-weekend-watering-7.md",
+    "form": "no Assignee line on an open ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/08-weekend-watering-8.md",
+    "form": "`Assignee: <person>` on a closed ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/09-weekend-watering-9.md",
+    "form": "`Assignee: <person> (<prose>, claimed <date>)` on a closed ticket: the claim stays after closing",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/10-weekend-watering-10.md",
+    "form": "`Assignee: <person> (claimed <date>, <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/11-weekend-watering-11.md",
+    "form": "`Assignee: <person> (session <date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/12-weekend-watering-12.md",
+    "form": "`Assignee: <person> (autonomous session <date>)`, an agent rather than a person",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "agent",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/claims/issues/13-weekend-watering-13.md",
+    "form": "`Assignee: <person> (<person>) — claimed <date>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "agent",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-charted/MAP.md",
+    "form": "map Status `charted <date> …`",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/map-charted/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-charted/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-destination-reached/MAP.md",
+    "form": "map Status `**destination reached <date>** …` and a `## Destination reached` section",
+    "kind": "map",
+    "reading": {
+      "state": "closed",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-destination-reached/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-destination-reached/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-done-bold/MAP.md",
+    "form": "map file named `MAP.md`; Status `**DONE <date>** — …`",
+    "kind": "map",
+    "reading": {
+      "state": "closed",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-done-bold/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-done-bold/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-done-plain/MAP.md",
+    "form": "map Status `DONE (<date>) — …`",
+    "kind": "map",
+    "reading": {
+      "state": "closed",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-done-plain/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-done-plain/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-done-second-closing/MAP.md",
+    "form": "map Status `**DONE <date> (second closing)** — …`; `Charted:` with `Recharted:`",
+    "kind": "map",
+    "reading": {
+      "state": "closed",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-done-second-closing/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-done-second-closing/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-in-progress-bold/MAP.md",
+    "form": "map Status `**in progress <date>** — …`",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/map-in-progress/MAP.md",
+    "form": "map Status `in progress <date> — …`",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-in-progress/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-in-progress/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-in-progress/issues/02-fill-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-in-progress/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-lower-case/map.md",
+    "form": "map file named `map.md`, the local template's name, with no header lines",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/map-no-status/MAP.md",
+    "form": "a map with no Status line",
+    "kind": "map",
+    "reading": {
+      "state": null,
+      "decisions": [1]
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A map with no Status line: the survey read them open, closed and in progress; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/map-no-status/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-no-status/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-numbers-first/MAP.md",
+    "form": "map Status led by other words: `**<NN> + <NN> DONE <date>** …`",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/map-prose-first/MAP.md",
+    "form": "map Status led by prose: `<prose> **DONE <date>** — … Frontier = …`",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/map-reopened/MAP.md",
+    "form": "map Status `**REOPENED <date> — …**`; `Redrawn:`; a `## Redraw` section",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-reopened/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-reopened/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-round-section/MAP.md",
+    "form": "a map with an extra `## Round <n> — <prose>` section and decision gists led by a state word",
+    "kind": "map",
+    "reading": {
+      "state": "closed",
+      "decisions": [1]
+    }
+  },
+  {
+    "path": ".scratch/map-round-section/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-round-section/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/map-route-walked/MAP.md",
+    "form": "map Status `**route walked …** — …`",
+    "kind": "map",
+    "reading": {
+      "state": null,
+      "decisions": [1]
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `route walked` map Status line: the survey read one closed and one in progress; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/map-route-walked/issues/01-pick-the-shelf.md",
+    "form": "a ticket of a map fixture",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/map-route-walked/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/membership/MAP.md",
+    "form": "the map the membership forms point at",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": [1, 2, 3]
+    }
+  },
+  {
+    "path": ".scratch/membership/issues/01-map-link.md",
+    "form": "`Map: [<title>](../MAP.md)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": ".scratch/membership/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/membership/issues/02-map-path.md",
+    "form": "`Map: ../MAP.md`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": ".scratch/membership/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/membership/issues/03-parent-map.md",
+    "form": "`Parent: ../MAP.md`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": ".scratch/membership/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/membership/issues/04-no-membership-line.md",
+    "form": "a ticket in a map effort with no membership line",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": ".scratch/membership/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/no-map-prd/PRD.md",
+    "form": "a PRD in an effort with no map, keeping its issues' states in a table",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/no-map-prd/issues/01-barrel.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` in an effort with no map",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": ".scratch/no-map-prd/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/no-map-prd/issues/02-hose.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` in an effort with no map",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": ".scratch/no-map-prd/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/no-map-triage/issues/01-leaky-tap.md",
+    "form": "an issue file in an effort with no map",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/no-map-triage/issues/02-gate-latch.md",
+    "form": "an issue file in an effort with no map",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "needs-info",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/no-map-triage/issues/03-shed-light.md",
+    "form": "an issue file in an effort with no map",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": "wontfix",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/other-files/MAP.md",
+    "form": "the map the other files sit beside",
+    "kind": "map",
+    "reading": {
+      "state": "open",
+      "decisions": []
+    }
+  },
+  {
+    "path": ".scratch/other-files/assets/01-research/catalogue-shapes.md",
+    "form": "a research write-up under `assets/<NN>-research/`",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/other-files/assets/shelf-photo.md",
+    "form": "an asset note under `assets/`",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/other-files/handoff-catalogue.md",
+    "form": "a handoff at an effort's top level",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/other-files/issues/01-catalogue.md",
+    "form": "the ticket the other files point at",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "research",
+      "mode": "AFK",
+      "map": ".scratch/other-files/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/other-files/qa-checklist.md",
+    "form": "a QA checklist at an effort's top level",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/other-files/research/01-seed-catalogues.md",
+    "form": "a research write-up under `research/` with `Ticket:` and `Researched:`",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/prd-in-map/MAP.md",
+    "form": "a map with no Status line whose prose closes a range of tickets their own files never close",
+    "kind": "map",
+    "reading": {
+      "state": null,
+      "decisions": [1]
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A map with no Status line; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/prd-in-map/PRD.md",
+    "form": "a PRD at an effort's top level with its own Status and Map lines",
+    "kind": "note",
+    "reading": null
+  },
+  {
+    "path": ".scratch/prd-in-map/issues/01-plan-the-shed.md",
+    "form": "a wayfinder ticket next to `/to-tickets` issues",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "grilling",
+      "mode": null,
+      "map": ".scratch/prd-in-map/MAP.md",
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/prd-in-map/issues/02-hooks.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/prd-in-map/MAP.md",
+      "parent": ".scratch/prd-in-map/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/prd-in-map/issues/03-labels.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/prd-in-map/MAP.md",
+      "parent": ".scratch/prd-in-map/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/prd-in-map/issues/04-lock.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/prd-in-map/MAP.md",
+      "parent": ".scratch/prd-in-map/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/prd-in-map/issues/05-key-box.md",
+    "form": "`**Parent:** [<title>](../PRD.md)` with a bold-key Status line",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": "ready-for-agent",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": ".scratch/prd-in-map/MAP.md",
+      "parent": ".scratch/prd-in-map/PRD.md",
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `/to-tickets` issue in the range the map's prose closes while its own file does not; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/01-returns-1.md",
+    "form": "`## Answer`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "answer",
+        "firstLine": "Yes, after a dry check."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/02-returns-2.md",
+    "form": "`### Resolution (<date> …)` under `## Comments`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "Yes, after a dry check."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/03-returns-3.md",
+    "form": "`### Resolution — <date> (<prose>)` under `## Comments`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "No, a week in the dry box first."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/04-returns-4.md",
+    "form": "`### Resolução (<date>)` under `## Comments`, the second language",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "Yes, the same day."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/05-returns-5.md",
+    "form": "`## Resolution (<date> …)` as its own H2",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "resolution",
+        "firstLine": "Yes, the same day."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/06-returns-6.md",
+    "form": "`## Resolução` as its own H2, the second language",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "resolution",
+        "firstLine": "Yes, the same day."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/07-returns-7.md",
+    "form": "a bold paragraph, `**Resolution …**`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "bold-paragraph",
+        "firstLine": "**Resolution (2025-05-05):** yes, after a dry check."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/08-returns-8.md",
+    "form": "a dated list item under `## Comments`, `- <date> (<person>): <prose>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-item",
+        "firstLine": "- 2025-05-06 (wren): done; returns go back the same day."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/09-returns-9.md",
+    "form": "other text under `## Comments`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-text",
+        "firstLine": "Returns go back the same day; the dry box is for gifts only."
+      }
+    }
+  },
+  {
+    "path": ".scratch/resolutions/issues/10-returns-10.md",
+    "form": "no resolution anywhere",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/01-winter-shelf-1.md",
+    "form": "Status line: `closed`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/02-winter-shelf-2.md",
+    "form": "Status line: `closed (<date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/03-winter-shelf-3.md",
+    "form": "Status line: `closed (resolved <date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/04-winter-shelf-4.md",
+    "form": "Status line: `closed <date>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/05-winter-shelf-5.md",
+    "form": "Status line: `closed (DONE <date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/06-winter-shelf-6.md",
+    "form": "Status line: `closed <date> (resolved)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/07-winter-shelf-7.md",
+    "form": "Status line: `closed <date> (DONE)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/08-winter-shelf-8.md",
+    "form": "Status line: `closed — DONE <date>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/09-winter-shelf-9.md",
+    "form": "Status line: `closed — DONE <date> (uncommitted)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/10-winter-shelf-10.md",
+    "form": "Status line: `closed (DONE <date> — <prose>; uncommitted <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/11-winter-shelf-11.md",
+    "form": "Status line: `closed (<date> — <prose>; resolution below)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/12-winter-shelf-12.md",
+    "form": "Status line: `**closed <date>** (resolved — <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/13-winter-shelf-13.md",
+    "form": "Status line: `closed (superseded <date> — <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/14-winter-shelf-14.md",
+    "form": "Status line: `closed (moved <date> — <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/15-winter-shelf-15.md",
+    "form": "Status line: `closed <date> (reopened and re-closed <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/16-winter-shelf-16.md",
+    "form": "Status line: `closed <date> — resolved <prose> (<prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/17-winter-shelf-17.md",
+    "form": "Status line: `done`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/18-winter-shelf-18.md",
+    "form": "Status line: `done (<date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/19-winter-shelf-19.md",
+    "form": "Status line: `done (implemented <date> <prose>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/20-winter-shelf-20.md",
+    "form": "Status line: `DONE <date> (closed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/21-winter-shelf-21.md",
+    "form": "Status line: `DONE <date> (closed — <prose>, see Resolution)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/22-winter-shelf-22.md",
+    "form": "Status line: `resolved`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/23-winter-shelf-23.md",
+    "form": "Status line: `resolved <date>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/24-winter-shelf-24.md",
+    "form": "Status line: `resolved (<date>)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/25-winter-shelf-25.md",
+    "form": "Status line: `resolved <date> (closed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/26-winter-shelf-26.md",
+    "form": "Status line: `wontfix`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": "wontfix",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/27-winter-shelf-27.md",
+    "form": "Status line: `open`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/28-winter-shelf-28.md",
+    "form": "Status line: `open (ready-for-human — unblocked <date>: <NN>/<NN> all closed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/29-winter-shelf-29.md",
+    "form": "Status line: `open — needs-triage (blocked)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "needs-triage",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/30-winter-shelf-30.md",
+    "form": "Status line: `needs-info`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "needs-info",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/31-winter-shelf-31.md",
+    "form": "Status line: `needs-triage`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "needs-triage",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/32-winter-shelf-32.md",
+    "form": "Status line: `ready-for-agent`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "ready-for-agent",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/33-bold-key-closed.md",
+    "form": "Status line with a bold key: `**Status:** closed`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/34-bold-key-ready-for-agent.md",
+    "form": "Status line with a bold key: `**Status:** ready-for-agent`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "ready-for-agent",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/35-ready-for-human.md",
+    "form": "Status line: `ready-for-human`",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `ready-for-human` Status line: the survey read these closed, open or in progress; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/status-lines/issues/36-ready-for-human-annotated.md",
+    "form": "Status line: `ready-for-human (charted <date> by <NN>'s resolution — HITL; fully unblocked <date>: <NN> closed)`",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A `ready-for-human` Status line: the survey read these closed, open or in progress; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/01-quoted-status.md",
+    "form": "a Status line quoted in inline code under `## Question`, on an open ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/02-quoted-resolved.md",
+    "form": "a quoted `` `Status: resolved` `` under `## Question`, on a claimed ticket",
+    "kind": "ticket",
+    "reading": {
+      "state": "claimed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/03-fenced-heading.md",
+    "form": "`## ` lines inside a code fence",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/04-two-comments.md",
+    "form": "two `## Comments` headings",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": {
+        "placement": "comments-resolution",
+        "firstLine": "Gold."
+      }
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/05-no-h2.md",
+    "form": "no H2 at all",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": "wren",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/06-checkboxes-in-header.md",
+    "form": "acceptance checkboxes before the first H2",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/traps/issues/07-two-states.md",
+    "form": "one Status line holding a DONE half and an OPEN half",
+    "kind": "ticket",
+    "reading": {
+      "state": null,
+      "role": null,
+      "assignee": "agent",
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    },
+    "unsettled": {
+      "fields": ["state"],
+      "why": "A Status line with a DONE half and an OPEN half; #134 settles it."
+    }
+  },
+  {
+    "path": ".scratch/types/issues/01-lending-1.md",
+    "form": "`Label: wayfinder:<type> (AFK)` and an H1 prefix",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": "AFK",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/02-lending-2.md",
+    "form": "`Label: wayfinder:<type> (HITL — <prose>)` and an H1 prefix",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "grilling",
+      "mode": "HITL",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/03-lending-3.md",
+    "form": "`Label: wayfinder:<type> (AFK — <prose> <NN> <prose>)`: the prose names a ticket that is no blocker",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": "AFK",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/04-lending-4.md",
+    "form": "`Label: wayfinder:<type>` alone",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "research",
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/05-lending-5.md",
+    "form": "`Labels: wayfinder:<type>`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "prototype",
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/06-lending-6.md",
+    "form": "`Labels: wayfinder:<type>, ready-for-agent`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "ready-for-agent",
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/07-lending-7.md",
+    "form": "`Labels: wayfinder:<type>, ready-for-human`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "ready-for-human",
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/08-lending-8.md",
+    "form": "`Type: wayfinder:<type> (AFK)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "research",
+      "mode": "AFK",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/09-lending-9.md",
+    "form": "`Type: wayfinder:<type> (HITL)`",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "grilling",
+      "mode": "HITL",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/10-lending-10.md",
+    "form": "`Type: <type>`, `Label: wayfinder:<type>` and an H1 prefix",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/11-lending-11.md",
+    "form": "`Label:` before `Status:`",
+    "kind": "ticket",
+    "reading": {
+      "state": "closed",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": "AFK",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  },
+  {
+    "path": ".scratch/types/issues/12-lending-12.md",
+    "form": "no type anywhere: a triage issue",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": "needs-triage",
+      "assignee": null,
+      "type": null,
+      "mode": null,
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
+  }
+]
