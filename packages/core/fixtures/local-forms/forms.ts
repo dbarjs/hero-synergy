@@ -57,7 +57,7 @@ export interface TicketReading {
 export interface MapReading {
   /** What its own Status line declares; a map with none, or with `route walked`, is open. */
   readonly state: 'open' | 'closed'
-  /** The ticket numbers its Decisions so far links, in order. */
+  /** The ticket each entry of Decisions so far leads with, in order; a link inside a gist is none. */
   readonly decisions: ReadonlyArray<number>
 }
 
