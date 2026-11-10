@@ -6,7 +6,7 @@
  * A word of an artifact LEAKS when the corpus uses it and nothing safe does: it is not a
  * lower-case dictionary word (`/usr/share/dict/american-english`, from Debian's `wamerican`),
  * not in `reviewed-words.txt` and not in a safe source. The safe sources default to the
- * repo's public text: `CONTEXT.md`, `README.md`, `docs/` and `packages/`, minus this mirror.
+ * repo's public text: `GLOSSARY.md`, `README.md`, `docs/` and `packages/`, minus this mirror.
  * Words are runs of letters (accents included), split at camelCase, lower-cased, three
  * letters or more.
  *
@@ -137,7 +137,7 @@ function main(): void {
     )
   }
   const safe =
-    values.safe ?? ['CONTEXT.md', 'README.md', 'docs', 'packages'].map((path) => join(REPO, path))
+    values.safe ?? ['GLOSSARY.md', 'README.md', 'docs', 'packages'].map((path) => join(REPO, path))
   const reports = check(
     {
       corpus: [...textsUnder(values.corpus)],
