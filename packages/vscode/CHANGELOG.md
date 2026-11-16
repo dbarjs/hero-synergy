@@ -1,5 +1,13 @@
 # hero-synergy
 
+## 0.2.0
+
+### Minor Changes
+
+- [#179](https://github.com/dbarjs/hero-synergy/pull/179) [`15e6dce`](https://github.com/dbarjs/hero-synergy/commit/15e6dcedefcc42da0a23d08953b7859c70d08e81) Thanks [@dbarjs](https://github.com/dbarjs)! - Launch AFK sessions with permissions bypassed in an isolated environment. Two new settings, both off until you turn them on and read from your user settings only: `heroSynergy.sessions.bypassPermissions` (`off`, `afkTickets` or `allSessions`) and `heroSynergy.sessions.bypassPermissionsOnlyWhenIsolated` (on by default). Under `afkTickets`, Work ticket, Launch fresh, Resume and Resume by name start research and task tickets, and any ticket labelled `ready-for-agent`, with `--permission-mode bypassPermissions`, unless the ticket is labelled `ready-for-human`; the Focus pane shows the flag and Copy command copies it. By default the flag is added only in a Dev Containers or Codespaces window, or in a Docker or Podman container that isn't toolbx or distrobox. Elsewhere a quiet Health note says why sessions keep their prompts, and a loud warning says when the window runs as root, where Claude Code refuses bypass. A bypassed session that sits in "starting" says it may be waiting at Claude Code's bypass dialog, which the Cockpit never accepts for you.
+
+- [#180](https://github.com/dbarjs/hero-synergy/pull/180) [`0c8b06a`](https://github.com/dbarjs/hero-synergy/commit/0c8b06ac5258ab239926b859532d3adca75d61e8) Thanks [@dbarjs](https://github.com/dbarjs)! - On a local tracker, the Cockpit now finds an effort's map whatever its file name's casing: `MAP.md` shows on Linux too, not only `map.md`. A map whose own `Status:` line starts with `DONE` or `destination reached` is hidden with all its tickets, as a closed map is on GitHub, and the other maps keep their numbers. Any other Status line, or none, leaves the map open; one that starts with a word the Cockpit doesn't read shows a quiet warning, and the map stays visible. A header line with a bold key (`**Status:** closed`) is read like a plain one, with a quiet warning. An effort holding two casings of its map file side by side gets a warning naming both and the one read.
+
 ## 0.1.3
 
 ### Patch Changes
