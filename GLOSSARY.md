@@ -77,11 +77,11 @@ A ticket's immediate neighbours: what it waits on (its blockers, wherever they l
 _Avoid_: dependency graph, dependants
 
 **Finished map**:
-An open map with at least one ticket and every ticket closed: nothing left to decide, ready for `/to-spec`. Folded away in the Tree.
+An open map with at least one ticket, every ticket closed and no fog left: nothing left to decide, ready for `/to-spec`. Folded away in the Tree.
 _Avoid_: done, complete, closed (a closed map is hidden)
 
 **Stuck map**:
-A map with open work but nothing takeable: every open ticket is claimed or blocked.
+A map with open tickets and none takeable, every one claimed or blocked; or a map with no ticket and no fog. Fog on a stuck map waits for its open tickets.
 _Avoid_: blocked map, idle
 
 **Needs you**:
@@ -89,7 +89,7 @@ A session waiting for you, needing approval or failed. It counts for the badge, 
 _Avoid_: attention, alert
 
 **Fog**:
-In-scope work too vague to ticket yet, written in the map's "Not yet specified" section.
+In-scope work too vague to ticket yet, written as patches in the map's "Not yet specified" section. A section that opens by saying nothing is left holds no fog. On a map with no open ticket, the fog left is the next work: Graduate fog turns it into tickets.
 _Avoid_: backlog, unknowns
 
 **Destination**:
@@ -179,6 +179,7 @@ _Avoid_: feature request, enhancement
 
 - A tracker holds many maps and many specs; a map holds decision tickets, a spec holds build tickets.
 - A map decides and a spec is built: a finished map leads to a spec through `/to-spec`, and a ticket is never both kinds.
+- A map with no open ticket and fog left offers Graduate fog, and To spec too once it has a ticket; a finished map offers To spec. A finished map has no fog.
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a map, a spec or a ticket has at most one live session.
