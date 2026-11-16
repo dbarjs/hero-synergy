@@ -18,6 +18,7 @@ import type {
   WayfinderMap,
 } from './model.ts'
 import { type ReferenceItem, type ReferenceLine, resolveTarget } from './reference-line.ts'
+import { readLocalResolution } from './resolution.ts'
 import { headerTicketLines, readTicketBody } from './ticket-body.ts'
 import { readTicketStatus } from './ticket-status.ts'
 import { isTicketType, KNOWN_LABELS, readTicketType } from './ticket-type.ts'
@@ -57,7 +58,7 @@ export interface CollectedTicket {
   readonly parent: number | null
   /** Native dependencies, closed ones included; empty when the tracker keeps them in the body. */
   readonly blockedBy: ReadonlyArray<Blocker>
-  /** The last comment on GitHub; null on a local tracker, where `## Answer` holds the resolution. */
+  /** The last comment on GitHub; null on a local tracker, whose body holds the resolution. */
   readonly lastComment: Resolution | null
   /**
    * Local: where the ticket's `Map:` and `Parent:` header lines point, as the collector found them
@@ -450,11 +451,10 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   if (unknown.length > 0)
     warnings.push({ code: 'unknown-wayfinder-labels', detail: unknown.join(', ') })
 
-  const resolution = onGitHub
-    ? ticket.lastComment
-    : body.answer === null
-      ? null
-      : { body: body.answer, author: null, at: null }
+  // Only a closed local ticket has a resolution, wherever it was written (#138).
+  const localResolution = !onGitHub && state === 'closed' ? readLocalResolution(ticket.body) : null
+  if (localResolution?.warning) warnings.push(localResolution.warning)
+  const resolution = onGitHub ? ticket.lastComment : (localResolution?.resolution ?? null)
   if (state === 'closed' && resolution === null) warnings.push({ code: 'closed-no-resolution' })
 
   return {

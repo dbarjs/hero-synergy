@@ -31,7 +31,8 @@ export interface TicketLines {
  * What a ticket body may carry besides its question: the lines the local
  * tracker and the text fallbacks use, and the headings the conventions name.
  * Reading says what is there; whether a line is the convention or drift
- * depends on the tracker, which `readSnapshot` knows.
+ * depends on the tracker, which `readSnapshot` knows. A local ticket's
+ * resolution is read by `readLocalResolution`, on closed tickets only.
  */
 export interface TicketBody extends TicketLines {
   /** The first H1, which titles a local ticket. */
@@ -45,8 +46,6 @@ export interface TicketBody extends TicketLines {
   readonly header: ReadonlyArray<HeaderLine>
   /** Whether a `## Question` heading is there. */
   readonly hasQuestion: boolean
-  /** The text under `## Answer`, which holds a local ticket's resolution. */
-  readonly answer: string | null
 }
 
 const EMPTY_BLOCKERS = new Set(['', '[]', 'none', '-', '—'])
@@ -54,7 +53,6 @@ const EMPTY_BLOCKERS = new Set(['', '[]', 'none', '-', '—'])
 export function readTicketBody(body: string): TicketBody {
   const found = sections(body)
   const question = found.find((section) => section.key === 'question')
-  const answer = found.find((section) => section.key === 'answer')
 
   let partOf: number | null = null
   let blockedBy: TicketBody['blockedBy'] = null
@@ -82,7 +80,6 @@ export function readTicketBody(body: string): TicketBody {
     labels,
     header: readHeaderLines(body),
     hasQuestion: question !== undefined,
-    answer: answer === undefined || answer.text === '' ? null : answer.text,
   }
 }
 

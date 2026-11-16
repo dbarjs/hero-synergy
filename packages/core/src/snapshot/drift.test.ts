@@ -329,6 +329,57 @@ describe('the drift catalogue', () => {
     expect(silent.warnings).toEqual([{ code: 'closed-no-resolution' }])
   })
 
+  test('resolution-outside-answer: a Resolution label is the answer, its form in the detail', () => {
+    const snapshot = read('resolution-outside-answer')
+    expect(
+      [1, 2, 3].map((number) => {
+        const { resolution, warnings } = ticket(snapshot, number)
+        return { resolution, warnings }
+      }),
+    ).toEqual([
+      {
+        resolution: {
+          body: 'The rule of the destination country.',
+          author: null,
+          at: '2026-10-01',
+        },
+        warnings: [{ code: 'resolution-outside-answer', detail: 'Resolution heading' }],
+      },
+      {
+        resolution: { body: 'A credit note.', author: null, at: '2026-10-02' },
+        warnings: [
+          { code: 'resolution-outside-answer', detail: 'Resolution heading under ## Comments' },
+        ],
+      },
+      {
+        resolution: { body: 'half-up, to the cent.', author: null, at: null },
+        warnings: [{ code: 'resolution-outside-answer', detail: 'bold Resolution label' }],
+      },
+    ])
+  })
+
+  test('resolution-from-last-comment: the last comment stands in, dated or not', () => {
+    const snapshot = read('resolution-from-last-comment')
+    const dated = ticket(snapshot, 1)
+    expect(dated.resolution).toEqual({
+      body: '- 2026-10-02 (rui): the rule of the destination country.',
+      author: 'rui',
+      at: '2026-10-02',
+    })
+    expect(dated.warnings).toEqual([
+      { code: 'resolution-from-last-comment', detail: 'dated comment' },
+    ])
+    const text = ticket(snapshot, 2)
+    expect(text.resolution).toEqual({
+      body: 'A credit note, never a reopened invoice.',
+      author: null,
+      at: null,
+    })
+    expect(text.warnings).toEqual([
+      { code: 'resolution-from-last-comment', detail: 'comment text' },
+    ])
+  })
+
   test('closed-unrecorded: closed, in neither Decisions so far nor Out of scope', () => {
     const snapshot = read('closed-unrecorded')
     const forgotten = ticket(snapshot, 2)

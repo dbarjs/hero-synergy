@@ -78,6 +78,31 @@ describe('the Detail of a ticket', () => {
     expect(wrapper.find('.resolution').text()).toContain('Codicons: they ship with VS Code.')
   })
 
+  it('bylines a local resolution with what its placement gives: a dated comment, a dated label', () => {
+    const detail = detailOf(snapshot, 'map:3:ticket:5')
+    if (detail?.kind !== 'ticket') throw new Error('expected a ticket')
+    const withResolution = (resolution: (typeof detail)['resolution']): VueWrapper =>
+      mount(Detail, {
+        props: { view: { detail: { ...detail, resolution }, section: null, scroll: 0 } },
+      })
+
+    const comment = withResolution({
+      body: '- 2026-10-04 (wren): yes, the same day.',
+      author: 'wren',
+      at: '2026-10-04',
+    })
+    expect(comment.find('.resolution .byline').text()).toBe('wren · 2026-10-04')
+    // The dated item is its own line, rendered as the list item it is.
+    expect(comment.find('.resolution li').text()).toBe('2026-10-04 (wren): yes, the same day.')
+
+    const label = withResolution({ body: 'Yes, the same day.', author: null, at: '2026-10-01' })
+    expect(label.find('.resolution .byline').text()).toBe('2026-10-01')
+
+    const bare = withResolution({ body: 'Yes, the same day.', author: null, at: null })
+    expect(bare.find('.resolution .byline').exists()).toBe(false)
+    expect(bare.find('.resolution').text()).toContain('Yes, the same day.')
+  })
+
   it('selects a neighbour in the Tree when it is clicked', async () => {
     const wrapper = render('map:3:ticket:1')
     await wrapper.find('.clears-the-way .neighbour').trigger('click')

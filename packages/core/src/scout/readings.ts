@@ -24,6 +24,21 @@ type TicketState = 'open' | 'claimed' | 'closed'
 type Role = 'needs-triage' | 'needs-info' | 'ready-for-agent' | 'ready-for-human' | 'wontfix'
 type TicketType = 'research' | 'prototype' | 'grilling' | 'task'
 type ModeNote = 'AFK' | 'HITL'
+type Placement =
+  | 'answer'
+  | 'resolution'
+  | 'comments-resolution'
+  | 'bold-paragraph'
+  | 'comments-item'
+  | 'comments-text'
+
+/** A closed ticket's one resolution: where it sits, its first non-empty line, and its byline. */
+interface ResolutionTruth {
+  readonly placement: Placement
+  readonly firstLine: string
+  readonly at: string | null
+  readonly author: string | null
+}
 
 interface TicketTruth {
   /** Closed; or open, and claimed when it has a claim. */
@@ -42,14 +57,16 @@ interface TicketTruth {
   readonly map: string | null
   /** The file other than the map that a `Parent:` line names, such as a PRD. */
   readonly parent: string | null
+  readonly resolution: ResolutionTruth | null
 }
 
 /**
  * One file in the columns compared: what it is; for a map its state and decisions; for a ticket
  * whether it is a ticket of its effort's map or an unmapped issue, its state (closed; or open, and
  * claimed when it has a claim), its triage role, who holds its claim (the first name, and only on
- * a ticket that isn't closed), its type and HITL note, and its merged blockers: its own
- * `Blocked by:` items in order, then the tickets whose `Blocks:` line names it, in number order.
+ * a ticket that isn't closed), its type and HITL note, its merged blockers (its own
+ * `Blocked by:` items in order, then the tickets whose `Blocks:` line names it, in number order),
+ * and its resolution: where it sits, its first non-empty line, and its byline.
  */
 export type Columns =
   | { readonly kind: 'map'; readonly state: 'open' | 'closed'; readonly decisions: number[] }
@@ -63,6 +80,7 @@ export type Columns =
       readonly type: TicketType | null
       readonly modeNote: ModeNote | null
       readonly blockedBy: number[]
+      readonly resolution: ResolutionTruth | null
     }
   | { readonly kind: 'note' }
 
@@ -89,7 +107,7 @@ export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>):
     .map((other) => numberOf(other.path))
     .sort((a, b) => a - b)
   for (const blocker of inverted) if (!blockedBy.includes(blocker)) blockedBy.push(blocker)
-  const { state, role, assignee, type, mode, map, parent } = entry.reading
+  const { state, role, assignee, type, mode, map, parent, resolution } = entry.reading
   return {
     kind: 'ticket',
     // A ticket exactly when the effort has a map and no `Parent:` line names another file.
@@ -101,6 +119,7 @@ export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>):
     type,
     modeNote: mode,
     blockedBy,
+    resolution,
   }
 }
 
@@ -134,5 +153,40 @@ export function scoutColumns(efforts: ReadonlyArray<EffortReading>, path: string
     type: ticket.type,
     modeNote: ticket.modeNote,
     blockedBy: ticket.blockedBy.map((blocker) => blocker.number),
+    resolution: resolutionColumns(ticket),
+  }
+}
+
+/** The placement each form a resolution drift detail names stands for. */
+const PLACEMENTS: Readonly<Record<string, Placement>> = {
+  'Resolution heading': 'resolution',
+  'Resolution heading under ## Comments': 'comments-resolution',
+  'bold Resolution label': 'bold-paragraph',
+  'dated comment': 'comments-item',
+  'comment text': 'comments-text',
+}
+
+/**
+ * The scout's resolution in the truth's terms: its placement, from the drift detail that names its
+ * form (none means `## Answer`), its first non-empty body line, trimmed, and its byline.
+ */
+function resolutionColumns(ticket: Ticket): ResolutionTruth | null {
+  if (ticket.resolution === null) return null
+  const named = ticket.warnings.find(
+    (warning) =>
+      warning.code === 'resolution-outside-answer' ||
+      warning.code === 'resolution-from-last-comment',
+  )
+  const placement = named === undefined ? 'answer' : PLACEMENTS[named.detail ?? '']
+  if (placement === undefined) throw new Error(`unknown resolution form: ${named?.detail}`)
+  return {
+    placement,
+    firstLine:
+      ticket.resolution.body
+        .split('\n')
+        .map((line) => line.trim())
+        .find((line) => line !== '') ?? '',
+    at: ticket.resolution.at,
+    author: ticket.resolution.author,
   }
 }
