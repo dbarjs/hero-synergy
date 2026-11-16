@@ -11,6 +11,7 @@ import {
   ProcessRunner,
   type ProcessRunnerShape,
   renderCommand,
+  type Ticket,
 } from '@hero-synergy/core'
 import { Effect, Fiber, Layer } from 'effect'
 import { TestClock } from 'effect/testing'
@@ -1065,10 +1066,63 @@ describe('the Cockpit keeps the last snapshot', () => {
         yield* cockpit.show
         const storage = yield* Storage
         expect(yield* storage.get(CACHE_KEY)).toMatchObject({
-          last: { folders: [ROOT], key: `local|${ROOT}|v2` },
+          last: { folders: [ROOT], key: `local|${ROOT}|v3` },
         })
       }),
     ),
+  )
+
+  it.effect(
+    'ignores a version-1 or version-2 cache in its own shape, shows loading, and replaces it on the first collect',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* localSnapshot
+        // Before version 3 a ticket had no role, Status line or HITL note, and unmapped was a flat list.
+        const ticketThen = ({ role: _r, statusLine: _s, modeNote: _m, ...rest }: Ticket) => rest
+        const shapeThen = {
+          ...snapshot,
+          maps: snapshot.maps.map((map) => ({ ...map, tickets: map.tickets.map(ticketThen) })),
+          unmapped: snapshot.unmapped.flatMap((group) => group.tickets.map(ticketThen)),
+        }
+        for (const version of [1, 2]) {
+          const key = `local|${ROOT}|v${version}`
+          const stored = {
+            last: { folders: [ROOT], key },
+            entries: {
+              [key]: {
+                version,
+                kind: 'local',
+                identity: ROOT,
+                collectedAt: snapshot.collectedAt,
+                snapshot:
+                  version === 1
+                    ? {
+                        ...shapeThen,
+                        maps: shapeThen.maps.map((map) => ({
+                          ...map,
+                          tickets: map.tickets.map(({ labels: _l, ...rest }) => rest),
+                        })),
+                      }
+                    : shapeThen,
+              },
+            },
+          }
+          yield* withCockpit({ stored: { [CACHE_KEY]: stored } }, ({ cockpit }) =>
+            Effect.gen(function* () {
+              expect(yield* cockpit.current, `v${version}`).toEqual({ kind: 'loading' })
+              yield* cockpit.show
+              expect(maps(yield* cockpit.current), `v${version}`).toHaveLength(2)
+              const storage = yield* Storage
+              const after = (yield* storage.get(CACHE_KEY)) as {
+                last: { key: string }
+                entries: Record<string, unknown>
+              }
+              expect(after.last.key).toBe(`local|${ROOT}|v3`)
+              expect(Object.keys(after.entries)).toEqual([`local|${ROOT}|v3`])
+            }),
+          )
+        }
+      }),
   )
 
   it.effect('ignores a cache under an older schema version, another repo or other folders', () =>

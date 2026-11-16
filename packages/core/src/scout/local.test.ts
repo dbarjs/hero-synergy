@@ -137,31 +137,61 @@ describe('readLocalTracker on the fixture repo', () => {
   )
 
   it.effect(
-    'puts the issue files of an effort without a map in unmapped with no-map, and ignores a stray file under .scratch',
+    'puts the issue files of an effort without a map in one unmapped group named after its directory, with no-map, and ignores a stray file under .scratch',
     () =>
       Effect.gen(function* () {
         const snapshot = yield* read(fixtureRepo())
         expect(
-          snapshot.unmapped.map((ticket) => [ticket.number, ticket.title, ticket.ref]),
+          snapshot.unmapped.map(({ effort, title, tickets }) => ({
+            effort,
+            title,
+            tickets: tickets.map((ticket) => [ticket.number, ticket.title, ticket.ref]),
+          })),
         ).toEqual([
-          [
-            1,
-            'Welcome screen',
-            { tracker: 'local', path: '.scratch/onboarding-spec/issues/01-welcome-screen.md' },
-          ],
-          [
-            2,
-            'Invite flow',
-            { tracker: 'local', path: '.scratch/onboarding-spec/issues/02-invite-flow.md' },
-          ],
+          {
+            effort: 'onboarding-spec',
+            title: 'onboarding-spec',
+            tickets: [
+              [
+                1,
+                'Welcome screen',
+                { tracker: 'local', path: '.scratch/onboarding-spec/issues/01-welcome-screen.md' },
+              ],
+              [
+                2,
+                'Invite flow',
+                { tracker: 'local', path: '.scratch/onboarding-spec/issues/02-invite-flow.md' },
+              ],
+            ],
+          },
         ])
-        for (const ticket of snapshot.unmapped) {
+        for (const ticket of snapshot.unmapped.flatMap((group) => group.tickets)) {
           expect(ticket.state).toBe('open')
           expect(codesOf(ticket)).toEqual([
             'type-missing',
             'unknown-status',
             'no-question-heading',
             'no-map',
+          ])
+        }
+      }),
+  )
+
+  it.effect(
+    'fills no triage role, Status line or HITL note yet, on a map ticket or an unmapped one',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(fixtureRepo())
+        const tickets = [
+          ...snapshot.maps.flatMap((map) => map.tickets),
+          ...snapshot.unmapped.flatMap((group) => group.tickets),
+        ]
+        expect(tickets.length).toBeGreaterThan(0)
+        for (const ticket of tickets) {
+          expect([ticket.role, ticket.statusLine, ticket.modeNote], ticket.title).toEqual([
+            null,
+            null,
+            null,
           ])
         }
       }),
@@ -289,7 +319,9 @@ describe('a local map file', () => {
         '/repo',
       )
       expect(snapshot.maps).toEqual([])
-      expect(snapshot.unmapped.map((ticket) => ticket.title)).toEqual(['Shelf'])
+      expect(
+        snapshot.unmapped.flatMap((group) => group.tickets.map((ticket) => ticket.title)),
+      ).toEqual(['Shelf'])
     }),
   )
 
@@ -441,6 +473,60 @@ describe('other Markdown under .scratch', () => {
         ])
         expect(snapshot.unmapped).toEqual([])
       }),
+  )
+})
+
+describe('unmapped groups', () => {
+  it.effect(
+    'give each effort without a map its own group, in directory order, and an effort with a map none',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/c-triage/issues/02-dark-shelf.md': ticketBody('Dark shelf'),
+            '/repo/.scratch/c-triage/issues/01-damp-shelf.md': ticketBody('Damp shelf'),
+            '/repo/.scratch/b-seeds/MAP.md': mapBody(),
+            '/repo/.scratch/b-seeds/issues/01-shelf.md': ticketBody('Shelf'),
+            '/repo/.scratch/a-onboarding/issues/01-welcome.md': ticketBody('Welcome'),
+            '/repo/.scratch/d-notes/PRD.md': '# A PRD\n',
+          },
+          '/repo',
+        )
+        expect(
+          snapshot.unmapped.map(({ effort, title, tickets }) => ({
+            effort,
+            title,
+            tickets: tickets.map((ticket) => `#${ticket.number} ${ticket.title}`),
+          })),
+        ).toEqual([
+          { effort: 'a-onboarding', title: 'a-onboarding', tickets: ['#1 Welcome'] },
+          { effort: 'c-triage', title: 'c-triage', tickets: ['#1 Damp shelf', '#2 Dark shelf'] },
+        ])
+        expect(snapshot.maps.map((map) => map.tickets.map((ticket) => ticket.title))).toEqual([
+          ['Shelf'],
+        ])
+      }),
+  )
+
+  it.effect('keep two efforts’ #1 apart, each in its own group', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/left/issues/01-shelf.md': ticketBody('Left shelf'),
+          '/repo/.scratch/right/issues/01-shelf.md': ticketBody('Right shelf'),
+        },
+        '/repo',
+      )
+      expect(
+        snapshot.unmapped.map((group) => [
+          group.effort,
+          group.tickets.map((ticket) => [ticket.number, ticket.ref]),
+        ]),
+      ).toEqual([
+        ['left', [[1, { tracker: 'local', path: '.scratch/left/issues/01-shelf.md' }]]],
+        ['right', [[1, { tracker: 'local', path: '.scratch/right/issues/01-shelf.md' }]]],
+      ])
+    }),
   )
 })
 

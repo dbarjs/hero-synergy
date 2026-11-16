@@ -55,7 +55,13 @@ export const driftingSnapshot = async (): Promise<Snapshot> => {
       }
       return map
     }),
-    unmapped: [{ ...stray, warnings: [{ code: 'no-map' as const }] }],
+    unmapped: [
+      {
+        effort: null,
+        title: null,
+        tickets: [{ ...stray, warnings: [{ code: 'no-map' as const }] }],
+      },
+    ],
   }
 }
 

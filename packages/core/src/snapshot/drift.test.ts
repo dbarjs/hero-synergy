@@ -30,7 +30,7 @@ const map = (snapshot: Snapshot, number: number): WayfinderMap => {
 const ticket = (snapshot: Snapshot, number: number): Ticket => {
   const found = [
     ...snapshot.maps.flatMap((candidate) => candidate.tickets),
-    ...snapshot.unmapped,
+    ...snapshot.unmapped.flatMap((group) => group.tickets),
   ].find((candidate) => candidate.number === number)
   if (found === undefined) throw new Error(`no ticket #${number}`)
   return found
@@ -272,10 +272,16 @@ describe('the drift catalogue', () => {
     expect(forgotten.warnings).toEqual([{ code: 'closed-unrecorded' }])
   })
 
-  test('no-map: the ticket goes to unmapped and has no outcome to read', () => {
+  test('no-map: the ticket goes to unmapped, in the one group with no effort, and has no outcome to read', () => {
     const snapshot = read('no-map')
     expect(map(snapshot, 1).tickets).toEqual([])
-    expect(snapshot.unmapped.map((candidate) => candidate.number)).toEqual([2])
+    expect(
+      snapshot.unmapped.map(({ effort, title, tickets }) => [
+        effort,
+        title,
+        tickets.map((candidate) => candidate.number),
+      ]),
+    ).toEqual([[null, null, [2]]])
     const stray = ticket(snapshot, 2)
     expect(stray.warnings).toEqual([{ code: 'no-map' }])
     expect(stray.outcome).toBeNull()

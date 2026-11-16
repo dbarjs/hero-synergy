@@ -144,6 +144,7 @@ export {
   type Decision,
   decodeSnapshot,
   encodeSnapshot,
+  type ModeNote,
   snapshotSchemaVersion,
   type Outcome,
   type Ref,
@@ -155,6 +156,8 @@ export {
   type TicketState,
   type TicketType,
   type Tracker,
+  type TriageRole,
+  type UnmappedGroup,
   type WayfinderMap,
 } from './snapshot/model.ts'
 export {

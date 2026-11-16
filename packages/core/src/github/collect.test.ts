@@ -80,6 +80,11 @@ describe('collecting this repo from the recorded gh outputs', () => {
             expect(ticket.claim, `#${ticket.number} claim`).toEqual(
               logins.length > 0 ? { by: logins } : null,
             )
+            // Nothing on GitHub fills a triage role, a Status line or a HITL note.
+            expect(
+              [ticket.role, ticket.statusLine, ticket.modeNote],
+              `#${ticket.number} role, Status line and HITL note`,
+            ).toEqual([null, null, null])
             expect(
               ticket.blockedBy.map((blocker) => [blocker.number, blocker.state]),
               `#${ticket.number} blockers`,

@@ -69,6 +69,10 @@ export const focusKeyOf = (map: WayfinderMap): string => `${mapKey(map)}:map`
 export const UNMAPPED_KEY = 'unmapped'
 export const unmappedKey = (number: number): string => `${UNMAPPED_KEY}:ticket:${number}`
 
+/** Every unmapped issue, the groups flattened in order: the Tree shows no group rows yet. */
+const unmappedTickets = (snapshot: Snapshot): ReadonlyArray<Ticket> =>
+  snapshot.unmapped.flatMap((group) => group.tickets)
+
 /** The snapshot with the sessions laid over it: a held ticket is off the frontier, and the disagreements are named. */
 const overlaid = (snapshot: Snapshot, launching: Launching): SessionOverlay =>
   overlaySessions(snapshot, launching.sessions, launching.me, (map, ticket) =>
@@ -169,7 +173,7 @@ export const selectionOf = (
 ): Selected | null => {
   if (key === null) return null
   const { snapshot, disagreements } = overlaid(collected, launching)
-  const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
+  const stray = unmappedTickets(snapshot).find((candidate) => unmappedKey(candidate.number) === key)
   if (stray !== undefined) {
     return {
       target: targetOf(snapshot.repoRoot, stray.ref),
@@ -263,7 +267,7 @@ export const detailOf = (
   if (key === null) return null
   const { snapshot, disagreements } = overlaid(collected, launching)
   const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
-  const stray = snapshot.unmapped.find((candidate) => unmappedKey(candidate.number) === key)
+  const stray = unmappedTickets(snapshot).find((candidate) => unmappedKey(candidate.number) === key)
   if (stray !== undefined) {
     return {
       kind: 'ticket',
@@ -357,7 +361,8 @@ export const detailOf = (
  * finished, and the Decisions fold when the row is a decision. Empty when the key names nothing.
  */
 export const revealKeys = (snapshot: Snapshot, key: string): ReadonlyArray<string> => {
-  if (snapshot.unmapped.some((ticket) => unmappedKey(ticket.number) === key)) return [UNMAPPED_KEY]
+  if (unmappedTickets(snapshot).some((ticket) => unmappedKey(ticket.number) === key))
+    return [UNMAPPED_KEY]
   for (const map of snapshot.maps) {
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
     if (key !== focusKeyOf(map) && ticket === undefined) continue
@@ -524,19 +529,21 @@ const unmappedFold = (
   snapshot: Snapshot,
   expanded: ReadonlySet<string>,
   dismissed: Dismissed,
-): Fold<UnmappedRow> | null =>
-  snapshot.unmapped.length === 0
+): Fold<UnmappedRow> | null => {
+  const tickets = unmappedTickets(snapshot)
+  return tickets.length === 0
     ? null
     : {
         key: UNMAPPED_KEY,
         expanded: expanded.has(UNMAPPED_KEY),
-        entries: snapshot.unmapped.map((ticket) => ({
+        entries: tickets.map((ticket) => ({
           key: unmappedKey(ticket.number),
           number: ticket.number,
           title: ticket.title,
           loud: loudOf(ticketDrift(unmappedKey(ticket.number), ticket, dismissed)),
         })),
       }
+}
 
 /**
  * The sessions whose `#number` matches no ticket in view, live or ended, by number. Null when
@@ -596,7 +603,7 @@ export const buildViewModel = (
     start: startOf(
       snapshot.repoRoot,
       launching,
-      active.length === 0 && finished.length === 0 && snapshot.unmapped.length === 0
+      active.length === 0 && finished.length === 0 && unmappedTickets(snapshot).length === 0
         ? 'map'
         : 'nothing',
     ),

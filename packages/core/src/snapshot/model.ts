@@ -28,6 +28,14 @@ const Tracker = Schema.Union([
 const TicketState = Schema.Literals(['open', 'closed'])
 const TicketType = Schema.Literals(['research', 'prototype', 'grilling', 'task'])
 const Outcome = Schema.Literals(['decided', 'out-of-scope', 'unrecorded'])
+const TriageRole = Schema.Literals([
+  'needs-triage',
+  'needs-info',
+  'ready-for-agent',
+  'ready-for-human',
+  'wontfix',
+])
+const ModeNote = Schema.Literals(['AFK', 'HITL'])
 
 const DriftWarning = Schema.Struct({
   code: Schema.Literals(warningCodes),
@@ -67,9 +75,15 @@ const Ticket = Schema.Struct({
   ref: Ref,
   state: TicketState,
   type: Schema.NullOr(TicketType),
+  /** The leading word inside a local type line's parenthesis, `Type: task (HITL)`; null on GitHub. */
+  modeNote: Schema.NullOr(ModeNote),
   /** The tracker's labels: GitHub's, or a local ticket's `Labels:` line; empty when it carries none. */
   labels: Schema.Array(Schema.String),
   claim: Schema.NullOr(Claim),
+  /** A local ticket's triage role; null on GitHub. */
+  role: Schema.NullOr(TriageRole),
+  /** A local ticket's Status line as written, trimmed, for display only; null on GitHub and without one. */
+  statusLine: Schema.NullOr(Schema.String),
   blockedBy: Schema.Array(Blocker),
   body: Schema.String,
   resolution: Schema.NullOr(Resolution),
@@ -92,12 +106,21 @@ const WayfinderMap = Schema.Struct({
   warnings: Schema.Array(DriftWarning),
 })
 
+const UnmappedGroup = Schema.Struct({
+  /** The effort's directory on a local tracker; null for a GitHub ticket outside every open map. */
+  effort: Schema.NullOr(Schema.String),
+  /** The effort's map title when it has a map file, open or closed, else the directory name; null without an effort. */
+  title: Schema.NullOr(Schema.String),
+  /** The group's unmapped issues, in number order. */
+  tickets: Schema.Array(Ticket),
+})
+
 const Snapshot = Schema.Struct({
   tracker: Tracker,
   repoRoot: Schema.String,
   collectedAt: Schema.String,
   maps: Schema.Array(WayfinderMap),
-  unmapped: Schema.Array(Ticket),
+  unmapped: Schema.Array(UnmappedGroup),
   warnings: Schema.Array(DriftWarning),
 })
 
@@ -109,6 +132,10 @@ export type TicketState = typeof TicketState.Type
 export type TicketType = typeof TicketType.Type
 /** How the map records a closed ticket: in Decisions so far, in Out of scope, or nowhere. */
 export type Outcome = typeof Outcome.Type
+/** One of the five default triage roles. */
+export type TriageRole = typeof TriageRole.Type
+/** What a local type line's parenthesis says of who works the ticket. */
+export type ModeNote = typeof ModeNote.Type
 /** A ticket marked as taken. `by` names the assignees on GitHub and nobody on a local tracker. */
 export type Claim = typeof Claim.Type
 /** A ticket this ticket waits on, with enough to render and gate on it wherever it lives. */
@@ -122,6 +149,8 @@ export type SectionEntry = typeof SectionEntry.Type
 export type Ticket = typeof Ticket.Type
 /** A wayfinder map (`Map` would shadow the global). */
 export type WayfinderMap = typeof WayfinderMap.Type
+/** One group of the Unmapped fold: an effort's issues that are no map's tickets, or GitHub's strays. */
+export type UnmappedGroup = typeof UnmappedGroup.Type
 export type Snapshot = typeof Snapshot.Type
 
 /** The JSON form of a snapshot: the same shape, since nothing transforms. */
@@ -138,6 +167,8 @@ export const encodeSnapshot: (snapshot: Snapshot) => SnapshotJson = Schema.encod
 
 /**
  * The shape of a stored snapshot. Bump it whenever the schema above changes, so
- * a cache written under the old shape is ignored instead of decoded.
+ * a cache written under the old shape is ignored instead of decoded. Version 2
+ * added a ticket's labels; 3 its triage role, Status line and HITL note, and
+ * unmapped issues grouped by effort.
  */
-export const snapshotSchemaVersion = 2
+export const snapshotSchemaVersion = 3
