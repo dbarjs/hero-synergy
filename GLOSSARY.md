@@ -127,6 +127,10 @@ _Avoid_: sandbox, safe environment
 One live Claude Code CLI process in a VS Code terminal, named `#<number> <title>` after the map, spec or ticket it works on, whoever started it; an Action with no issue, such as Chart a map, names it after itself. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
 
+**Whole-spec run**:
+A session that builds every open build ticket of a spec in one go, started by Implement spec. It is the spec's session and counts as one: the Cockpit never sees the subagents that build inside it.
+_Avoid_: batch build, orchestrator, spec session
+
 **Bypassed session**:
 A session the Cockpit launched with Claude Code's permission prompts bypassed. It still stops for ask rules and questions.
 _Avoid_: YOLO mode, skip-permissions, dangerous mode, sandboxed session
@@ -140,11 +144,11 @@ One line the session plugin's hooks append when a session starts, fails or ends:
 _Avoid_: log line, heartbeat
 
 **Worktree**:
-The git worktree a ticket session runs in, created by `claude -w` at `.claude/worktrees/<slug>` on branch `worktree-<slug>`. Sessions on a local tracker have none.
+The git worktree a ticket session or a whole-spec run runs in, created by `claude -w` at `.claude/worktrees/<slug>` on branch `worktree-<slug>`. Sessions on a local tracker have none.
 _Avoid_: sandbox, checkout
 
 **Pull request**:
-A GitHub pull request, shown on each ticket or unmapped issue it closes by keyword or, when it closes none, on the ticket its `worktree-<number>` branch is named after. Only open ones are shown, each in one state: draft, conflicts, checks failing, changes requested, checks running, review required, out of date, merge blocked, ready to merge, or open while GitHub has yet to say. A ticket with an open one is in review. The Cockpit opens it and never merges it; a local tracker has none.
+A GitHub pull request, shown on each spec, ticket or unmapped issue it closes by keyword or, when it closes none, on the spec or ticket its `worktree-<number>` branch is named after. Only open ones are shown, each in one state: draft, conflicts, checks failing, changes requested, checks running, review required, out of date, merge blocked, ready to merge, or open while GitHub has yet to say. A ticket with an open one is in review. The Cockpit opens it and never merges it; a local tracker has none.
 _Avoid_: PR, merge request
 
 **Action**:
@@ -202,8 +206,9 @@ _Avoid_: feature request, enhancement
 - The tracker alone says claimed, open or closed and blocked; the session side alone says alive and what status. Neither overrides the other.
 - The scout reports drift; the extension host reports health; both are warnings, shown in the same places. A warning never gates: the Cockpit says, it never stops.
 - The Cockpit has one tree and at most one detail; both show the same selection.
-- A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
+- A ticket session or a whole-spec run on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 - A build ticket's session commits on its worktree branch and stops there; the claim, the push, the pull request and the close follow the repo's own agent docs, never the Cockpit.
+- A spec is built ticket by ticket or by one whole-spec run, never both at once: while the run is live its build tickets offer no action, and while a build ticket's session is live its spec offers no run.
 - An open pull request claims the open ticket it is shown on, and the merge of one that closes its ticket by keyword closes the ticket; the Cockpit opens a pull request but never merges, approves or closes one.
 - A pull request waiting for a merge never needs you: a stuck map or spec with open tickets in review says so, and still ranks as stuck.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
