@@ -1,5 +1,25 @@
 # hero-synergy
 
+## 0.3.0
+
+### Minor Changes
+
+- [#207](https://github.com/dbarjs/hero-synergy/pull/207) [`f888920`](https://github.com/dbarjs/hero-synergy/commit/f888920e3b3d5ba805ab6890c4c7d1a72c5feef8) Thanks [@dbarjs](https://github.com/dbarjs)! - On a local tracker, the Cockpit now reads every way a `Blocked by:` line names its blockers, so a ticket's frontier is right in both directions. Each item names the ticket at its start: a link to a ticket file, a bare `NN-<slug>.md`, or a number such as `03` or `#03`. A note after it (`(closed <date>)`, `**UNBLOCKED**`, `— <prose>`) and a link's title are never read, so a number in a note no longer blocks a ticket, and a blocker's state always comes from its own file. Items split on commas, and on a semicolon only before another ticket. `—`, `none`, `nothing`, `(none …` or an empty value mean no blockers.
+  
+  A `Blocks:` line now gates too: when ticket A says it blocks B, B waits on A even if B's own line doesn't name it, and A clears the way for B in the Detail. A blocker that points at a missing file, or outside the effort, gets a quiet warning and doesn't block. A line off the template's `Blocked by: NN, NN` and a `Blocks:` line each get a quiet warning, and an item that names no ticket gets a loud one, so a dependency the Cockpit can't follow never goes unnoticed. Nothing changes on GitHub.
+
+- [#216](https://github.com/dbarjs/hero-synergy/pull/216) [`82c48ab`](https://github.com/dbarjs/hero-synergy/commit/82c48abb6451ffedb21deb8ec045a23849ba25d6) Thanks [@dbarjs](https://github.com/dbarjs)! - On a local tracker, the Cockpit now reads a ticket's state from the first word of its `Status:` line, so your closed tickets read as closed. `closed`, `done`, `resolved` and `wontfix` close a ticket, in any case and with or without `**` around them. `open`, `claimed` and the triage roles `needs-triage`, `needs-info`, `ready-for-agent` and `ready-for-human` leave it open, as does no Status line at all. What follows the first word (a date, a note in parentheses, a dash clause) never changes the state, so `closed 2026-10-01 (reopened and re-closed)` stays closed.
+  
+  After `open`, one more word is read: `open — needs-triage (blocked)` and `open (ready-for-human — …)` set the triage role, and `open — claimed <date>` or `open (claimed …)` claim the ticket. An `Assignee:` line that names someone also claims an open ticket, and the Focus pane says who holds it; `—`, an empty value and `(unclaimed)` name nobody. A claim that names nobody, like `Status: claimed` on its own, now shows as "claimed" instead of an empty value. A closed ticket is never claimed, whatever its Assignee line still says. Claimed tickets leave the frontier.
+  
+  Each ticket's triage role is read from its Status line, or else from its `Labels:` line. The role never changes the frontier: a `ready-for-human` ticket can still be next. With `heroSynergy.sessions.bypassPermissions` set to `afkTickets`, a local `ready-for-human` ticket keeps its prompts, and a `ready-for-agent` one runs without them, whatever its type.
+  
+  A Status line that starts with any other word reads as open, can still be claimed through `Assignee:`, and gets a loud warning whose hint lists the words that are read. A second Status line is ignored and gets the same warning. Nothing changes on GitHub.
+
+### Patch Changes
+
+- [#193](https://github.com/dbarjs/hero-synergy/pull/193) [`a401528`](https://github.com/dbarjs/hero-synergy/commit/a4015282218cf50ff0b6e4a8da6f95b5bc194acc) Thanks [@dbarjs](https://github.com/dbarjs)! - The Cockpit's cached snapshot changes shape, so the first window after this update drops the old cache and shows loading until its first collect, as on a fresh install. Nothing else you see changes.
+
 ## 0.2.0
 
 ### Minor Changes

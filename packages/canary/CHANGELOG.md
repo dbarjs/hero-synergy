@@ -1,5 +1,12 @@
 # @hero-synergy/canary
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @hero-synergy/core@0.3.0
+
 ## 0.2.0
 
 ### Patch Changes
