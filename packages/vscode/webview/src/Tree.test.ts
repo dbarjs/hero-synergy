@@ -3,7 +3,7 @@ import { mount, type VueWrapper } from '@vue/test-utils'
 import { Effect } from 'effect'
 import { beforeAll, describe, expect, it } from 'vite-plus/test'
 
-import { workspaceFiles } from '../../test/fixtures/workspace-files.ts'
+import { localTrackerFiles, workspaceFiles } from '../../test/fixtures/workspace-files.ts'
 import type { ActionView, MapNode, ViewModel } from '../../src/protocol.ts'
 import { buildViewModel } from '../../src/view-model.ts'
 import Tree from './Tree.vue'
@@ -442,5 +442,119 @@ describe('what opens the Detail', () => {
     const w = wrapper()
     await rowOf(w, '#5 Icon set')?.trigger('keydown', { key: 'Enter' })
     expect(w.emitted('openDetail')).toEqual([['map:3:ticket:5', null]])
+  })
+})
+
+describe('the Unmapped fold, grouped by effort', () => {
+  // Core's local tracker fixture: a mapless onboarding-spec effort, plus a PRD-parented issue
+  // beside the Billing rewrite map and a second mapless effort.
+  const files = {
+    ...localTrackerFiles(ROOT),
+    [`${ROOT}/.scratch/billing-rewrite/PRD.md`]: '# Billing PRD\n',
+    [`${ROOT}/.scratch/billing-rewrite/issues/04-tax-export.md`]:
+      '# Tax export\n\nParent: [Billing PRD](../PRD.md)\nStatus: in-review\n',
+    [`${ROOT}/.scratch/z-triage/issues/01-leaky-tap.md`]: '# Leaky tap\n\nStatus: needs-info\n',
+  }
+  const viewModel = async (expanded: ReadonlyArray<string>, selected: string | null = null) =>
+    buildViewModel(
+      await Effect.runPromise(
+        readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+      ),
+      new Set(expanded),
+      selected,
+    )
+  const level = (wrapper: VueWrapper, label: string): string | undefined =>
+    wrapper
+      .findAll('[role="treeitem"]')
+      .find((row) => row.find('.label').text().startsWith(label))
+      ?.attributes('aria-level')
+
+  it('counts the open unmapped issues on the fold, collapsed until opened', async () => {
+    const wrapper = render(await viewModel([]))
+    expect(rows(wrapper).filter((line) => line.startsWith('Unmapped'))).toEqual(['Unmapped | 4'])
+    expect(wrapper.findAll('.unmapped-group')).toHaveLength(0)
+    expect(wrapper.findAll('.unmapped')).toHaveLength(0)
+  })
+
+  it('opens into one plain row per effort with its title and count, its issues one level deeper', async () => {
+    const wrapper = render(await viewModel(['unmapped']))
+    const lines = rows(wrapper)
+    const from = lines.indexOf('Unmapped | 4')
+    expect(lines.slice(from, from + 8)).toEqual([
+      'Unmapped | 4',
+      'Billing rewrite | 1',
+      '#4 Tax export',
+      'onboarding-spec | 2',
+      '#1 Welcome screen',
+      '#2 Invite flow',
+      'z-triage | 1',
+      '#1 Leaky tap',
+    ])
+    expect(level(wrapper, 'Unmapped')).toBe('1')
+    expect(level(wrapper, 'onboarding-spec')).toBe('2')
+    expect(level(wrapper, '#1 Welcome screen')).toBe('3')
+    // A group row neither folds nor is selected.
+    const group = wrapper.find('.unmapped-group')
+    expect(group.attributes('aria-expanded')).toBeUndefined()
+    expect(group.find('.codicon-chevron-right').exists()).toBe(false)
+    await group.trigger('click')
+    await group.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.emitted('expand')).toBeUndefined()
+    expect(wrapper.emitted('openDetail')).toBeUndefined()
+    // The issue with loud drift keeps its mark under its group.
+    expect(
+      wrapper
+        .findAll('.unmapped')
+        .find((row) => row.text().includes('Tax export'))
+        ?.find('.warn')
+        .exists(),
+    ).toBe(true)
+  })
+
+  it('selects an issue by its effort key, and opens its Focus pane under it', async () => {
+    const wrapper = render(await viewModel(['unmapped']))
+    const tap = wrapper.findAll('.unmapped').find((row) => row.text().includes('Leaky tap'))
+    await tap?.trigger('click')
+    await tap?.trigger('dblclick')
+    expect(wrapper.emitted('select')).toEqual([['unmapped:z-triage:ticket:1']])
+    expect(wrapper.emitted('openDetail')).toEqual([['unmapped:z-triage:ticket:1', null]])
+
+    const selected = render(await viewModel(['unmapped'], 'unmapped:z-triage:ticket:1'))
+    const pane = selected.find('.pane')
+    expect(pane.exists()).toBe(true)
+    expect(pane.classes()).toContain('depth-2')
+    expect(selected.findAll('.unmapped').filter((row) => row.classes('selected'))).toHaveLength(1)
+  })
+
+  it('puts the rows of a group with no effort straight under the fold, as on GitHub', () => {
+    const wrapper = render({
+      kind: 'maps',
+      health: null,
+      collectedAt: '2026-10-07T00:00:00.000Z',
+      repo: 'acme/billing',
+      notice: null,
+      budget: null,
+      maps: [],
+      finished: null,
+      unlisted: null,
+      unmapped: {
+        key: 'unmapped',
+        expanded: true,
+        count: 1,
+        groups: [
+          {
+            effort: null,
+            title: null,
+            entries: [{ key: 'unmapped:ticket:7', number: 7, title: 'Rotate the keys', loud: [] }],
+          },
+        ],
+      },
+      start: NO_START,
+      selection: null,
+    })
+    expect(wrapper.findAll('.unmapped-group')).toHaveLength(0)
+    expect(level(wrapper, '#7 Rotate the keys')).toBe('2')
+    expect(rows(wrapper).slice(-2)).toEqual(['Unmapped | 1', '#7 Rotate the keys'])
   })
 })

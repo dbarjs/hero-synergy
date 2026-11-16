@@ -136,6 +136,12 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
     message: () => 'The ticket belongs to no map.',
     hint: 'A ticket is a child issue of its map.',
   },
+  'map-line-disagrees': {
+    level: 'loud',
+    message: (detail) =>
+      `The ticket's Map or Parent line points away from its effort's map${quoted(detail)}.`,
+    hint: 'A local ticket belongs to the map in its effort directory; the directory decides.',
+  },
   'closed-unrecorded': {
     level: 'loud',
     message: () => 'The ticket is closed, but its map records no decision or scope line for it.',

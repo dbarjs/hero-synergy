@@ -93,6 +93,20 @@ function leadingReference(text: string): ReferenceItem | null {
   return null
 }
 
+/** A bare path at a value's start, up to the first space or parenthesis: `../PRD.md`. */
+const BARE_PATH = /^[^\s()[\]]+\.md\b/i
+
+/**
+ * The file a `Map:` or `Parent:` value names (#137): the target of the Markdown link it starts
+ * with, or a bare path ending in `.md` at its start. The link title is never read; null for any
+ * other value, such as a GitHub-shaped `#12` or prose, which names no file and raises nothing.
+ */
+export function fileTarget(value: string): string | null {
+  const text = value.trim()
+  if (text.startsWith('[')) return leadingLinkTarget(text)
+  return BARE_PATH.exec(text)?.[0] ?? null
+}
+
 /** The target of the Markdown link `text` starts with: `[title](target "tooltip")` gives `target`. */
 function leadingLinkTarget(text: string): string | null {
   let depth = 0

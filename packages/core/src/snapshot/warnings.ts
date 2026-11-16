@@ -43,6 +43,7 @@ export const warningCodes = [
   'closed-no-resolution',
   'closed-unrecorded',
   'no-map',
+  'map-line-disagrees',
   'blocker-outside-map',
   'ticket-title-from-slug',
   'unknown-status',

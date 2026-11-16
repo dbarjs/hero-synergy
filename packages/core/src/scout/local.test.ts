@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { fixtureRepo as seed } from '../../fixtures/local-tracker/seed.ts'
 import { FileSystem } from '../file-system.ts'
 import {
+  decidedOfTotal,
   frontierOf,
   isFinished,
   modeOf,
@@ -144,7 +145,7 @@ describe('readLocalTracker on the fixture repo', () => {
   )
 
   it.effect(
-    'puts the issue files of an effort without a map in one unmapped group named after its directory, with no-map, and ignores a stray file under .scratch',
+    'puts the open issue files of an effort without a map in one unmapped group named after its directory, with no drift, hides the closed one and ignores a stray file under .scratch',
     () =>
       Effect.gen(function* () {
         const snapshot = yield* read(fixtureRepo())
@@ -172,10 +173,24 @@ describe('readLocalTracker on the fixture repo', () => {
             ],
           },
         ])
+        // No map, no type and no Question are a normal local form, not drift (#139).
         for (const ticket of snapshot.unmapped.flatMap((group) => group.tickets)) {
           expect(ticket.state).toBe('open')
-          expect(codesOf(ticket)).toEqual(['type-missing', 'no-question-heading', 'no-map'])
+          expect(codesOf(ticket)).toEqual([])
         }
+        // The closed issue is read, and only the snapshot hides it.
+        const [, , onboarding] = yield* readLocalEfforts(ROOT).pipe(
+          Effect.provide(FileSystem.inMemory(fixtureRepo())),
+          Effect.orDie,
+        )
+        expect(
+          onboarding!.unmapped.map((ticket) => [ticket.number, ticket.title, ticket.state]),
+        ).toEqual([
+          [1, 'Welcome screen', 'open'],
+          [2, 'Invite flow', 'open'],
+          [3, 'Terms page', 'closed'],
+        ])
+        expect(codesOf(onboarding!.unmapped[2]!)).toEqual([])
       }),
   )
 
@@ -226,7 +241,11 @@ describe('readLocalTracker on the fixture repo', () => {
         [],
       ])
       expect(efforts[0]!.collected.maps[0]!.children).toEqual([1, 2, 3])
-      expect(efforts[2]!.collected.tickets.map((ticket) => ticket.parent)).toEqual([null, null])
+      expect(efforts[2]!.collected.tickets.map((ticket) => ticket.parent)).toEqual([
+        null,
+        null,
+        null,
+      ])
       for (const effort of efforts) {
         for (const ticket of effort.collected.tickets) {
           expect(ticket).toMatchObject({
@@ -533,6 +552,303 @@ describe('unmapped groups', () => {
         ['right', [[1, { tracker: 'local', path: '.scratch/right/issues/01-shelf.md' }]]],
       ])
     }),
+  )
+})
+
+describe('membership: which issue files are a map’s tickets', () => {
+  const issue = (title: string, lines: string, status = 'Status: open') =>
+    `# ${title}\n\nType: task\n${status}\n${lines}\n\n## Question\n\nq\n`
+  const mapTickets = (snapshot: Snapshot): string[] =>
+    snapshot.maps.flatMap((map) => map.tickets.map((ticket) => ticket.title))
+  const allTickets = (snapshot: Snapshot): Ticket[] => [
+    ...snapshot.maps.flatMap((map) => map.tickets),
+    ...snapshot.unmapped.flatMap((group) => group.tickets),
+  ]
+  const warningsOf = (snapshot: Snapshot, title: string) =>
+    allTickets(snapshot).find((ticket) => ticket.title === title)!.warnings
+
+  it.effect(
+    "raises nothing for a Map or Parent line naming the effort's own map, in any case, whatever the link title says",
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/MAP.md': mapBody(),
+            '/repo/.scratch/other/MAP.md': '# Other\n',
+            '/repo/.scratch/seeds/issues/01-link.md': issue(
+              'Link',
+              'Map: [Seed library](../MAP.md)',
+            ),
+            '/repo/.scratch/seeds/issues/02-path.md': issue('Path', 'Map: ../MAP.md'),
+            '/repo/.scratch/seeds/issues/03-parent.md': issue('Parent', 'Parent: ../map.MD'),
+            '/repo/.scratch/seeds/issues/04-title.md': issue(
+              'Title',
+              'Map: [../../other/MAP.md](../MAP.md#decisions-so-far)',
+            ),
+            '/repo/.scratch/seeds/issues/05-bold.md': issue(
+              'Bold',
+              '**Parent:** [Seed library](./../MAP.md)',
+            ),
+          },
+          '/repo',
+        )
+        expect(mapTickets(snapshot)).toEqual(['Link', 'Path', 'Parent', 'Title', 'Bold'])
+        for (const title of ['Link', 'Path', 'Parent', 'Title'])
+          expect(warningsOf(snapshot, title), title).toEqual([])
+        expect(warningsOf(snapshot, 'Bold')).toEqual([
+          { code: 'header-key-bold', detail: 'Parent' },
+        ])
+        expect(snapshot.unmapped).toEqual([])
+      }),
+  )
+
+  it.effect(
+    "raises a loud map-line-disagrees naming the target for another effort's map, a missing file or no file in the repo, and the directory still wins",
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/map.md': mapBody(),
+            '/repo/.scratch/other/MAP.md': '# Other\n',
+            '/repo/.scratch/seeds/research.md/notes.md': '# Not a file\n',
+            '/repo/.scratch/seeds/issues/01-other-map.md': issue(
+              'Other map',
+              'Map: [Other](../../other/MAP.md)',
+            ),
+            '/repo/.scratch/seeds/issues/02-other-casing.md': issue(
+              'Other casing',
+              'Parent: ../../other/map.md',
+            ),
+            '/repo/.scratch/seeds/issues/03-missing.md': issue('Missing', 'Map: ../GONE.md'),
+            '/repo/.scratch/seeds/issues/04-url.md': issue(
+              'Url',
+              'Parent: [#3](https://github.com/acme/seeds/issues/3.md)',
+            ),
+            '/repo/.scratch/seeds/issues/05-directory.md': issue(
+              'Directory',
+              'Parent: ../research.md',
+            ),
+            '/repo/.scratch/seeds/issues/06-above.md': issue('Above', 'Map: ../../../../MAP.md'),
+          },
+          '/repo',
+        )
+        const titles = ['Other map', 'Other casing', 'Missing', 'Url', 'Directory', 'Above']
+        expect(mapTickets(snapshot)).toEqual(titles)
+        expect(snapshot.unmapped).toEqual([])
+        expect(titles.map((title) => warningsOf(snapshot, title))).toEqual(
+          [
+            '../../other/MAP.md',
+            '../../other/map.md',
+            '../GONE.md',
+            'https://github.com/acme/seeds/issues/3.md',
+            '../research.md',
+            '../../../../MAP.md',
+          ].map((detail) => [{ code: 'map-line-disagrees', detail }]),
+        )
+        expect(driftEntryOf({ code: 'map-line-disagrees' }).level).toBe('loud')
+      }),
+  )
+
+  it.effect(
+    'makes an issue whose Parent names a PRD an unmapped issue with no drift, and a Map line naming one disagrees',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/MAP.md': mapBody(),
+            '/repo/.scratch/seeds/PRD.md': '# Seed PRD\n\nStatus: ready-for-agent\n',
+            '/repo/.scratch/seeds/issues/01-plan.md': issue('Plan', 'Map: [Seeds](../MAP.md)'),
+            '/repo/.scratch/seeds/issues/02-hooks.md':
+              '# Hooks\n\n**Parent:** [Seed PRD](../PRD.md)\n**Status:** ready-for-agent\n\n## What to build\n\nHooks.\n',
+            '/repo/.scratch/seeds/issues/03-labels.md': issue('Labels', 'Map: ../PRD.md'),
+            '/repo/.scratch/seeds/issues/04-case.md': issue('Case', 'Parent: ../prd.md'),
+          },
+          '/repo',
+        )
+        // A PRD named in another case is no file on any disk: it is listed, never opened.
+        expect(mapTickets(snapshot)).toEqual(['Plan', 'Labels', 'Case'])
+        expect(
+          snapshot.unmapped.map((group) => [
+            group.effort,
+            group.title,
+            group.tickets.map((ticket) => ticket.title),
+          ]),
+        ).toEqual([['seeds', 'Seed library', ['Hooks']]])
+        expect(warningsOf(snapshot, 'Hooks')).toEqual([
+          { code: 'header-key-bold', detail: 'Parent, Status' },
+        ])
+        expect(warningsOf(snapshot, 'Labels')).toEqual([
+          { code: 'map-line-disagrees', detail: '../PRD.md' },
+        ])
+        expect(warningsOf(snapshot, 'Case')).toEqual([
+          { code: 'map-line-disagrees', detail: '../prd.md' },
+        ])
+      }),
+  )
+
+  it.effect(
+    'reads a GitHub-shaped or prose Map or Parent value as naming nothing, with no drift',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/map.md': mapBody(),
+            '/repo/.scratch/seeds/issues/01-number.md': issue('Number', 'Map: #3'),
+            '/repo/.scratch/seeds/issues/02-prose.md': issue('Prose', 'Parent: the seed library'),
+            '/repo/.scratch/seeds/issues/03-empty.md': issue('Empty', 'Parent:'),
+          },
+          '/repo',
+        )
+        expect(mapTickets(snapshot)).toEqual(['Number', 'Prose', 'Empty'])
+        for (const ticket of allTickets(snapshot)) expect(ticket.warnings, ticket.title).toEqual([])
+      }),
+  )
+
+  it.effect(
+    "counts a map's tickets only: the unmapped issues beside it are off its frontier, its decided-of-total and its finished state",
+    () =>
+      Effect.gen(function* () {
+        const prd = '**Parent:** [Seed PRD](../PRD.md)'
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/MAP.md': mapBody().replace(
+              '## Decisions so far\n',
+              '## Decisions so far\n\n- [Plan](issues/01-plan.md): plan it\n',
+            ),
+            '/repo/.scratch/seeds/PRD.md': '# Seed PRD\n',
+            '/repo/.scratch/seeds/issues/01-plan.md': issue(
+              'Plan',
+              '',
+              'Status: closed\n\n## Answer\n\nPlanned.',
+            ),
+            '/repo/.scratch/seeds/issues/02-hooks.md': issue(
+              'Hooks',
+              prd,
+              'Status: ready-for-agent',
+            ),
+            '/repo/.scratch/seeds/issues/03-labels.md': issue('Labels', prd, 'Status: open'),
+            '/repo/.scratch/seeds/issues/04-lock.md': issue(
+              'Lock',
+              `${prd}\nBlocked by: 01`,
+              'Status: open',
+            ),
+          },
+          '/repo',
+        )
+        const [map] = snapshot.maps
+        expect(map!.tickets.map((ticket) => ticket.title)).toEqual(['Plan'])
+        expect(frontierOf(map!)).toEqual([])
+        expect(nextOf(map!)).toBeNull()
+        expect(decidedOfTotal(map!)).toEqual({ decided: 1, total: 1 })
+        expect(isFinished(map!)).toBe(true)
+        const unmapped = snapshot.unmapped.flatMap((group) => group.tickets)
+        expect(unmapped.map((ticket) => [ticket.title, ticket.role])).toEqual([
+          ['Hooks', 'ready-for-agent'],
+          ['Labels', null],
+          ['Lock', null],
+        ])
+        // Every other rule still reads: the blocker gates the unmapped issue by its own state.
+        expect(unmapped[2]!.blockedBy.map((blocker) => [blocker.number, blocker.state])).toEqual([
+          [1, 'closed'],
+        ])
+        for (const ticket of unmapped)
+          expect(codesOf(ticket), ticket.title).toEqual(['header-key-bold'])
+      }),
+  )
+
+  it.effect(
+    'gates a map ticket on an unmapped issue by its own state, with a quiet blocker-outside-map',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/map.md': mapBody(),
+            '/repo/.scratch/seeds/PRD.md': '# Seed PRD\n',
+            '/repo/.scratch/seeds/issues/01-hooks.md': issue('Hooks', 'Parent: ../PRD.md'),
+            '/repo/.scratch/seeds/issues/02-hang.md': issue('Hang', 'Blocked by: 01'),
+          },
+          '/repo',
+        )
+        const [hang] = snapshot.maps[0]!.tickets
+        expect(hang!.blockedBy.map((blocker) => [blocker.number, blocker.state])).toEqual([
+          [1, 'open'],
+        ])
+        expect(placeOf(hang!)).toBe('blocked')
+        expect(hang!.warnings).toEqual([{ code: 'blocker-outside-map', detail: '#1 Hooks' }])
+      }),
+  )
+
+  it.effect(
+    "keeps an open PRD-parented issue of a closed map under the map's title, and hides the closed ones",
+    () =>
+      Effect.gen(function* () {
+        const prd = 'Parent: [Seed PRD](../PRD.md)'
+        const files = {
+          '/repo/.scratch/seeds/MAP.md': mapBody('Status: DONE 2026-10-01'),
+          '/repo/.scratch/seeds/PRD.md': '# Seed PRD\n',
+          '/repo/.scratch/seeds/issues/01-plan.md': issue(
+            'Plan',
+            '',
+            'Status: closed\n\n## Answer\n\nPlanned.',
+          ),
+          '/repo/.scratch/seeds/issues/02-hooks.md': issue('Hooks', prd, 'Status: needs-info'),
+          '/repo/.scratch/seeds/issues/03-lock.md': `# Lock\n\nStatus: done\n${prd}\n\n## Answer\n\nFitted.\n`,
+        }
+        const snapshot = yield* read(files, '/repo')
+        expect(snapshot.maps).toEqual([])
+        expect(
+          snapshot.unmapped.map((group) => [
+            group.effort,
+            group.title,
+            group.tickets.map((ticket) => [ticket.number, ticket.title]),
+          ]),
+        ).toEqual([['seeds', 'Seed library', [[2, 'Hooks']]]])
+        const [seeds] = yield* efforts(files)
+        expect(seeds!.mapState).toBe('closed')
+        expect(seeds!.map!.tickets.map((ticket) => ticket.title)).toEqual(['Plan'])
+        expect(seeds!.unmapped.map((ticket) => [ticket.title, ticket.state])).toEqual([
+          ['Hooks', 'open'],
+          ['Lock', 'closed'],
+        ])
+      }),
+  )
+
+  it.effect(
+    'reads an issue of an effort with no map as unmapped, whatever its lines say, with no no-map, type-missing or no-question-heading',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/triage/issues/01-leak.md':
+              '# Leak\n\nStatus: ready-for-agent\nMap: ../MAP.md\n\n## What to build\n\nFix it.\n',
+            '/repo/.scratch/triage/issues/02-latch.md':
+              '# Latch\n\nStatus: in-review\n\n## What to build\n\nFix it.\n',
+          },
+          '/repo',
+        )
+        expect(snapshot.maps).toEqual([])
+        expect(
+          snapshot.unmapped.map((group) => [
+            group.title,
+            group.tickets.map((ticket) => [ticket.title, ticket.role, ticket.type]),
+          ]),
+        ).toEqual([
+          [
+            'triage',
+            [
+              ['Leak', 'ready-for-agent', null],
+              ['Latch', null, null],
+            ],
+          ],
+        ])
+        // A Map line naming a map the effort lacks names a missing file; the Status rules still read.
+        expect(warningsOf(snapshot, 'Leak')).toEqual([
+          { code: 'map-line-disagrees', detail: '../MAP.md' },
+        ])
+        expect(warningsOf(snapshot, 'Latch')).toEqual([
+          { code: 'unknown-status', detail: 'in-review' },
+        ])
+      }),
   )
 })
 

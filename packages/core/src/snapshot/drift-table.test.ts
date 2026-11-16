@@ -14,6 +14,7 @@ const LOUD = [
   'blockers-as-slugs',
   'blocker-unread',
   'no-map',
+  'map-line-disagrees',
   'closed-unrecorded',
   'closed-no-resolution',
   'unknown-status',
@@ -115,6 +116,15 @@ describe('the drift table', () => {
       detail: 'the design review',
       withDetail: 'A Blocked by item names no ticket: the design review.',
       hint: 'Each item of a Blocked by line starts with a ticket number, a ticket file name or a link to one.',
+    },
+    {
+      code: 'map-line-disagrees',
+      level: 'loud',
+      message: "The ticket's Map or Parent line points away from its effort's map.",
+      detail: '../../garden/MAP.md',
+      withDetail:
+        "The ticket's Map or Parent line points away from its effort's map: ../../garden/MAP.md.",
+      hint: 'A local ticket belongs to the map in its effort directory; the directory decides.',
     },
     {
       code: 'type-as-label',

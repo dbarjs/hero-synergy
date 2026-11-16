@@ -1,3 +1,4 @@
+import type { Ticket } from '../snapshot/model.ts'
 import type { EffortReading } from './local.ts'
 
 /**
@@ -37,19 +38,25 @@ interface TicketTruth {
   readonly blockedBy: ReadonlyArray<number>
   /** The tickets the file's own `Blocks:` line names. */
   readonly blocks: ReadonlyArray<number>
+  /** The effort's map file, when the effort has one. */
+  readonly map: string | null
+  /** The file other than the map that a `Parent:` line names, such as a PRD. */
+  readonly parent: string | null
 }
 
 /**
  * One file in the columns compared: what it is; for a map its state and decisions; for a ticket
- * its state (closed; or open, and claimed when it has a claim), its triage role, who holds its
- * claim (the first name, and only on a ticket that isn't closed), its type and HITL note, and its
- * merged blockers: its own `Blocked by:` items in order, then the tickets whose `Blocks:` line
- * names it, in number order.
+ * whether it is a ticket of its effort's map or an unmapped issue, its state (closed; or open, and
+ * claimed when it has a claim), its triage role, who holds its claim (the first name, and only on
+ * a ticket that isn't closed), its type and HITL note, and its merged blockers: its own
+ * `Blocked by:` items in order, then the tickets whose `Blocks:` line names it, in number order.
  */
 export type Columns =
   | { readonly kind: 'map'; readonly state: 'open' | 'closed'; readonly decisions: number[] }
   | {
       readonly kind: 'ticket'
+      /** A ticket of its effort's map; false for an unmapped issue (#139). */
+      readonly member: boolean
       readonly state: TicketState
       readonly role: Role | null
       readonly assignee: string | null
@@ -82,9 +89,11 @@ export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>):
     .map((other) => numberOf(other.path))
     .sort((a, b) => a - b)
   for (const blocker of inverted) if (!blockedBy.includes(blocker)) blockedBy.push(blocker)
-  const { state, role, assignee, type, mode } = entry.reading
+  const { state, role, assignee, type, mode, map, parent } = entry.reading
   return {
     kind: 'ticket',
+    // A ticket exactly when the effort has a map and no `Parent:` line names another file.
+    member: map !== null && parent === null,
     state,
     role,
     // A closed ticket keeps its Assignee as history, and is never claimed.
@@ -111,13 +120,14 @@ export function scoutColumns(efforts: ReadonlyArray<EffortReading>, path: string
       decisions: [...new Set(map.decisions.flatMap((decision) => decision.number ?? []))],
     }
   }
-  const tickets = [...(map?.tickets ?? []), ...effort.unmapped]
-  const ticket = tickets.find(
-    (candidate) => candidate.ref.tracker === 'local' && candidate.ref.path === path,
-  )
+  const isFile = (candidate: Ticket): boolean =>
+    candidate.ref.tracker === 'local' && candidate.ref.path === path
+  const member = map?.tickets.find(isFile)
+  const ticket = member ?? effort.unmapped.find(isFile)
   if (ticket === undefined) return { kind: 'note' }
   return {
     kind: 'ticket',
+    member: member !== undefined,
     state: ticket.state === 'closed' ? 'closed' : ticket.claim === null ? 'open' : 'claimed',
     role: ticket.role,
     assignee: ticket.claim?.by[0] ?? null,

@@ -174,33 +174,46 @@ const toggle = (key: string, expanded: boolean): void => {
         muted
         @activate="toggle(viewModel.unmapped.key, !viewModel.unmapped.expanded)"
       >
-        <span class="count">{{ viewModel.unmapped.entries.length }}</span>
+        <span class="count">{{ viewModel.unmapped.count }}</span>
       </Row>
       <template v-if="viewModel.unmapped.expanded">
-        <template v-for="ticket in viewModel.unmapped.entries" :key="ticket.key">
+        <template v-for="group in viewModel.unmapped.groups" :key="group.effort ?? ''">
+          <!-- An effort's plain row: it neither folds nor selects; its issues sit one level deeper. -->
           <Row
-            class="ticket unmapped"
+            v-if="group.title !== null"
+            class="unmapped-group"
             :depth="1"
-            :number="ticket.number"
-            :label="ticket.title"
-            :warn="ticket.loud.length > 0 ? ticket.loud.join('\n') : undefined"
-            :selected="viewModel.selection?.key === ticket.key"
-            opens-detail
-            @activate="select(ticket.key)"
-            @open-detail="emit('openDetail', ticket.key, null)"
-          />
-          <FocusPane
-            v-if="viewModel.selection && viewModel.selection.key === ticket.key"
-            :focus="viewModel.selection"
-            :depth="1"
-            @close="emit('select', null)"
-            @open="(key) => emit('open', key)"
-            @detail="(key) => emit('openDetail', key, null)"
-            @drift="(key) => emit('openDetail', key, 'drift')"
-            @launch="(key, action) => emit('launch', key, action)"
-            @focus-terminal="(key) => emit('focusTerminal', key)"
-            @copy="(key, action) => emit('copy', key, action)"
-          />
+            icon="folder"
+            :label="group.title"
+            muted
+          >
+            <span class="count">{{ group.entries.length }}</span>
+          </Row>
+          <template v-for="ticket in group.entries" :key="ticket.key">
+            <Row
+              class="ticket unmapped"
+              :depth="group.title === null ? 1 : 2"
+              :number="ticket.number"
+              :label="ticket.title"
+              :warn="ticket.loud.length > 0 ? ticket.loud.join('\n') : undefined"
+              :selected="viewModel.selection?.key === ticket.key"
+              opens-detail
+              @activate="select(ticket.key)"
+              @open-detail="emit('openDetail', ticket.key, null)"
+            />
+            <FocusPane
+              v-if="viewModel.selection && viewModel.selection.key === ticket.key"
+              :focus="viewModel.selection"
+              :depth="group.title === null ? 1 : 2"
+              @close="emit('select', null)"
+              @open="(key) => emit('open', key)"
+              @detail="(key) => emit('openDetail', key, null)"
+              @drift="(key) => emit('openDetail', key, 'drift')"
+              @launch="(key, action) => emit('launch', key, action)"
+              @focus-terminal="(key) => emit('focusTerminal', key)"
+              @copy="(key, action) => emit('copy', key, action)"
+            />
+          </template>
         </template>
       </template>
     </template>

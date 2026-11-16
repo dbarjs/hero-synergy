@@ -59,6 +59,26 @@ export interface CollectedTicket {
   readonly blockedBy: ReadonlyArray<Blocker>
   /** The last comment on GitHub; null on a local tracker, where `## Answer` holds the resolution. */
   readonly lastComment: Resolution | null
+  /**
+   * Local: where the ticket's `Map:` and `Parent:` header lines point, as the collector found them
+   * on disk, which alone can tell a map file from a PRD or a missing file. Absent on GitHub and
+   * on a ticket with no such line that names a file.
+   */
+  readonly mapLines?: ReadonlyArray<MapLine>
+}
+
+/**
+ * One `Map:` or `Parent:` header line of a local ticket that names a file (#137, #139). The
+ * directory decides membership: a line naming the effort's own map agrees; one naming another
+ * effort's map or a missing file disagrees; one naming any other file, such as a PRD, makes the
+ * ticket an unmapped issue on `Parent:`, and disagrees on `Map:`.
+ */
+export interface MapLine {
+  readonly key: 'map' | 'parent'
+  /** The target as written: the link's or the bare path's. */
+  readonly target: string
+  /** The effort's own map file, in any case; another map or no file at all; or some other file. */
+  readonly points: 'own-map' | 'away' | 'file'
 }
 
 /** One collect of a tracker: its open maps and their tickets, bodies unread. */
@@ -72,6 +92,12 @@ export interface Collected {
   readonly maps: ReadonlyArray<CollectedMap>
   readonly tickets: ReadonlyArray<CollectedTicket>
 }
+
+/** What an unmapped local issue never raises: it needs no map's type, and no `## Question`. */
+const SILENT_WHEN_UNMAPPED: ReadonlySet<DriftWarning['code']> = new Set([
+  'type-missing',
+  'no-question-heading',
+])
 
 const unknownLabels = (labels: ReadonlyArray<string>): ReadonlyArray<string> =>
   labels.filter((label) => label.startsWith('wayfinder:') && !KNOWN_LABELS.has(label))
@@ -128,14 +154,16 @@ export function readSnapshot(collected: Collected): Snapshot {
   const bodies = new Map(collected.maps.map((map) => [map.number, readMapBody(map.body)]))
 
   // Which map a ticket belongs to: the tracker's parent, the map's own children, a task list, a `Part of` line.
+  // Locally the collector alone decides, from the directory and the `Parent:` line (#139).
   const mapOf = new Map<number, number>()
   const place = (ticket: number, map: number) => {
     if (!mapOf.has(ticket) && byNumber.has(ticket) && bodies.has(map)) mapOf.set(ticket, map)
   }
   for (const draft of drafts) if (draft.parent !== null) place(draft.number, draft.parent)
   for (const map of collected.maps) for (const child of map.children) place(child, map.number)
-  for (const map of collected.maps)
-    for (const child of bodies.get(map.number)?.taskList ?? []) place(child, map.number)
+  if (onGitHub)
+    for (const map of collected.maps)
+      for (const child of bodies.get(map.number)?.taskList ?? []) place(child, map.number)
   for (const draft of drafts) if (draft.partOf !== null) place(draft.number, draft.partOf)
 
   // A local blocker is an issue file of the ticket's effort, the one directory its own file sits in.
@@ -164,7 +192,11 @@ export function readSnapshot(collected: Collected): Snapshot {
   const finish = (draft: Draft): Ticket => {
     const map = mapOf.get(draft.number)
     const body = map === undefined ? undefined : bodies.get(map)
-    const ticketWarnings = [...draft.warnings]
+    // An unmapped local issue with no type and no Question is a normal local form, not drift (#139).
+    const ticketWarnings =
+      map === undefined && !onGitHub
+        ? draft.warnings.filter((warning) => !SILENT_WHEN_UNMAPPED.has(warning.code))
+        : [...draft.warnings]
 
     const blockedBy: Blocker[] = [...draft.nativeBlockers]
     const block = (number: number) => {
@@ -196,7 +228,8 @@ export function readSnapshot(collected: Collected): Snapshot {
     for (const number of (blockedVia.get(draft.number) ?? []).toSorted((a, b) => a - b))
       block(number)
     if (map === undefined) {
-      ticketWarnings.push({ code: 'no-map' })
+      // A local issue outside every map is an unmapped issue, never drift; `no-map` is GitHub's.
+      if (onGitHub) ticketWarnings.push({ code: 'no-map' })
     } else {
       for (const blocker of blockedBy) {
         if (mapOf.get(blocker.number) !== map) {
@@ -334,6 +367,11 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   if (!onGitHub) {
     const bold = boldKeysOf(body.header)
     if (bold.length > 0) warnings.push({ code: 'header-key-bold', detail: bold.join(', ') })
+    // The directory decides; a line pointing elsewhere is pointed out (#137). A PRD parent is #139's.
+    for (const line of ticket.mapLines ?? []) {
+      if (line.points === 'away' || (line.points === 'file' && line.key === 'map'))
+        warnings.push({ code: 'map-line-disagrees', detail: line.target })
+    }
   }
 
   let title = ticket.title

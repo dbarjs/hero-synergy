@@ -38,14 +38,13 @@ import type {
   DriftGroup,
   DriftSummary,
   Focus,
-  Fold,
   HealthRow,
   MapNode,
   NeighbourView,
   Notice,
   TicketRow,
   UnlistedRow,
-  UnmappedRow,
+  UnmappedFold,
   ViewModel,
   WorktreeView,
 } from './protocol.ts'
@@ -67,11 +66,26 @@ export const ticketKey = (map: WayfinderMap, number: number): string =>
 export const focusKeyOf = (map: WayfinderMap): string => `${mapKey(map)}:map`
 /** The synthetic node that holds the tickets of no map. */
 export const UNMAPPED_KEY = 'unmapped'
-export const unmappedKey = (number: number): string => `${UNMAPPED_KEY}:ticket:${number}`
+/**
+ * An unmapped issue's row key. Local ticket numbers repeat across efforts, so the effort is part
+ * of it (#139); GitHub's strays, with no effort, keep `unmapped:ticket:<n>`.
+ */
+export const unmappedKey = (effort: string | null, number: number): string =>
+  effort === null
+    ? `${UNMAPPED_KEY}:ticket:${number}`
+    : `${UNMAPPED_KEY}:${effort}:ticket:${number}`
 
-/** Every unmapped issue, the groups flattened in order: the Tree shows no group rows yet. */
-const unmappedTickets = (snapshot: Snapshot): ReadonlyArray<Ticket> =>
-  snapshot.unmapped.flatMap((group) => group.tickets)
+/** Every unmapped issue with the key its row goes by, the groups in order. */
+const unmappedEntries = (
+  snapshot: Snapshot,
+): ReadonlyArray<{ readonly key: string; readonly ticket: Ticket }> =>
+  snapshot.unmapped.flatMap((group) =>
+    group.tickets.map((ticket) => ({ key: unmappedKey(group.effort, ticket.number), ticket })),
+  )
+
+/** The unmapped issue a row key names; undefined when it names none. */
+const unmappedOf = (snapshot: Snapshot, key: string): Ticket | undefined =>
+  unmappedEntries(snapshot).find((entry) => entry.key === key)?.ticket
 
 /** The snapshot with the sessions laid over it: a held ticket is off the frontier, and the disagreements are named. */
 const overlaid = (snapshot: Snapshot, launching: Launching): SessionOverlay =>
@@ -173,7 +187,7 @@ export const selectionOf = (
 ): Selected | null => {
   if (key === null) return null
   const { snapshot, disagreements } = overlaid(collected, launching)
-  const stray = unmappedTickets(snapshot).find((candidate) => unmappedKey(candidate.number) === key)
+  const stray = unmappedOf(snapshot, key)
   if (stray !== undefined) {
     return {
       target: targetOf(snapshot.repoRoot, stray.ref),
@@ -267,7 +281,7 @@ export const detailOf = (
   if (key === null) return null
   const { snapshot, disagreements } = overlaid(collected, launching)
   const openUrl = (ref: Ref): string | null => (ref.tracker === 'github' ? ref.url : null)
-  const stray = unmappedTickets(snapshot).find((candidate) => unmappedKey(candidate.number) === key)
+  const stray = unmappedOf(snapshot, key)
   if (stray !== undefined) {
     return {
       kind: 'ticket',
@@ -361,8 +375,7 @@ export const detailOf = (
  * finished, and the Decisions fold when the row is a decision. Empty when the key names nothing.
  */
 export const revealKeys = (snapshot: Snapshot, key: string): ReadonlyArray<string> => {
-  if (unmappedTickets(snapshot).some((ticket) => unmappedKey(ticket.number) === key))
-    return [UNMAPPED_KEY]
+  if (unmappedOf(snapshot, key) !== undefined) return [UNMAPPED_KEY]
   for (const map of snapshot.maps) {
     const ticket = map.tickets.find((candidate) => ticketKey(map, candidate.number) === key)
     if (key !== focusKeyOf(map) && ticket === undefined) continue
@@ -524,25 +537,35 @@ const mapNode = (
   }
 }
 
-/** The Unmapped node: the tickets of no map, shown only when there are some. */
+/**
+ * The Unmapped node: the tickets of no map, one group per effort in the snapshot's order, shown
+ * only when there are some. A group with no effort, GitHub's strays, puts its rows straight
+ * under the fold.
+ */
 const unmappedFold = (
   snapshot: Snapshot,
   expanded: ReadonlySet<string>,
   dismissed: Dismissed,
-): Fold<UnmappedRow> | null => {
-  const tickets = unmappedTickets(snapshot)
-  return tickets.length === 0
-    ? null
-    : {
-        key: UNMAPPED_KEY,
-        expanded: expanded.has(UNMAPPED_KEY),
-        entries: tickets.map((ticket) => ({
-          key: unmappedKey(ticket.number),
+): UnmappedFold | null => {
+  const groups = snapshot.unmapped
+    .filter((group) => group.tickets.length > 0)
+    .map((group) => ({
+      effort: group.effort,
+      title: group.title,
+      entries: group.tickets.map((ticket) => {
+        const key = unmappedKey(group.effort, ticket.number)
+        return {
+          key,
           number: ticket.number,
           title: ticket.title,
-          loud: loudOf(ticketDrift(unmappedKey(ticket.number), ticket, dismissed)),
-        })),
-      }
+          loud: loudOf(ticketDrift(key, ticket, dismissed)),
+        }
+      }),
+    }))
+  const count = groups.reduce((sum, group) => sum + group.entries.length, 0)
+  return count === 0
+    ? null
+    : { key: UNMAPPED_KEY, expanded: expanded.has(UNMAPPED_KEY), count, groups }
 }
 
 /**
@@ -603,7 +626,7 @@ export const buildViewModel = (
     start: startOf(
       snapshot.repoRoot,
       launching,
-      active.length === 0 && finished.length === 0 && unmappedTickets(snapshot).length === 0
+      active.length === 0 && finished.length === 0 && unmappedEntries(snapshot).length === 0
         ? 'map'
         : 'nothing',
     ),

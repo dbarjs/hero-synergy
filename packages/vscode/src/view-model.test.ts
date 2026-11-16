@@ -3,6 +3,7 @@ import { Effect } from 'effect'
 import { describe, expect, it } from 'vite-plus/test'
 
 import { localTrackerFiles, workspaceFiles } from '../test/fixtures/workspace-files.ts'
+import { dismissalKey } from './drift.ts'
 import type { MapNode, ViewModel } from './protocol.ts'
 import {
   buildViewModel,
@@ -167,50 +168,197 @@ describe('the Unmapped fold over core’s local-tracker fixture', () => {
       ),
     )
 
-  it('shows the mapless effort’s issues as plain rows keyed by number, with no group row', async () => {
+  it('shows the mapless effort as one group row with its count, its open issues keyed by effort, the closed one hidden', async () => {
     const snapshot = await localTrackerSnapshot()
     expect(snapshot.unmapped.map((group) => group.effort)).toEqual(['onboarding-spec'])
     const viewModel = buildViewModel(snapshot, new Set(['unmapped']))
-    expect(viewModel.kind === 'maps' && viewModel.unmapped).toMatchObject({
+    expect(viewModel.kind === 'maps' && viewModel.unmapped).toEqual({
       key: 'unmapped',
       expanded: true,
-      entries: [
-        { key: 'unmapped:ticket:1', number: 1, title: 'Welcome screen' },
-        { key: 'unmapped:ticket:2', number: 2, title: 'Invite flow' },
+      count: 2,
+      groups: [
+        {
+          effort: 'onboarding-spec',
+          title: 'onboarding-spec',
+          entries: [
+            {
+              key: 'unmapped:onboarding-spec:ticket:1',
+              number: 1,
+              title: 'Welcome screen',
+              loud: [],
+            },
+            { key: 'unmapped:onboarding-spec:ticket:2', number: 2, title: 'Invite flow', loud: [] },
+          ],
+        },
       ],
     })
+    // Collapsed until opened, still counting.
+    const closed = buildViewModel(snapshot, new Set())
+    expect(closed.kind === 'maps' && closed.unmapped).toMatchObject({ expanded: false, count: 2 })
   })
 
-  it('lays several efforts’ groups end to end, in directory order', async () => {
+  it('lays several efforts’ groups end to end, in directory order, and counts them all', async () => {
     const snapshot = await localTrackerSnapshot({
       [`${ROOT}/.scratch/a-triage/issues/03-damp-shelf.md`]: '# Damp shelf\n',
+      [`${ROOT}/.scratch/a-triage/issues/04-dry-shelf.md`]: '# Dry shelf\n\nStatus: wontfix\n',
     })
     const viewModel = buildViewModel(snapshot, new Set())
+    expect(viewModel.kind === 'maps' && viewModel.unmapped?.count).toBe(3)
     expect(
       viewModel.kind === 'maps' &&
-        viewModel.unmapped?.entries.map(({ key, title }) => `${key} ${title}`),
+        viewModel.unmapped?.groups.map(({ title, entries }) => [
+          title,
+          entries.map(({ key, title: name }) => `${key} ${name}`),
+        ]),
     ).toEqual([
-      'unmapped:ticket:3 Damp shelf',
-      'unmapped:ticket:1 Welcome screen',
-      'unmapped:ticket:2 Invite flow',
+      ['a-triage', ['unmapped:a-triage:ticket:3 Damp shelf']],
+      [
+        'onboarding-spec',
+        [
+          'unmapped:onboarding-spec:ticket:1 Welcome screen',
+          'unmapped:onboarding-spec:ticket:2 Invite flow',
+        ],
+      ],
     ])
   })
 
-  it('selects, reveals and details an unmapped issue by its key', async () => {
+  it('titles a group with its effort’s map, and keeps that map’s tickets off the fold', async () => {
+    const snapshot = await localTrackerSnapshot({
+      [`${ROOT}/.scratch/billing-rewrite/PRD.md`]: '# Billing PRD\n',
+      [`${ROOT}/.scratch/billing-rewrite/issues/04-tax-export.md`]:
+        '# Tax export\n\nParent: [Billing PRD](../PRD.md)\nStatus: ready-for-agent\n',
+    })
+    const viewModel = buildViewModel(snapshot, new Set(['unmapped']))
+    expect(
+      viewModel.kind === 'maps' &&
+        viewModel.unmapped?.groups.map(({ effort, title, entries }) => [
+          effort,
+          title,
+          entries.map(({ key }) => key),
+        ]),
+    ).toEqual([
+      ['billing-rewrite', 'Billing rewrite', ['unmapped:billing-rewrite:ticket:4']],
+      [
+        'onboarding-spec',
+        'onboarding-spec',
+        ['unmapped:onboarding-spec:ticket:1', 'unmapped:onboarding-spec:ticket:2'],
+      ],
+    ])
+    const billing = mapsOf(viewModel).maps.find((map) => map.title === 'Billing rewrite')
+    expect(billing?.tickets.map((ticket) => ticket.number)).not.toContain(4)
+    expect(billing).toMatchObject({ total: 3 })
+  })
+
+  it('selects, reveals and details an unmapped issue by its effort key', async () => {
     const snapshot = await localTrackerSnapshot()
-    expect(selectionOf(snapshot, 'unmapped:ticket:2')?.focus).toMatchObject({
+    expect(selectionOf(snapshot, 'unmapped:onboarding-spec:ticket:2')?.focus).toMatchObject({
       kind: 'ticket',
-      key: 'unmapped:ticket:2',
+      key: 'unmapped:onboarding-spec:ticket:2',
       number: 2,
       title: 'Invite flow',
+      actions: [],
     })
-    expect(revealKeys(snapshot, 'unmapped:ticket:2')).toEqual(['unmapped'])
-    expect(detailOf(snapshot, 'unmapped:ticket:1')).toMatchObject({
+    expect(revealKeys(snapshot, 'unmapped:onboarding-spec:ticket:2')).toEqual(['unmapped'])
+    expect(detailOf(snapshot, 'unmapped:onboarding-spec:ticket:1')).toMatchObject({
       kind: 'ticket',
-      key: 'unmapped:ticket:1',
+      key: 'unmapped:onboarding-spec:ticket:1',
       number: 1,
       title: 'Welcome screen',
+      actions: [],
+      clearsWayFor: [],
     })
+    // On a local tracker the number-only key names nothing any more.
+    expect(selectionOf(snapshot, 'unmapped:ticket:1')).toBeNull()
+    expect(detailOf(snapshot, 'unmapped:ticket:1')).toBeNull()
+    expect(revealKeys(snapshot, 'unmapped:ticket:1')).toEqual([])
+  })
+
+  it('keeps an unmapped issue’s neighbours unselectable in its Detail', async () => {
+    const snapshot = await localTrackerSnapshot({
+      [`${ROOT}/.scratch/onboarding-spec/issues/04-invite-email.md`]:
+        '# Invite email\n\nStatus: needs-info\nBlocked by: 02\n',
+    })
+    const detail = detailOf(snapshot, 'unmapped:onboarding-spec:ticket:4')
+    expect(detail).toMatchObject({ kind: 'ticket', actions: [], clearsWayFor: [] })
+    expect(detail?.kind === 'ticket' && detail.waitsOn).toEqual([
+      { number: 2, title: 'Invite flow', state: 'open', key: null },
+    ])
+  })
+})
+
+describe('two efforts’ #1 in the Unmapped fold', () => {
+  // Both raise the same loud unknown-status: only the effort in the key tells them apart.
+  const files = {
+    [`${ROOT}/.scratch/left/issues/01-shelf.md`]: '# Left shelf\n\nStatus: in-review\n',
+    [`${ROOT}/.scratch/right/issues/01-shelf.md`]: '# Right shelf\n\nStatus: in-review\n',
+  }
+  const LEFT = 'unmapped:left:ticket:1'
+  const RIGHT = 'unmapped:right:ticket:1'
+  const snapshot = (): Promise<Snapshot> =>
+    Effect.runPromise(readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))))
+
+  it('gives each its own row', async () => {
+    const viewModel = buildViewModel(await snapshot(), new Set(['unmapped']))
+    expect(
+      viewModel.kind === 'maps' &&
+        viewModel.unmapped?.groups.map(({ title, entries }) => [
+          title,
+          entries.map(({ key, title: name }) => [key, name]),
+        ]),
+    ).toEqual([
+      ['left', [[LEFT, 'Left shelf']]],
+      ['right', [[RIGHT, 'Right shelf']]],
+    ])
+  })
+
+  it('selects, reveals and opens the Detail of only its own issue', async () => {
+    const read = await snapshot()
+    for (const [key, title] of [
+      [LEFT, 'Left shelf'],
+      [RIGHT, 'Right shelf'],
+    ] as const) {
+      expect(selectionOf(read, key)?.focus, key).toMatchObject({ key, number: 1, title })
+      expect(selectionOf(read, key)?.target, key).toEqual({
+        kind: 'file',
+        path: `${ROOT}/.scratch/${key === LEFT ? 'left' : 'right'}/issues/01-shelf.md`,
+      })
+      expect(detailOf(read, key), key).toMatchObject({ key, number: 1, title })
+      expect(revealKeys(read, key), key).toEqual(['unmapped'])
+      const viewModel = buildViewModel(read, new Set(['unmapped']), key)
+      expect(viewModel.kind === 'maps' && viewModel.selection?.key, key).toBe(key)
+    }
+  })
+
+  it('dismisses drift on one issue only', async () => {
+    const read = await snapshot()
+    const warning = { code: 'unknown-status', detail: 'in-review' } as const
+    const dismissed = new Set([dismissalKey(LEFT, warning)])
+    const viewModel = buildViewModel(
+      read,
+      new Set(['unmapped']),
+      null,
+      undefined,
+      null,
+      null,
+      undefined,
+      dismissed,
+    )
+    expect(
+      viewModel.kind === 'maps' &&
+        viewModel.unmapped?.groups.map(({ entries }) =>
+          entries.map(({ key, loud }) => [key, loud.length]),
+        ),
+    ).toEqual([[[LEFT, 0]], [[RIGHT, 1]]])
+    expect(detailOf(read, LEFT, undefined, dismissed)).toMatchObject({ drift: [] })
+    expect(detailOf(read, RIGHT, undefined, dismissed)).toMatchObject({
+      drift: [{ entries: [{ code: 'unknown-status', dismissKey: dismissalKey(RIGHT, warning) }] }],
+    })
+    // A dismissal stored under the old number-only key hides neither: each shows once more.
+    const old = new Set([dismissalKey('unmapped:ticket:1', warning)])
+    for (const key of [LEFT, RIGHT])
+      expect(detailOf(read, key, undefined, old), key).toMatchObject({
+        drift: [{ entries: [{ code: 'unknown-status' }] }],
+      })
   })
 })
 

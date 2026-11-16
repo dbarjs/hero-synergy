@@ -354,6 +354,20 @@ describe('the drift catalogue', () => {
     expect(stray.gist).toBeNull()
   })
 
+  test('map-line-disagrees: the target rides in the detail, and the directory still wins', () => {
+    const snapshot = read('map-line-disagrees')
+    // Another effort's map, and a PRD on a Map line, both point away; the effort's own map agrees.
+    expect(map(snapshot, 1).tickets.map((candidate) => candidate.number)).toEqual([1, 2, 3])
+    expect(snapshot.unmapped).toEqual([])
+    expect(ticket(snapshot, 1).warnings).toEqual([
+      { code: 'map-line-disagrees', detail: '../../tax-rewrite/map.md' },
+    ])
+    expect(ticket(snapshot, 2).warnings).toEqual([
+      { code: 'map-line-disagrees', detail: '../PRD.md' },
+    ])
+    expect(codesOf(ticket(snapshot, 3))).toEqual([])
+  })
+
   test('blocker-outside-map: the blocker stays and gates, named in the detail', () => {
     const snapshot = read('blocker-outside-map')
     const blocked = ticket(snapshot, 2)
