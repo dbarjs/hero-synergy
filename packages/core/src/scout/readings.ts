@@ -21,6 +21,8 @@ interface MapTruth {
 
 type TicketState = 'open' | 'claimed' | 'closed'
 type Role = 'needs-triage' | 'needs-info' | 'ready-for-agent' | 'ready-for-human' | 'wontfix'
+type TicketType = 'research' | 'prototype' | 'grilling' | 'task'
+type ModeNote = 'AFK' | 'HITL'
 
 interface TicketTruth {
   /** Closed; or open, and claimed when it has a claim. */
@@ -28,6 +30,9 @@ interface TicketTruth {
   readonly role: Role | null
   /** Who the `Assignee:` line names; a closed ticket keeps it as history. */
   readonly assignee: string | null
+  readonly type: TicketType | null
+  /** The leading `AFK` or `HITL` the type line's parenthesis carries: the scout's `modeNote`. */
+  readonly mode: ModeNote | null
   /** The tickets the file's own `Blocked by:` line names, in order. */
   readonly blockedBy: ReadonlyArray<number>
   /** The tickets the file's own `Blocks:` line names. */
@@ -37,8 +42,9 @@ interface TicketTruth {
 /**
  * One file in the columns compared: what it is; for a map its state and decisions; for a ticket
  * its state (closed; or open, and claimed when it has a claim), its triage role, who holds its
- * claim (the first name, and only on a ticket that isn't closed), and its merged blockers: its
- * own `Blocked by:` items in order, then the tickets whose `Blocks:` line names it, in number order.
+ * claim (the first name, and only on a ticket that isn't closed), its type and HITL note, and its
+ * merged blockers: its own `Blocked by:` items in order, then the tickets whose `Blocks:` line
+ * names it, in number order.
  */
 export type Columns =
   | { readonly kind: 'map'; readonly state: 'open' | 'closed'; readonly decisions: number[] }
@@ -47,6 +53,8 @@ export type Columns =
       readonly state: TicketState
       readonly role: Role | null
       readonly assignee: string | null
+      readonly type: TicketType | null
+      readonly modeNote: ModeNote | null
       readonly blockedBy: number[]
     }
   | { readonly kind: 'note' }
@@ -74,13 +82,15 @@ export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>):
     .map((other) => numberOf(other.path))
     .sort((a, b) => a - b)
   for (const blocker of inverted) if (!blockedBy.includes(blocker)) blockedBy.push(blocker)
-  const { state, role, assignee } = entry.reading
+  const { state, role, assignee, type, mode } = entry.reading
   return {
     kind: 'ticket',
     state,
     role,
     // A closed ticket keeps its Assignee as history, and is never claimed.
     assignee: state === 'closed' ? null : assignee,
+    type,
+    modeNote: mode,
     blockedBy,
   }
 }
@@ -111,6 +121,8 @@ export function scoutColumns(efforts: ReadonlyArray<EffortReading>, path: string
     state: ticket.state === 'closed' ? 'closed' : ticket.claim === null ? 'open' : 'claimed',
     role: ticket.role,
     assignee: ticket.claim?.by[0] ?? null,
+    type: ticket.type,
+    modeNote: ticket.modeNote,
     blockedBy: ticket.blockedBy.map((blocker) => blocker.number),
   }
 }

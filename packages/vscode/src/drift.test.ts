@@ -17,7 +17,7 @@ describe('drift in the Tree', () => {
       level: 'loud',
       message: 'The ticket has no type.',
       detail: null,
-      hint: 'A ticket carries one wayfinder:<type> label: research, prototype, grilling or task.',
+      hint: 'A ticket carries one wayfinder:<type> label (a Type: line on a local tracker): research, prototype, grilling or task.',
       dismissKey: 'k',
     })
   })

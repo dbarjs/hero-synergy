@@ -18,6 +18,7 @@ const LOUD = [
   'closed-no-resolution',
   'unknown-status',
   'map-file-ambiguous',
+  'mode-conflicts-type',
 ]
 
 describe('the drift table', () => {
@@ -114,6 +115,40 @@ describe('the drift table', () => {
       detail: 'the design review',
       withDetail: 'A Blocked by item names no ticket: the design review.',
       hint: 'Each item of a Blocked by line starts with a ticket number, a ticket file name or a link to one.',
+    },
+    {
+      code: 'type-as-label',
+      level: 'quiet',
+      message: 'The ticket gives its type as a label.',
+      detail: 'wayfinder:task (AFK)',
+      withDetail: 'The ticket gives its type as a label: wayfinder:task (AFK).',
+      hint: 'A local ticket names its type on a "Type: <type>" line.',
+    },
+    {
+      code: 'mode-conflicts-type',
+      level: 'loud',
+      message: 'The ticket is marked AFK, but its type is HITL.',
+      detail: 'wayfinder:grilling (AFK — quick call)',
+      withDetail:
+        'The ticket is marked AFK, but its type is HITL: wayfinder:grilling (AFK — quick call).',
+      hint: 'Prototype and grilling tickets are HITL; only a research or task ticket runs AFK.',
+    },
+    {
+      code: 'type-missing',
+      level: 'loud',
+      message: 'The ticket has no type.',
+      detail: 'Type: discuss',
+      // The message names no detail: the type line rides in the entry's detail alone.
+      withDetail: 'The ticket has no type.',
+      hint: 'A ticket carries one wayfinder:<type> label (a Type: line on a local tracker): research, prototype, grilling or task.',
+    },
+    {
+      code: 'type-several',
+      level: 'loud',
+      message: 'The ticket has several types.',
+      detail: 'task, research',
+      withDetail: 'The ticket has several types: task, research.',
+      hint: 'A ticket carries exactly one type: one wayfinder:<type> label, or one Type: line locally.',
     },
     {
       code: 'unknown-status',

@@ -1,9 +1,9 @@
-import type { Blocker, Ticket, TicketType, WayfinderMap } from './model.ts'
+import type { Blocker, Ticket, WayfinderMap } from './model.ts'
 
 /**
  * What the Cockpit derives from a snapshot: the frontier and `next`, the order
  * of a map's tickets and of the maps, decided-of-total and finished, the
- * neighbourhood of a ticket, and HITL or AFK from the type.
+ * neighbourhood of a ticket, and HITL or AFK from the type and its note.
  *
  * Pure functions over the snapshot, applied by the extension host on every
  * render; nothing here is ever stored. The snapshot knows nothing about
@@ -14,18 +14,23 @@ import type { Blocker, Ticket, TicketType, WayfinderMap } from './model.ts'
 /** Who drives a ticket's session: a human in the loop, the agent alone, or either for a task ticket. */
 export type Mode = 'HITL' | 'AFK' | 'task'
 
-/** HITL or AFK from the type: research is AFK, prototype and grilling are HITL, a task ticket shows as task. */
-export const modeOf = (type: TicketType | null): Mode | null => {
-  switch (type) {
-    case 'research':
-      return 'AFK'
+/**
+ * HITL or AFK from the type and a local ticket's HITL note: no type gives no mode; prototype and
+ * grilling are HITL; a `HITL` note makes any ticket HITL; research is AFK; a task ticket is AFK
+ * with an `AFK` note, and shows as task otherwise. A note can take a ticket out of AFK, never put
+ * one in: `AFK` on a prototype or grilling ticket leaves it HITL.
+ */
+export const modeOf = (ticket: Pick<Ticket, 'type' | 'modeNote'>): Mode | null => {
+  if (ticket.type === null) return null
+  if (ticket.modeNote === 'HITL') return 'HITL'
+  switch (ticket.type) {
     case 'prototype':
     case 'grilling':
       return 'HITL'
+    case 'research':
+      return 'AFK'
     case 'task':
-      return 'task'
-    case null:
-      return null
+      return ticket.modeNote === 'AFK' ? 'AFK' : 'task'
   }
 }
 

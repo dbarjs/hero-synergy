@@ -262,14 +262,27 @@ describe('the neighbourhood of a ticket', () => {
   })
 })
 
-describe('HITL or AFK from the type', () => {
+describe('HITL or AFK from the type and the HITL note', () => {
   test.each([
-    ['research', 'AFK'],
-    ['prototype', 'HITL'],
-    ['grilling', 'HITL'],
-    ['task', 'task'],
-    [null, null],
-  ] as const)('%s is %s', (type, mode) => {
-    expect(modeOf(type)).toBe(mode)
+    // No note: the type alone.
+    ['research', null, 'AFK'],
+    ['prototype', null, 'HITL'],
+    ['grilling', null, 'HITL'],
+    ['task', null, 'task'],
+    [null, null, null],
+    // A HITL note makes any typed ticket HITL.
+    ['research', 'HITL', 'HITL'],
+    ['prototype', 'HITL', 'HITL'],
+    ['grilling', 'HITL', 'HITL'],
+    ['task', 'HITL', 'HITL'],
+    [null, 'HITL', null],
+    // An AFK note agrees with research, makes a task AFK, and never puts a HITL type in AFK.
+    ['research', 'AFK', 'AFK'],
+    ['prototype', 'AFK', 'HITL'],
+    ['grilling', 'AFK', 'HITL'],
+    ['task', 'AFK', 'AFK'],
+    [null, 'AFK', null],
+  ] as const)('%s with note %s is %s', (type, modeNote, mode) => {
+    expect(modeOf({ type, modeNote })).toBe(mode)
   })
 })

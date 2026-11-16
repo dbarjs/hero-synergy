@@ -1,4 +1,5 @@
 import type { TriageLabels } from '../scout/triage-labels.ts'
+import { modeOf } from '../snapshot/derive.ts'
 import type { Ticket } from '../snapshot/model.ts'
 import { type Raised, raise } from './health.ts'
 import type { Isolation } from './isolation.ts'
@@ -44,18 +45,31 @@ export const NO_BYPASS: BypassPolicy = {
 /**
  * Whether a ticket is AFK: marked ready for an agent whatever its type, or typed research or task.
  * A ticket marked for a human is never AFK, even when it is also marked ready for an agent: a
- * ticket marked for a person is never run unattended. A ticket is marked by the repo's triage
- * labels (`docs/agents/triage-labels.md` may rename them), or, on a local tracker, by its triage
- * role, which reads only the five default names. Any other ticket, one with no type included, is HITL.
+ * ticket marked for a person is never run unattended. A ticket is marked for a human by the repo's
+ * triage labels (`docs/agents/triage-labels.md` may rename them), or, on a local tracker, by its
+ * triage role, which reads only the five default names, or by a `HITL` note on its type line; it
+ * is marked ready for an agent by the label or the role. Any other ticket, one with no type
+ * included, is HITL.
+ *
+ * The type and note are read through `modeOf`, the Tree's mode chip. On a ticket with no triage
+ * mark, the chip's HITL keeps the prompts, and its AFK and its task both bypass: #155 runs a task
+ * ticket alone even when the tracker doesn't say who drives it. A mark for a human keeps the
+ * prompts whatever the chip says; a mark ready for an agent bypasses whatever the chip says, unless
+ * the ticket also carries a `HITL` note.
  */
 export function isAfkTicket(
-  ticket: Pick<Ticket, 'type' | 'labels' | 'role'>,
+  ticket: Pick<Ticket, 'type' | 'modeNote' | 'labels' | 'role'>,
   triage: TriageLabels,
 ): boolean {
-  if (ticket.role === 'ready-for-human' || ticket.labels.includes(triage.readyForHuman))
+  if (
+    ticket.modeNote === 'HITL' ||
+    ticket.role === 'ready-for-human' ||
+    ticket.labels.includes(triage.readyForHuman)
+  )
     return false
   if (ticket.role === 'ready-for-agent' || ticket.labels.includes(triage.readyForAgent)) return true
-  return ticket.type === 'research' || ticket.type === 'task'
+  const mode = modeOf(ticket)
+  return mode === 'AFK' || mode === 'task'
 }
 
 /** What an Action is, for the decision: a ticket session, a plain session, or not a session at all. */

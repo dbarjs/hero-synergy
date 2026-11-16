@@ -8,9 +8,12 @@ import {
   statusClaims,
   triageRole,
 } from '../../fixtures/scratch-mirror/tools/truth.ts'
+import { isAfkTicket } from '../claude/bypass.ts'
 import { FileSystem } from '../file-system.ts'
+import { modeOf } from '../snapshot/derive.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
 import { scoutColumns, truthColumns } from './readings.ts'
+import { DEFAULT_TRIAGE_LABELS } from './triage-labels.ts'
 
 const ROOT = '/home/ana/mirror'
 const repo = mirrorRepo(ROOT)
@@ -183,4 +186,26 @@ describe('the local reader on the scratch mirror', () => {
       }
     }),
   )
+
+  it.effect('never runs the 15 HITL-noted open tickets of the open maps AFK', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* readLocalTracker(ROOT).pipe(Effect.provide(files), Effect.orDie)
+      const noted = snapshot.maps
+        .flatMap((map) => map.tickets)
+        .filter((ticket) => ticket.state === 'open' && ticket.modeNote === 'HITL')
+      expect(noted).toHaveLength(15)
+      for (const ticket of noted) {
+        expect(modeOf(ticket), ticket.title).toBe('HITL')
+        expect(isAfkTicket(ticket, DEFAULT_TRIAGE_LABELS), ticket.title).toBe(false)
+      }
+    }),
+  )
+
+  it('raises no mode-conflicts-type and no type-several on any file', () => {
+    const codes = efforts
+      .flatMap((effort) => [...(effort.map?.tickets ?? []), ...effort.unmapped])
+      .flatMap((ticket) => ticket.warnings.map((warning) => warning.code))
+    expect(codes.filter((code) => code === 'mode-conflicts-type')).toEqual([])
+    expect(codes.filter((code) => code === 'type-several')).toEqual([])
+  })
 })

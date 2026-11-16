@@ -3676,6 +3676,46 @@ describe('the Cockpit controller bypassing permissions', () => {
     },
   )
 
+  it.effect(
+    "reads a local ticket's HITL note: a HITL-noted task keeps its prompts, an AFK-noted one bypasses",
+    () => {
+      const setup = bypassing('afkTickets', DEV_CONTAINER)
+      const issues = `${ROOT}/.scratch/cockpit-colors/issues`
+      return withCockpit(
+        {
+          ...setup,
+          files: {
+            ...setup.files,
+            // Marked ready for an agent too: the HITL note still wins.
+            [`${issues}/03-contrast-audit.md`]:
+              '# Contrast audit\n\nType: task (HITL — a person reads the contrast)\nStatus: ready-for-agent\n\n## Question\n\nMeasure the contrast.\n',
+            [`${issues}/01-palette.md`]:
+              '# Palette\n\nLabel: wayfinder:task (AFK for the hex codes; HITL for the final pick)\n\n## Question\n\nWhich five colors?\n',
+          },
+        },
+        ({ cockpit, published, terminals }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(ticketRowOf(published.at(-1), AUDIT)?.mode).toBe('HITL')
+            expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+            expect(ticketRowOf(published.at(-1), PALETTE)?.mode).toBe('AFK')
+            expect(commandOf(published, PALETTE)).toMatch(
+              /^claude --permission-mode bypassPermissions -n '#1 Palette' /,
+            )
+            yield* cockpit.receive({ type: 'launch', key: AUDIT })
+            yield* cockpit.receive({ type: 'launch', key: PALETTE })
+            const [audit, palette] = terminals.opened
+            expect(audit?.shellArgs).not.toContain('--permission-mode')
+            expect(palette?.shellArgs.slice(0, 2)).toEqual([
+              '--permission-mode',
+              'bypassPermissions',
+            ])
+          }),
+      )
+    },
+  )
+
   it.effect('keeps plain Actions interactive under afkTickets', () =>
     withCockpit(bypassing('afkTickets', DEV_CONTAINER), ({ cockpit, published, terminals }) =>
       Effect.gen(function* () {

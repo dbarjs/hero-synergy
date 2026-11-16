@@ -3,7 +3,14 @@ import { Effect } from 'effect'
 
 import { fixtureRepo as seed } from '../../fixtures/local-tracker/seed.ts'
 import { FileSystem } from '../file-system.ts'
-import { frontierOf, isFinished, neighbourhoodOf, nextOf, placeOf } from '../snapshot/derive.ts'
+import {
+  frontierOf,
+  isFinished,
+  modeOf,
+  neighbourhoodOf,
+  nextOf,
+  placeOf,
+} from '../snapshot/derive.ts'
 import { driftEntryOf } from '../snapshot/drift-table.ts'
 import { decodeSnapshot, encodeSnapshot, type Snapshot, type Ticket } from '../snapshot/model.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
@@ -173,7 +180,7 @@ describe('readLocalTracker on the fixture repo', () => {
   )
 
   it.effect(
-    "reads each ticket's triage role and Status line, on a map ticket or an unmapped one, and no HITL note yet",
+    "reads each ticket's triage role and Status line, on a map ticket or an unmapped one, and no HITL note from a plain Type line",
     () =>
       Effect.gen(function* () {
         const snapshot = yield* read(fixtureRepo())
@@ -767,6 +774,165 @@ describe("a local ticket's state, claim and triage role", () => {
       const map = snapshot.maps[0]!
       expect(nextOf(map)?.number).toBe(1)
       expect(map.tickets.map(placeOf)).toEqual(['frontier', 'blocked'])
+    }),
+  )
+})
+
+describe("a local ticket's type and HITL note", () => {
+  /** One map, `seeds`, holding issue files numbered in order from 01, each with the given header lines. */
+  const seeds = (...headers: string[]) =>
+    Object.fromEntries([
+      ['/repo/.scratch/seeds/map.md', mapBody()],
+      ...headers.map((header, index) => [
+        `/repo/.scratch/seeds/issues/0${index + 1}-step.md`,
+        `# Task: Step ${index + 1}\n\nStatus: open\n${header}\n\n## Question\n\nq\n`,
+      ]),
+    ])
+  const ticketsOf = (...headers: string[]) =>
+    read(seeds(...headers), '/repo').pipe(Effect.map((snapshot) => snapshot.maps[0]!.tickets))
+  const typeDrift = (ticket: Ticket) =>
+    ticket.warnings.filter((warning) =>
+      [
+        'type-missing',
+        'type-several',
+        'type-as-label',
+        'mode-conflicts-type',
+        'unknown-wayfinder-labels',
+      ].includes(warning.code),
+    )
+
+  it.effect(
+    'reads the type from Type, Label and Labels lines, noting every form but the template’s',
+    () =>
+      Effect.gen(function* () {
+        const tickets = yield* ticketsOf(
+          'Type: research',
+          'Label: wayfinder:grilling',
+          'Labels: wayfinder:prototype',
+          'Type: wayfinder:task (AFK)',
+          '**Type:** grilling',
+        )
+        expect(tickets.map((ticket) => [ticket.type, ticket.modeNote, typeDrift(ticket)])).toEqual([
+          ['research', null, []],
+          ['grilling', null, [{ code: 'type-as-label', detail: 'wayfinder:grilling' }]],
+          ['prototype', null, [{ code: 'type-as-label', detail: 'wayfinder:prototype' }]],
+          ['task', 'AFK', [{ code: 'type-as-label', detail: 'wayfinder:task (AFK)' }]],
+          ['grilling', null, []],
+        ])
+      }),
+  )
+
+  it.effect('gives one Labels line both the type and the triage role', () =>
+    Effect.gen(function* () {
+      const [ticket] = yield* ticketsOf('Labels: wayfinder:task, ready-for-agent')
+      expect(ticket).toMatchObject({
+        type: 'task',
+        role: 'ready-for-agent',
+        modeNote: null,
+        labels: ['wayfinder:task', 'ready-for-agent'],
+      })
+      expect(typeDrift(ticket!)).toEqual([{ code: 'type-as-label', detail: 'wayfinder:task' }])
+    }),
+  )
+
+  it.effect('never reads the H1 as a type, and keeps the title verbatim', () =>
+    Effect.gen(function* () {
+      const [untyped, typed] = yield* ticketsOf('Assignee: —', 'Type: research')
+      expect([untyped!.title, untyped!.type]).toEqual(['Task: Step 1', null])
+      expect(typeDrift(untyped!)).toEqual([{ code: 'type-missing' }])
+      expect([typed!.title, typed!.type]).toEqual(['Task: Step 2', 'research'])
+    }),
+  )
+
+  it.effect('never makes data of a type word or a number in the parenthesis’s prose', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        'Type: task',
+        'Label: wayfinder:task (AFK — ready once 01 closes; the grilling in 03 can wait)',
+        'Labels: wayfinder:research (HITL, wayfinder:grilling after 01), ready-for-agent',
+      )
+      const [, noted, labelled] = tickets
+      expect([noted!.type, noted!.modeNote, noted!.blockedBy]).toEqual(['task', 'AFK', []])
+      expect([labelled!.type, labelled!.modeNote, labelled!.blockedBy]).toEqual([
+        'research',
+        'HITL',
+        [],
+      ])
+      for (const ticket of tickets) {
+        expect(codesOf(ticket), ticket.title).not.toContain('type-several')
+        expect(placeOf(ticket), ticket.title).toBe('frontier')
+      }
+    }),
+  )
+
+  it.effect('reads no type from lines that name two, and says which', () =>
+    Effect.gen(function* () {
+      const [ticket] = yield* ticketsOf('Type: task\nLabels: wayfinder:research, ready-for-agent')
+      expect(ticket!.type).toBeNull()
+      expect(typeDrift(ticket!)).toEqual([
+        { code: 'type-several', detail: 'task, research' },
+        { code: 'type-as-label', detail: 'wayfinder:research' },
+      ])
+      expect(driftEntryOf(typeDrift(ticket!)[0]!).level).toBe('loud')
+    }),
+  )
+
+  it.effect(
+    'reads the leading word of the type’s parenthesis as the HITL note, the first source’s winning',
+    () =>
+      Effect.gen(function* () {
+        const tickets = yield* ticketsOf(
+          'Type: task (HITL — a member signs it off)',
+          'Type: research (AFK)',
+          'Label: wayfinder:task (AFK for the weight; HITL at the counter)',
+          'Type: task (a member does the HITL part)',
+          'Labels: wayfinder:task (HITL)\nLabel: wayfinder:task (AFK)',
+        )
+        expect(tickets.map((ticket) => ticket.modeNote)).toEqual([
+          'HITL',
+          'AFK',
+          'AFK',
+          null,
+          'AFK',
+        ])
+      }),
+  )
+
+  it.effect('keeps a prototype or grilling ticket HITL under an AFK note, loudly', () =>
+    Effect.gen(function* () {
+      const [grilling, prototype] = yield* ticketsOf(
+        'Type: grilling (AFK)',
+        'Label: wayfinder:prototype (AFK — a quick sketch)',
+      )
+      expect([grilling!.type, grilling!.modeNote, modeOf(grilling!)]).toEqual([
+        'grilling',
+        'AFK',
+        'HITL',
+      ])
+      expect(typeDrift(grilling!)).toEqual([
+        { code: 'mode-conflicts-type', detail: 'grilling (AFK)' },
+      ])
+      expect(modeOf(prototype!)).toBe('HITL')
+      expect(typeDrift(prototype!)).toEqual([
+        { code: 'type-as-label', detail: 'wayfinder:prototype (AFK — a quick sketch)' },
+        { code: 'mode-conflicts-type', detail: 'wayfinder:prototype (AFK — a quick sketch)' },
+      ])
+    }),
+  )
+
+  it.effect('raises unknown-wayfinder-labels on the ticket, and none on the snapshot', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        seeds('Labels: wayfinder:task, wayfinder:blocked', 'Label: wayfinder:map'),
+        '/repo',
+      )
+      const [labelled, mapLabelled] = snapshot.maps[0]!.tickets
+      expect(snapshot.warnings).toEqual([])
+      expect(typeDrift(labelled!)).toEqual([
+        { code: 'type-as-label', detail: 'wayfinder:task' },
+        { code: 'unknown-wayfinder-labels', detail: 'wayfinder:blocked' },
+      ])
+      expect(typeDrift(mapLabelled!)).toEqual([{ code: 'type-missing' }])
     }),
   )
 })

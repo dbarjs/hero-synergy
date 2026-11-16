@@ -2,6 +2,7 @@ import { type HeaderLine, headerValue, readHeaderLines } from './header-lines.ts
 import { firstH1, lines, sections } from './markdown.ts'
 import type { TicketType } from './model.ts'
 import { type ReferenceLine, readReferenceLine } from './reference-line.ts'
+import { isTicketType } from './ticket-type.ts'
 
 /** A GitHub `Blocked by:` text line: the numbers it holds and the tokens that are not numbers. */
 export interface BlockersLine {
@@ -48,7 +49,6 @@ export interface TicketBody extends TicketLines {
   readonly answer: string | null
 }
 
-const TYPES: ReadonlyArray<TicketType> = ['research', 'prototype', 'grilling', 'task']
 const EMPTY_BLOCKERS = new Set(['', '[]', 'none', '-', '—'])
 
 export function readTicketBody(body: string): TicketBody {
@@ -88,9 +88,10 @@ export function readTicketBody(body: string): TicketBody {
 
 /**
  * A local ticket's lines, read from its header lines, where a bold key counts too. Its
- * `Blocked by:` and `Blocks:` values are read by the local item grammar, not GitHub's text fallback.
+ * `Blocked by:` and `Blocks:` values are read by the local item grammar, not GitHub's text fallback;
+ * its type and HITL note by `readTicketType`, from `Type:`, `Label:` and `Labels:`.
  */
-export interface LocalTicketLines extends Omit<TicketLines, 'blockedBy'> {
+export interface LocalTicketLines extends Omit<TicketLines, 'blockedBy' | 'type'> {
   readonly blockedBy: ReferenceLine | null
   readonly blocks: ReferenceLine | null
 }
@@ -99,19 +100,18 @@ export interface LocalTicketLines extends Omit<TicketLines, 'blockedBy'> {
 export function headerTicketLines(header: ReadonlyArray<HeaderLine>): LocalTicketLines {
   const blockedBy = headerValue(header, 'blocked by')
   const blocks = headerValue(header, 'blocks')
-  const type = headerValue(header, 'type')
   const labels = headerValue(header, 'labels')
   return {
     blockedBy: blockedBy === null ? null : readReferenceLine(blockedBy),
     blocks: blocks === null ? null : readReferenceLine(blocks),
-    type: type === null || type === '' ? null : readType(type, `Type: ${type}`),
     labels: labels === null ? null : readLabels(labels),
   }
 }
 
+/** GitHub's `Type:` text fallback: the whole value, in any case, must be one of the four types. */
 function readType(value: string, raw: string): TypeLine {
   const name = value.toLowerCase()
-  return { value: TYPES.find((known) => known === name) ?? null, raw }
+  return { value: isTicketType(name) ? name : null, raw }
 }
 
 function readBlockers(value: string): BlockersLine {

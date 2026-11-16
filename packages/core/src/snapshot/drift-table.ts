@@ -93,12 +93,22 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
   'type-missing': {
     level: 'loud',
     message: () => 'The ticket has no type.',
-    hint: 'A ticket carries one wayfinder:<type> label: research, prototype, grilling or task.',
+    hint: 'A ticket carries one wayfinder:<type> label (a Type: line on a local tracker): research, prototype, grilling or task.',
   },
   'type-several': {
     level: 'loud',
     message: (detail) => `The ticket has several types${quoted(detail)}.`,
-    hint: 'A ticket carries exactly one wayfinder:<type> label.',
+    hint: 'A ticket carries exactly one type: one wayfinder:<type> label, or one Type: line locally.',
+  },
+  'type-as-label': {
+    level: 'quiet',
+    message: (detail) => `The ticket gives its type as a label${quoted(detail)}.`,
+    hint: 'A local ticket names its type on a "Type: <type>" line.',
+  },
+  'mode-conflicts-type': {
+    level: 'loud',
+    message: (detail) => `The ticket is marked AFK, but its type is HITL${quoted(detail)}.`,
+    hint: 'Prototype and grilling tickets are HITL; only a research or task ticket runs AFK.',
   },
   'blockers-as-slugs': {
     level: 'loud',
