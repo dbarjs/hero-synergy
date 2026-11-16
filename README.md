@@ -79,7 +79,7 @@ flowchart TD
 - **Status** comes from two places. Claude Code's **registry** says whether each session is alive and busy, idle or waiting, whoever started it. The **status plugin**, a hooks plugin the Cockpit passes to the sessions it starts, adds what the registry can't: that a session failed, and why it ended.
 - The tracker alone says whether a ticket is claimed, open or blocked; the session side alone says whether it is alive. Neither overrides the other, and the Cockpit shows where they disagree.
 
-The vocabulary is in [`CONTEXT.md`](CONTEXT.md), the decisions in [`docs/adr/`](docs/adr), and every upstream the Cockpit relies on, with its floor and tested ceiling, in [`docs/upstream.md`](docs/upstream.md).
+The vocabulary is in [`GLOSSARY.md`](GLOSSARY.md), the decisions in [`docs/adr/`](docs/adr), and every upstream the Cockpit relies on, with its floor and tested ceiling, in [`docs/upstream.md`](docs/upstream.md).
 
 ## Built with its own maps
 

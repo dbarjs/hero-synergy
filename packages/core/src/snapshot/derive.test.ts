@@ -39,6 +39,7 @@ const ticket = (number: number, overrides: Partial<Ticket> = {}): Ticket => ({
   ref: ref(number),
   state: 'open',
   type: 'grilling',
+  labels: [],
   claim: null,
   blockedBy: [],
   body: '## Question\n\nWhat?',

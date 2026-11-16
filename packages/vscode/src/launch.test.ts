@@ -29,7 +29,9 @@ describe('session state', () => {
   it('allows a launch with no session or an ended one, never while starting or live', () => {
     expect(canLaunchFrom(undefined)).toBe(true)
     expect(canLaunchFrom(ended)).toBe(true)
-    expect(canLaunchFrom({ ...ended, kind: 'starting', terminal: null, hint: false })).toBe(false)
+    expect(
+      canLaunchFrom({ ...ended, kind: 'starting', terminal: null, hint: false, bypassed: false }),
+    ).toBe(false)
     expect(
       canLaunchFrom({
         ...ended,

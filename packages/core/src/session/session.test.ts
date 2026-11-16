@@ -5,6 +5,7 @@ import {
   afterReload,
   describeExit,
   type Listed,
+  BYPASS_NO_STATUS_HINT,
   NO_STATUS_HINT,
   needsYou,
   reduceSession,
@@ -293,6 +294,30 @@ describe('why a session ended, from the terminal', () => {
 })
 
 describe('what the Tree is told', () => {
+  it('names the bypass dialog too in the hint of a bypassed launch, and only then', () => {
+    const bypassed: SessionInput = { type: 'launched', at: 0, bypassed: true }
+    expect(sessionView(run([bypassed, terminal(4)]))).toEqual({ kind: 'starting', hint: null })
+    expect(sessionView(run([bypassed, terminal(4), quiet(4)]))).toEqual({
+      kind: 'starting',
+      hint: BYPASS_NO_STATUS_HINT,
+    })
+    expect(BYPASS_NO_STATUS_HINT).toBe(
+      'no status yet, the session may be waiting at the trust or bypass-permissions dialog, open the terminal',
+    )
+    // A plain launch keeps today's hint, and a relaunch without the flag drops the bypass one.
+    const plain: SessionInput = { type: 'launched', at: 0, bypassed: false }
+    expect(sessionView(run([...launchedInTerminal, quiet(4)]))).toMatchObject({
+      hint: NO_STATUS_HINT,
+    })
+    expect(
+      sessionView(run([bypassed, terminal(4), closed(4, 'user'), plain, terminal(5), quiet(5)])),
+    ).toMatchObject({ hint: NO_STATUS_HINT })
+    // An adopted terminal after a reload is not known to be bypassed.
+    expect(sessionView(run([{ type: 'adopt', terminal: 7 }, quiet(7)]))).toMatchObject({
+      hint: NO_STATUS_HINT,
+    })
+  })
+
   it('shows none, starting with and without the hint, live with its word, and ended with its age', () => {
     expect(sessionView(undefined)).toEqual({ kind: 'none' })
     expect(sessionView(run(launchedInTerminal))).toEqual({ kind: 'starting', hint: null })
