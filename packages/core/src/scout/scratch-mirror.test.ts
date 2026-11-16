@@ -2,6 +2,12 @@ import { describe, expect, it } from '@effect/vitest'
 import { Effect } from 'effect'
 
 import { mirrorRepo, mirrorTruth, type FileTruth } from '../../fixtures/scratch-mirror/seed.ts'
+import {
+  assignee,
+  headerLines,
+  statusClaims,
+  triageRole,
+} from '../../fixtures/scratch-mirror/tools/truth.ts'
 import { FileSystem } from '../file-system.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
 import { scoutColumns, truthColumns } from './readings.ts'
@@ -101,6 +107,41 @@ describe('the scratch mirror', () => {
       (ticket) => ticket.reading.state === 'closed' && ticket.reading.resolution === null,
     )
     expect(closedWithout).toHaveLength(2)
+  })
+
+  it('reads every ticket as ticket 135 does, from its own Status, Assignee and Labels lines', () => {
+    // The Status line vocabulary ticket 135 decided; any other first word reads open.
+    const closing = ['closed', 'done', 'resolved', 'wontfix']
+    const opening = [
+      'open',
+      'claimed',
+      'needs-triage',
+      'needs-info',
+      'ready-for-agent',
+      'ready-for-human',
+    ]
+    const known = [...closing, ...opening]
+    const unknown: string[] = []
+    const closedButNamed: string[] = []
+    for (const ticket of tickets) {
+      const header = headerLines(body(ticket.path))
+      const status = (header.get('status') ?? '').replaceAll('*', '').trim()
+      const first = /^([a-z-]+)/i.exec(status)?.[1]?.toLowerCase() ?? ''
+      if (header.has('status') && !known.includes(first)) unknown.push(ticket.path)
+      const closed = closing.includes(first)
+      const named = assignee(header.get('assignee'))
+      if (closed && named !== null) closedButNamed.push(ticket.path)
+      const state = closed ? 'closed' : named !== null || statusClaims(header) ? 'claimed' : 'open'
+      expect({ state, role: triageRole(header), assignee: named }, ticket.path).toEqual({
+        state: ticket.reading.state,
+        role: ticket.reading.role,
+        assignee: ticket.reading.assignee,
+      })
+    }
+    // The line with a DONE half and an OPEN half: open, and claimed through its Assignee line.
+    expect(unknown).toEqual(['.scratch/effort-03/issues/06-ticket.md'])
+    // A closed ticket keeps its Assignee as history and is never claimed.
+    expect(closedButNamed).toHaveLength(185)
   })
 
   it('carries the disagreements ticket 134 listed, on 11 files', () => {

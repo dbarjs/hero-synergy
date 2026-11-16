@@ -13,12 +13,14 @@
  *
  * - State (tickets 134 and 135): a closed ticket is closed and never claimed; an open one is
  *   claimed when its `Assignee:` line names someone, its Status line leads with `claimed`, or
- *   `claimed` is the first word after `open` and a dash or parenthesis. A map is closed only
- *   when its Status line leads with `DONE` or `destination reached` (ticket 136). There is no
- *   "in progress".
- * - Type, AFK or HITL, blockers and membership (ticket 137): header lines before the first H2;
+ *   `claimed` is the first word after `open` and a dash or parenthesis. The triage role is read
+ *   the same two places, else from a `Labels:` item. A map is closed only when its Status line
+ *   leads with `DONE` or `destination reached` (ticket 136). There is no "in progress".
+ * - Type, AFK or HITL, blockers, map and parent (ticket 137): header lines before the first H2;
  *   type from `Type:`, `Label:` and `Labels:`, never the H1, and none when they disagree;
  *   each comma-separated `Blocked by:` or `Blocks:` item names the ticket at its start.
+ *   Membership derives from them (ticket 139): a ticket with `map` set and `parent` null is its
+ *   map's.
  * - Resolution (ticket 138): `## Answer`, else the last Resolution heading or bold label,
  *   else, on a closed ticket only, the last entry under the last `## Comments`.
  */
@@ -90,12 +92,23 @@ export function headerLines(body: string): Map<string, string> {
 const plainStatus = (header: Map<string, string>): string =>
   (header.get('status') ?? '').replaceAll('*', '').trim()
 
+/** The Status line's first word, its letters and hyphens, lower-cased (ticket 135). */
+const firstWord = (status: string): string | undefined =>
+  /^([a-z-]+)/i.exec(status)?.[1]?.toLowerCase()
+
+/**
+ * The one more word read after `open` (ticket 135): the first word after a dash (`—`, `–`,
+ * ` - `) or an opening parenthesis, lower-cased. A bare hyphen is not a dash.
+ */
+const wordAfterOpen = (status: string): string | undefined =>
+  /^open\s*(?:—|–| - |\()\s*([a-z-]+)/i.exec(status)?.[1]?.toLowerCase()
+
 /** The triage role a Status line or a `Labels:` line names. */
 export function triageRole(header: Map<string, string>): TriageRole | null {
   const status = plainStatus(header)
-  const lead = /^([a-z-]+)/i.exec(status)?.[1]?.toLowerCase()
+  const lead = firstWord(status)
   if (lead !== undefined && ROLES.includes(lead)) return lead as TriageRole
-  const after = /^open\s*(?:—|–|-|\()\s*([a-z-]+)/i.exec(status)?.[1]?.toLowerCase()
+  const after = wordAfterOpen(status)
   if (after !== undefined && ROLES.includes(after)) return after as TriageRole
   for (const label of (header.get('labels') ?? '').split(',')) {
     const word = label.trim().toLowerCase()
@@ -109,7 +122,8 @@ export function triageRole(header: Map<string, string>): TriageRole | null {
  * one word read after `open` and a dash or parenthesis. A claim deeper in the annotation is not read.
  */
 export function statusClaims(header: Map<string, string>): boolean {
-  return /^(?:claimed\b|open\s*(?:—|–| - |\()\s*claimed\b)/i.test(plainStatus(header))
+  const status = plainStatus(header)
+  return firstWord(status) === 'claimed' || wordAfterOpen(status) === 'claimed'
 }
 
 /** Who the `Assignee:` line names, before any parenthesis or dash; null for none. */

@@ -50,6 +50,14 @@ describe('triageRole', () => {
     expect(triageRole(header('Labels: wayfinder:task, ready-for-agent'))).toBe('ready-for-agent')
     expect(triageRole(header('Status: closed (resolved)'))).toBeNull()
   })
+
+  it('reads the word after `open` past every dash ticket 135 names, but not a bare hyphen', () => {
+    expect(triageRole(header('Status: open – needs-info'))).toBe('needs-info')
+    expect(triageRole(header('Status: open - needs-info'))).toBe('needs-info')
+    expect(triageRole(header('Status: **OPEN** — Ready-For-Agent'))).toBe('ready-for-agent')
+    expect(triageRole(header('Status: open-needs-info'))).toBeNull()
+    expect(triageRole(header('Status: open -needs-info'))).toBeNull()
+  })
 })
 
 describe('statusClaims', () => {
@@ -57,6 +65,13 @@ describe('statusClaims', () => {
     expect(statusClaims(header('Status: claimed'))).toBe(true)
     expect(statusClaims(header('Status: open — claimed 2026-01-02 (HITL: live)'))).toBe(true)
     expect(statusClaims(header('Status: open (claimed by the agent)'))).toBe(true)
+    expect(statusClaims(header('Status: open – claimed 2026-01-02'))).toBe(true)
+    expect(statusClaims(header('Status: open - claimed 2026-01-02'))).toBe(true)
+  })
+
+  it('ignores case and bold on the key or the value', () => {
+    expect(statusClaims(header('**Status:** **Claimed**'))).toBe(true)
+    expect(statusClaims(header('**Status**: OPEN — CLAIMED 2026-01-02'))).toBe(true)
   })
 
   it('reads no claim deeper in the annotation, nor on a closed line', () => {
@@ -65,6 +80,13 @@ describe('statusClaims', () => {
       false,
     )
     expect(statusClaims(header('Status: open'))).toBe(false)
+  })
+
+  it('reads a whole word of letters and hyphens, and no claim after a bare hyphen', () => {
+    expect(statusClaims(header('Status: claimed-by-ana'))).toBe(false)
+    expect(statusClaims(header('Status: open — claimed-ish'))).toBe(false)
+    expect(statusClaims(header('Status: open-claimed'))).toBe(false)
+    expect(statusClaims(header('Status: open -claimed'))).toBe(false)
   })
 })
 
