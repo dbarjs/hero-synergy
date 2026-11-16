@@ -241,7 +241,7 @@ describe('a local tracker', () => {
       effort(
         3,
         'invoice-numbers',
-        '# Invoice numbers\n\nType: task\nLabels: wayfinder:task, `ready-for-human`\nBlocked by: 02, 01\n\n## Question\n\nOne sequence per tenant?\n',
+        '# Invoice numbers\n\nType: task\nLabels: billing, `ready-for-human`\nBlocked by: 02, 01\n\n## Question\n\nOne sequence per tenant?\n',
       ),
     ],
   }
@@ -270,7 +270,7 @@ describe('a local tracker', () => {
   })
 
   test('takes the labels from a Labels line, and none without one', () => {
-    expect(tickets.get(3)?.labels).toEqual(['wayfinder:task', 'ready-for-human'])
+    expect(tickets.get(3)?.labels).toEqual(['billing', 'ready-for-human'])
     expect(tickets.get(1)?.labels).toEqual([])
     expect(tickets.get(2)?.labels).toEqual([])
   })

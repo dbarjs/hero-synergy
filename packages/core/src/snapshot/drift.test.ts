@@ -282,6 +282,31 @@ describe('the drift catalogue', () => {
     ])
   })
 
+  test('type-as-label: a local Label line gives the type and its note, quietly, the value in the detail', () => {
+    const snapshot = read('type-as-label')
+    const labelled = ticket(snapshot, 1)
+    expect([labelled.type, labelled.modeNote]).toEqual(['research', 'AFK'])
+    expect(labelled.warnings).toEqual([
+      { code: 'type-as-label', detail: 'wayfinder:research (AFK)' },
+    ])
+    // The template's plain Type line raises nothing.
+    expect(ticket(snapshot, 2).type).toBe('grilling')
+    expect(codesOf(ticket(snapshot, 2))).toEqual([])
+  })
+
+  test('mode-conflicts-type: AFK on a grilling ticket leaves it grilling, loudly, the value in the detail', () => {
+    const snapshot = read('mode-conflicts-type')
+    const marked = ticket(snapshot, 2)
+    expect([marked.type, marked.modeNote]).toEqual(['grilling', 'AFK'])
+    expect(marked.warnings).toEqual([
+      {
+        code: 'mode-conflicts-type',
+        detail: 'grilling (AFK — the policy is in the ledger notes)',
+      },
+    ])
+    expect(codesOf(ticket(snapshot, 1))).toEqual([])
+  })
+
   test('claim-legacy-label: the label is a claim by nobody', () => {
     const snapshot = read('claim-legacy-label')
     expect(ticket(snapshot, 2).claim).toEqual({ by: [] })

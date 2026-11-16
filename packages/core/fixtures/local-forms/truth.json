@@ -2648,5 +2648,22 @@
       "blocks": [],
       "resolution": null
     }
+  },
+  {
+    "path": ".scratch/types/issues/13-lending-13.md",
+    "form": "`Label: wayfinder:<type> (AFK <prose>; HITL <prose>)`: both modes in one parenthesis, the leading one counts",
+    "kind": "ticket",
+    "reading": {
+      "state": "open",
+      "role": null,
+      "assignee": null,
+      "type": "task",
+      "mode": "AFK",
+      "map": null,
+      "parent": null,
+      "blockedBy": [],
+      "blocks": [],
+      "resolution": null
+    }
   }
 ]

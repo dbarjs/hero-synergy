@@ -89,6 +89,40 @@ describe('the Tree view model of the fixture workspace', () => {
     ])
   })
 
+  it('reads the HITL note into the mode: a HITL-noted task is HITL, an AFK-noted one AFK, a grilling one HITL whatever its note', async () => {
+    const noted = async (contrast: string) => {
+      const issues = `${ROOT}/.scratch/cockpit-colors/issues`
+      const files = {
+        ...workspaceFiles(ROOT),
+        [`${issues}/03-contrast-audit.md`]: `# Contrast audit\n\nType: ${contrast}\n\n## Question\n\nMeasure it.\n`,
+        [`${issues}/02-dark-mode.md`]:
+          '# Dark mode\n\nType: research (HITL — a person judges the themes)\nBlocked by: 01\n\n## Question\n\nFollow the theme?\n',
+        [`${issues}/04-row-density.md`]:
+          '# Row density\n\nType: grilling (AFK)\nStatus: claimed\n\n## Question\n\nHow dense?\n',
+      }
+      return Effect.runPromise(
+        readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+      )
+    }
+
+    const hitl = await noted('task (HITL — a person reads the contrast)')
+    const { maps } = mapsOf(buildViewModel(hitl, new Set()))
+    expect(maps[0]?.tickets.map(({ number, type, mode }) => [number, type, mode])).toEqual([
+      [4, 'grilling', 'HITL'],
+      [1, 'prototype', 'HITL'],
+      [3, 'task', 'HITL'],
+      [2, 'research', 'HITL'],
+    ])
+    const detail = detailOf(hitl, 'map:3:ticket:3')
+    expect(detail).toMatchObject({ kind: 'ticket', type: 'task', mode: 'HITL' })
+
+    const afk = await noted('task (AFK)')
+    const task = mapsOf(buildViewModel(afk, new Set())).maps[0]?.tickets.find(
+      (ticket) => ticket.number === 3,
+    )
+    expect([task?.type, task?.mode]).toEqual(['task', 'AFK'])
+  })
+
   it('carries the Fog and the Decisions with their gists', async () => {
     const snapshot = await fixtureSnapshot()
     const { maps } = mapsOf(buildViewModel(snapshot, new Set()))

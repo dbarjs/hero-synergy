@@ -5,6 +5,7 @@ import { firstH1 } from './markdown.ts'
 import type {
   Blocker,
   Claim,
+  ModeNote,
   Outcome,
   Ref,
   Resolution,
@@ -19,6 +20,7 @@ import type {
 import { type ReferenceItem, type ReferenceLine, resolveTarget } from './reference-line.ts'
 import { headerTicketLines, readTicketBody } from './ticket-body.ts'
 import { readTicketStatus } from './ticket-status.ts'
+import { isTicketType, KNOWN_LABELS, readTicketType } from './ticket-type.ts'
 import type { DriftWarning } from './warnings.ts'
 
 /**
@@ -71,17 +73,6 @@ export interface Collected {
   readonly tickets: ReadonlyArray<CollectedTicket>
 }
 
-const KNOWN_LABELS: ReadonlySet<string> = new Set([
-  'wayfinder:map',
-  'wayfinder:research',
-  'wayfinder:prototype',
-  'wayfinder:grilling',
-  'wayfinder:task',
-  'wayfinder:claimed',
-])
-const TYPES: ReadonlyArray<TicketType> = ['research', 'prototype', 'grilling', 'task']
-const isType = (value: string): value is TicketType =>
-  (TYPES as ReadonlyArray<string>).includes(value)
 const unknownLabels = (labels: ReadonlyArray<string>): ReadonlyArray<string> =>
   labels.filter((label) => label.startsWith('wayfinder:') && !KNOWN_LABELS.has(label))
 
@@ -92,6 +83,8 @@ interface Draft {
   readonly ref: Ref
   readonly state: TicketState
   readonly type: TicketType | null
+  /** Local: the leading AFK or HITL in the type line's parenthesis; null on GitHub. */
+  readonly modeNote: ModeNote | null
   readonly labels: ReadonlyArray<string>
   readonly claim: Claim | null
   /** Local: the triage role; null on GitHub. */
@@ -233,8 +226,7 @@ export function readSnapshot(collected: Collected): Snapshot {
       ref: draft.ref,
       state: draft.state,
       type: draft.type,
-      // Null until the local type rules fill it; GitHub never does.
-      modeNote: null,
+      modeNote: draft.modeNote,
       labels: draft.labels,
       claim: draft.claim,
       role: draft.role,
@@ -367,31 +359,32 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   }
 
   let type: TicketType | null = null
+  let modeNote: ModeNote | null = null
   if (onGitHub) {
     const fromLabels = ticket.labels
       .filter((label) => label.startsWith('wayfinder:'))
       .map((label) => label.slice('wayfinder:'.length))
-      .filter(isType)
+      .filter(isTicketType)
     if (fromLabels.length > 1) {
       warnings.push({ code: 'type-several', detail: fromLabels.join(', ') })
     } else if (fromLabels[0] !== undefined) {
       type = fromLabels[0]
-    } else if (lines.type?.value) {
-      type = lines.type.value
-      warnings.push({ code: 'type-as-line', detail: lines.type.raw })
+    } else if (body.type?.value) {
+      // GitHub's text fallback: a `Type:` line anywhere before the first section.
+      type = body.type.value
+      warnings.push({ code: 'type-as-line', detail: body.type.raw })
     } else {
       warnings.push({
         code: 'type-missing',
-        ...(lines.type === null ? {} : { detail: lines.type.raw }),
+        ...(body.type === null ? {} : { detail: body.type.raw }),
       })
     }
-  } else if (lines.type?.value) {
-    type = lines.type.value
   } else {
-    warnings.push({
-      code: 'type-missing',
-      ...(lines.type === null ? {} : { detail: lines.type.raw }),
-    })
+    // A local ticket's type, HITL note and unknown wayfinder labels sit on its type lines (#137).
+    const reading = readTicketType(body.header)
+    type = reading.type
+    modeNote = reading.modeNote
+    warnings.push(...reading.warnings)
   }
 
   let state: TicketState = ticket.state ?? 'open'
@@ -415,7 +408,7 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
 
   if (!body.hasQuestion) warnings.push({ code: 'no-question-heading' })
 
-  const unknown = unknownLabels(ticket.labels)
+  const unknown = onGitHub ? unknownLabels(ticket.labels) : []
   if (unknown.length > 0)
     warnings.push({ code: 'unknown-wayfinder-labels', detail: unknown.join(', ') })
 
@@ -432,6 +425,7 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
     ref: ticket.ref,
     state,
     type,
+    modeNote,
     labels: onGitHub ? ticket.labels : (lines.labels ?? ticket.labels),
     claim,
     role,
