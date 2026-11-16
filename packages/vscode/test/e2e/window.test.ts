@@ -119,6 +119,21 @@ async function runCommand(title: string): Promise<void> {
   await page.keyboard.press('Enter')
 }
 
+/**
+ * Reloads the window and waits for the new workbench. The reload starts a few hundred milliseconds
+ * after the command returns, so a check made before it lands reads the old window, then breaks
+ * when the old window goes away (#183).
+ */
+async function reloadWindow(): Promise<void> {
+  const reloaded = page.waitForEvent('framenavigated', {
+    predicate: (frame) => frame === page.mainFrame(),
+    timeout: 60_000,
+  })
+  await runCommand('Developer: Reload Window')
+  await reloaded
+  await page.locator('.monaco-workbench').waitFor({ timeout: 60_000 })
+}
+
 it('opens a window with the extension loaded', async () => {
   onTestFailed(() => captureFailure('extension-loaded'))
   await page.locator('.monaco-workbench').waitFor()
@@ -245,6 +260,20 @@ const textsOf = (locator: Locator, timeout = 30_000) =>
   expect.poll(() => locator.allTextContents(), { timeout })
 const attributeOf = (locator: Locator, name: string, timeout = 30_000) =>
   expect.poll(() => locator.getAttribute(name), { timeout })
+
+/**
+ * Selects a row and leaves it selected if it already is. A click on the selected row closes its
+ * pane and clears the selection, and what is selected depends on the tests before, or on an
+ * earlier attempt of the same test (#183).
+ */
+async function selectRow(label: string): Promise<void> {
+  const target = row(label)
+  // The label, not the row's centre: a crowded row puts ▶ there.
+  if ((await target.getAttribute('aria-selected')) !== 'true') {
+    await target.locator('.label').click()
+  }
+  await attributeOf(target, 'aria-selected', 15_000).toBe('true')
+}
 
 /** A neighbourhood column's entries as they read: `#number title state`. */
 const neighbours = (column: 'waits-on' | 'clears-the-way'): Promise<string[]> =>
@@ -509,10 +538,10 @@ it('shows a session nobody launched from the registry: working, waiting for you,
 
 it('reopens the Detail on the last selection after the window reloads', async () => {
   onTestFailed(() => captureFailure('detail-reload'))
-  await row('#3 Contrast audit').click()
+  await selectRow('#3 Contrast audit')
   await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor()
 
-  await runCommand('Developer: Reload Window')
+  await reloadWindow()
   // The serializer hands the panel back; its tab and its page carry the stored selection.
   await detailTab('#3 Contrast audit').waitFor({ timeout: 60_000 })
   await detail().locator('h1').filter({ hasText: '#3 Contrast audit' }).waitFor({ timeout: 60_000 })
@@ -559,12 +588,12 @@ it('marks a legacy map for its loud ticket and ends its Detail with the Drift se
 
 it('keeps a dismissed drift entry hidden after the window reloads, until its detail changes', async () => {
   onTestFailed(() => captureFailure('drift-dismiss'))
-  await row('#1 Pick a name').click()
+  await selectRow('#1 Pick a name')
   await detail().locator('h1').filter({ hasText: '#1 Pick a name' }).waitFor({ timeout: 30_000 })
   await detail().locator('#section-drift .dismiss').first().click()
   await expect.poll(() => detail().locator('#section-drift').count(), { timeout: 30_000 }).toBe(0)
 
-  await runCommand('Developer: Reload Window')
+  await reloadWindow()
   await detailTab('#1 Pick a name').waitFor({ timeout: 60_000 })
   await detail().locator('h1').filter({ hasText: '#1 Pick a name' }).waitFor({ timeout: 60_000 })
   expect(await detail().locator('#section-drift').count()).toBe(0)
