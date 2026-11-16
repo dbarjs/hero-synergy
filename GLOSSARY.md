@@ -45,7 +45,7 @@ A tracker issue that is not a ticket of any map: on a local tracker, an issue fi
 _Avoid_: orphan, stray ticket
 
 **AFK ticket**:
-A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent whatever its type, unless it is marked HITL or ready for a human, which wins even over ready for an agent. A ticket with no type is one only when marked ready for an agent.
+A ticket the agent works alone: a decision ticket typed research or task, or a build ticket whose triage role is ready-for-agent, unless it is marked HITL or ready for a human. A ready-for-agent mark never makes a decision ticket AFK, and a type never makes a build ticket AFK.
 _Avoid_: autonomous ticket, unattended ticket
 
 **Frontier**:
@@ -57,7 +57,7 @@ A ticket marked as taken, made by the session before any work: an assignee on Gi
 _Avoid_: lock, reservation
 
 **Triage role**:
-The triage label on a ticket or issue file: needs-triage, needs-info, ready-for-agent, ready-for-human or wontfix. Shown with the ticket; it never changes the frontier.
+The triage label on a ticket or issue file: needs-triage, needs-info, ready-for-agent, ready-for-human or wontfix. A build ticket carries one, and it says whether the ticket is AFK. A decision ticket carries none; on one that does, only ready-for-human counts, and it takes the ticket out of AFK. Shown with the ticket; it never changes the frontier.
 _Avoid_: status, stage
 
 **Header line**:
@@ -182,7 +182,7 @@ _Avoid_: feature request, enhancement
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a ticket has at most one live session.
-- Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
+- Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike, and a whole-spec run bypasses only when its spec has open build tickets and every one is AFK. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
 - An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
 - A session emits status events.
 - A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
@@ -199,7 +199,7 @@ _Avoid_: feature request, enhancement
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
-- "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Frontier, Claim, AFK ticket and Neighbourhood entries were written for decision tickets.
+- "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Frontier, Claim and Neighbourhood entries were written for decision tickets.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
