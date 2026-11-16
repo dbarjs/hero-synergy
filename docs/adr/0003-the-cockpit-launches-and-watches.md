@@ -20,3 +20,4 @@ What the Cockpit does instead: it launches ticket sessions with `-w <slug>` on a
 - The push-back routine is a convention the session follows, not a feature: commit on the worktree branch, `pnpm install` there if a check needs it, rebase onto `origin/main`, push `HEAD:main` when the ticket closes. Two sessions editing `GLOSSARY.md` at once resolve the conflict in the session that pushes second.
 - A "remove worktree" or "merge back" button is a change to this decision, not a small feature.
 - The Cockpit may show state it cannot fix: a worktree with unpushed commits stays listed until the developer deals with it.
+- A skill's command carries the skill and the item's reference, never workflow words: a build session claims, pushes and opens a pull request only when the repo's agent docs say so ([#206 How is a build ticket launched, and how does its work reach main?](https://github.com/dbarjs/hero-synergy/issues/206)).

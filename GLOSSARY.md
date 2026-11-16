@@ -41,7 +41,7 @@ A ticket of a spec: one slice to build, with its acceptance criteria and a triag
 _Avoid_: spec ticket, story
 
 **Unmapped issue**:
-A tracker issue that is not a ticket of any map: on a local tracker, an issue file in an effort with no map, or one whose `Parent:` line names a PRD. Shown by effort, never on a frontier, hidden once closed.
+A tracker issue that is not a ticket of any map: on GitHub, an open ready-for-agent issue with no parent that is not a spec; on a local tracker, an issue file in an effort with no map, or one whose `Parent:` line names a PRD. Shown by effort, never on a frontier, hidden once closed.
 _Avoid_: orphan, stray ticket
 
 **AFK ticket**:
@@ -49,11 +49,11 @@ A ticket the agent works alone: a decision ticket typed research or task, or a b
 _Avoid_: autonomous ticket, unattended ticket
 
 **Frontier**:
-The open, unblocked, unclaimed tickets of a map. The first one in map order is next.
+The open, unblocked, unclaimed tickets of a map or a spec. The first one in its map's or spec's order is next.
 _Avoid_: backlog, ready list
 
 **Claim**:
-A ticket marked as taken, made by the session before any work: an assignee on GitHub; locally, a `claimed` Status line, `claimed` after `open` on it, or a name on an open ticket's `Assignee:` line. A closed ticket is never claimed.
+A ticket marked as taken, made by the session before any work: an assignee on GitHub; locally, a `claimed` Status line, `claimed` after `open` on it, or a name on an open ticket's `Assignee:` line. A decision ticket's session always claims; a build ticket's session claims only when the repo's agent docs tell it to. A closed ticket is never claimed.
 _Avoid_: lock, reservation
 
 **Triage role**:
@@ -191,6 +191,7 @@ _Avoid_: feature request, enhancement
 - The scout reports drift; the extension host reports health; both are warnings, shown in the same places. A warning never gates: the Cockpit says, it never stops.
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
+- A build ticket's session commits on its worktree branch and stops there; the claim, the push, the pull request and the close follow the repo's own agent docs, never the Cockpit.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
 - The canary runs the Cockpit's own checks against the newest upstreams and files an upstream break on the tracker; the Cockpit at runtime reports health. The same contract can surface as either, in different places.
 - An upstream review moves an upstream's last-checked date and tested ceiling; it never moves the floor, and the canary never writes the register.
@@ -199,7 +200,7 @@ _Avoid_: feature request, enhancement
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
-- "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Frontier, Claim and Neighbourhood entries were written for decision tickets.
+- "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Neighbourhood entry was written for decision tickets.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
