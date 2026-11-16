@@ -136,7 +136,10 @@ export type Outcome = typeof Outcome.Type
 export type TriageRole = typeof TriageRole.Type
 /** What a local type line's parenthesis says of who works the ticket. */
 export type ModeNote = typeof ModeNote.Type
-/** A ticket marked as taken. `by` names the assignees on GitHub and nobody on a local tracker. */
+/**
+ * A ticket marked as taken. `by` names the assignees on GitHub; on a local tracker, the name its
+ * `Assignee:` line gives, or nobody (a `claimed` Status line alone). A claim naming nobody still claims.
+ */
 export type Claim = typeof Claim.Type
 /** A ticket this ticket waits on, with enough to render and gate on it wherever it lives. */
 export type Blocker = typeof Blocker.Type

@@ -192,7 +192,7 @@ describe('the Detail of the fixture workspace', () => {
       place: 'frontier',
       type: 'prototype',
       mode: 'HITL',
-      claim: null,
+      claim: 'unclaimed',
       url: null,
       resolution: null,
       waitsOn: [],

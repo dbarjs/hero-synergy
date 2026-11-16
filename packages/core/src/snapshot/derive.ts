@@ -54,7 +54,10 @@ export const placeOf = (ticket: Ticket): TicketPlace => {
 const placed = (map: WayfinderMap, place: TicketPlace): Ticket[] =>
   map.tickets.filter((ticket) => placeOf(ticket) === place)
 
-/** The frontier: the open, unblocked, unclaimed tickets of a map, in map order. */
+/**
+ * The frontier: the open, unblocked, unclaimed tickets of a map, in map order. A triage role never
+ * gates it: a `ready-for-human` ticket can be next, as the wayfinder skill and GitHub labels behave.
+ */
 export const frontierOf = (map: WayfinderMap): Ticket[] => placed(map, 'frontier')
 
 /** The first ticket of the frontier, the one to take next; null when nothing is takeable. */

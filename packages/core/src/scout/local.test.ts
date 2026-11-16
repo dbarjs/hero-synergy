@@ -3,7 +3,7 @@ import { Effect } from 'effect'
 
 import { fixtureRepo as seed } from '../../fixtures/local-tracker/seed.ts'
 import { FileSystem } from '../file-system.ts'
-import { frontierOf, isFinished, neighbourhoodOf, placeOf } from '../snapshot/derive.ts'
+import { frontierOf, isFinished, neighbourhoodOf, nextOf, placeOf } from '../snapshot/derive.ts'
 import { driftEntryOf } from '../snapshot/drift-table.ts'
 import { decodeSnapshot, encodeSnapshot, type Snapshot, type Ticket } from '../snapshot/model.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
@@ -167,18 +167,13 @@ describe('readLocalTracker on the fixture repo', () => {
         ])
         for (const ticket of snapshot.unmapped.flatMap((group) => group.tickets)) {
           expect(ticket.state).toBe('open')
-          expect(codesOf(ticket)).toEqual([
-            'type-missing',
-            'unknown-status',
-            'no-question-heading',
-            'no-map',
-          ])
+          expect(codesOf(ticket)).toEqual(['type-missing', 'no-question-heading', 'no-map'])
         }
       }),
   )
 
   it.effect(
-    'fills no triage role, Status line or HITL note yet, on a map ticket or an unmapped one',
+    "reads each ticket's triage role and Status line, on a map ticket or an unmapped one, and no HITL note yet",
     () =>
       Effect.gen(function* () {
         const snapshot = yield* read(fixtureRepo())
@@ -186,14 +181,18 @@ describe('readLocalTracker on the fixture repo', () => {
           ...snapshot.maps.flatMap((map) => map.tickets),
           ...snapshot.unmapped.flatMap((group) => group.tickets),
         ]
-        expect(tickets.length).toBeGreaterThan(0)
-        for (const ticket of tickets) {
-          expect([ticket.role, ticket.statusLine, ticket.modeNote], ticket.title).toEqual([
-            null,
-            null,
-            null,
-          ])
-        }
+        expect(
+          tickets.map((ticket) => [ticket.title, ticket.state, ticket.role, ticket.statusLine]),
+        ).toEqual([
+          ['Which database?', 'closed', null, 'resolved'],
+          ['Refund policy', 'open', null, 'claimed'],
+          ['Invoice numbering', 'open', null, null],
+          ['Palette', 'open', null, null],
+          ['Dark mode', 'closed', null, 'resolved'],
+          ['Welcome screen', 'open', 'ready-for-agent', 'ready-for-agent'],
+          ['Invite flow', 'open', 'needs-triage', 'needs-triage'],
+        ])
+        for (const ticket of tickets) expect(ticket.modeNote, ticket.title).toBeNull()
       }),
   )
 
@@ -526,6 +525,248 @@ describe('unmapped groups', () => {
         ['left', [[1, { tracker: 'local', path: '.scratch/left/issues/01-shelf.md' }]]],
         ['right', [[1, { tracker: 'local', path: '.scratch/right/issues/01-shelf.md' }]]],
       ])
+    }),
+  )
+})
+
+describe("a local ticket's state, claim and triage role", () => {
+  const issue = (title: string, lines: string) =>
+    `# ${title}\n\nType: task\n${lines}\n\n## Question\n\nq\n\n## Answer\n\nDone.\n`
+  /** One map, `seeds`, holding the given issue files, numbered in order from 01. */
+  const seeds = (...lines: string[]) =>
+    Object.fromEntries([
+      ['/repo/.scratch/seeds/map.md', mapBody()],
+      ...lines.map((line, index) => [
+        `/repo/.scratch/seeds/issues/0${index + 1}-step.md`,
+        issue(`Step ${index + 1}`, line),
+      ]),
+    ])
+  const ticketsOf = (...lines: string[]) =>
+    read(seeds(...lines), '/repo').pipe(Effect.map((snapshot) => snapshot.maps[0]!.tickets))
+  const statusDrift = (ticket: Ticket) =>
+    ticket.warnings.filter((warning) => warning.code === 'unknown-status')
+  const facts = (ticket: Ticket) => ({
+    state: ticket.state,
+    claim: ticket.claim,
+    role: ticket.role,
+    statusLine: ticket.statusLine,
+  })
+
+  it.effect('closes a ticket on its first word, and no annotation after it reverses that', () =>
+    Effect.gen(function* () {
+      const lines = [
+        'Status: closed 2026-10-01 (reopened and re-closed after a recount)',
+        'Status: **closed 2026-10-02** (resolved — turned twice)',
+        'Status: DONE 2026-10-03 (closed — labels in place)',
+        'Status: resolved',
+        'Status: closed — claimed 2026-10-04 (open again?)',
+        '**Status:** done (2026-10-05)',
+      ]
+      const tickets = yield* ticketsOf(...lines)
+      tickets.forEach((ticket, index) => {
+        const value = lines[index]!.replace(/^\**Status:\**\s*/, '')
+        expect(facts(ticket), lines[index]).toEqual({
+          state: 'closed',
+          claim: null,
+          role: null,
+          statusLine: value,
+        })
+        expect(placeOf(ticket)).toBe('closed')
+        expect(statusDrift(ticket), lines[index]).toEqual([])
+      })
+    }),
+  )
+
+  it.effect('closes a ticket on wontfix and makes wontfix its role', () =>
+    Effect.gen(function* () {
+      const [ticket] = yield* ticketsOf('Status: wontfix (2026-10-06 — the hall is gone)')
+      expect(facts(ticket!)).toEqual({
+        state: 'closed',
+        claim: null,
+        role: 'wontfix',
+        statusLine: 'wontfix (2026-10-06 — the hall is gone)',
+      })
+    }),
+  )
+
+  it.effect('leaves a ticket open on open, a triage role or no Status line, with no drift', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        'Status: open',
+        'Status: needs-triage',
+        'Status: needs-info (asked 2026-10-07)',
+        'Status: ready-for-agent',
+        '**Status:** ready-for-human',
+        'Assignee: —',
+      )
+      expect(tickets.map((ticket) => [ticket.state, ticket.claim, ticket.role])).toEqual([
+        ['open', null, null],
+        ['open', null, 'needs-triage'],
+        ['open', null, 'needs-info'],
+        ['open', null, 'ready-for-agent'],
+        ['open', null, 'ready-for-human'],
+        ['open', null, null],
+      ])
+      for (const ticket of tickets) expect(statusDrift(ticket), ticket.title).toEqual([])
+      expect(tickets[5]!.statusLine).toBeNull()
+    }),
+  )
+
+  it.effect('reads one more word after open: a role sets the role, claimed claims', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        'Status: open — needs-triage (blocked)',
+        'Status: open (ready-for-human — unblocked 2026-10-08: 01/02 all closed)',
+        'Status: open — claimed 2026-10-09 (HITL: waiting on the roster)',
+        'Status: open (claimed 2026-10-10, a member on it)',
+        'Status: open — ready-for-human (claimed 2026-10-11, being worked)',
+      )
+      expect(tickets.map((ticket) => [ticket.claim, ticket.role])).toEqual([
+        [null, 'needs-triage'],
+        [null, 'ready-for-human'],
+        [{ by: [] }, null],
+        [{ by: [] }, null],
+        // Only one word is read after open: the claim after the role is annotation.
+        [null, 'ready-for-human'],
+      ])
+      for (const ticket of tickets) expect(statusDrift(ticket), ticket.title).toEqual([])
+    }),
+  )
+
+  it.effect('takes the role from a Labels item when the Status line gives none', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        'Status: open\nLabels: wayfinder:task, ready-for-agent',
+        'Status: open — needs-info\nLabels: ready-for-agent',
+        'Labels: ready-for-agent (afk)',
+      )
+      expect(tickets.map((ticket) => ticket.role)).toEqual(['ready-for-agent', 'needs-info', null])
+    }),
+  )
+
+  it.effect(
+    'claims an open ticket by its Assignee name, which takes it off the frontier, and names nobody for a placeholder',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          seeds(
+            'Status: open\nAssignee: wren (claimed 2026-10-12, wayfinder session)',
+            'Status: open\nAssignee: agent (wren) — claimed 2026-10-13',
+            'Status: claimed\nAssignee: wren',
+            'Status: open\nAssignee: — (unclaimed)',
+            'Status: open\nAssignee: (unclaimed)',
+            'Status: open\nAssignee:',
+            'Status: claimed',
+          ),
+          '/repo',
+        )
+        const map = snapshot.maps[0]!
+        expect(map.tickets.map((ticket) => ticket.claim)).toEqual([
+          { by: ['wren'] },
+          { by: ['agent'] },
+          { by: ['wren'] },
+          null,
+          null,
+          null,
+          { by: [] },
+        ])
+        expect(frontierOf(map).map((ticket) => ticket.number)).toEqual([4, 5, 6])
+        expect(map.tickets.filter((ticket) => placeOf(ticket) === 'claimed')).toHaveLength(4)
+        for (const ticket of map.tickets) expect(statusDrift(ticket), ticket.title).toEqual([])
+      }),
+  )
+
+  it.effect('never claims a closed ticket, whatever its Assignee line or a leftover claim', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        'Status: closed 2026-10-14\nAssignee: wren (claimed 2026-10-01)',
+        'Status: done\nAssignee: agent (agent session 2026-10-02)',
+        'Status: resolved — claimed 2026-10-03',
+      )
+      for (const ticket of tickets) {
+        expect([ticket.state, ticket.claim, placeOf(ticket)], ticket.title).toEqual([
+          'closed',
+          null,
+          'closed',
+        ])
+      }
+    }),
+  )
+
+  it.effect(
+    'reads a Status line it does not know as open, claimable through Assignee, with a loud unknown-status naming the value',
+    () =>
+      Effect.gen(function* () {
+        const line =
+          'build half DONE 2026-10-15 (uncommitted); check half OPEN (HITL — a member walks it)'
+        const [twoStates, other] = yield* ticketsOf(
+          `Status: ${line}\nAssignee: wren (claimed 2026-10-15)`,
+          'Status: in-progress',
+        )
+        expect(facts(twoStates!)).toEqual({
+          state: 'open',
+          claim: { by: ['wren'] },
+          role: null,
+          statusLine: line,
+        })
+        expect(statusDrift(twoStates!)).toEqual([{ code: 'unknown-status', detail: line }])
+        expect(driftEntryOf(statusDrift(twoStates!)[0]!)).toMatchObject({
+          level: 'loud',
+          message: `The ticket's Status line starts with a word this version does not read; the ticket reads as open: ${line}.`,
+        })
+        expect([other!.state, other!.claim]).toEqual(['open', null])
+        expect(statusDrift(other!)).toEqual([{ code: 'unknown-status', detail: 'in-progress' }])
+      }),
+  )
+
+  it.effect(
+    'reads the first of two Status header lines, and raises unknown-status for the second',
+    () =>
+      Effect.gen(function* () {
+        const [ticket] = yield* ticketsOf('Status: closed 2026-10-16\nStatus: open — claimed')
+        expect(facts(ticket!)).toEqual({
+          state: 'closed',
+          claim: null,
+          role: null,
+          statusLine: 'closed 2026-10-16',
+        })
+        expect(statusDrift(ticket!)).toEqual([
+          { code: 'unknown-status', detail: 'open — claimed (a second Status line, ignored)' },
+        ])
+      }),
+  )
+
+  it.effect(
+    'never reads a Status or Assignee line after the first H2, in a fence or in inline code',
+    () =>
+      Effect.gen(function* () {
+        const body =
+          '# Step 1\n\nType: task\n```\nStatus: closed\n```\n`Status: closed`\n\n## Question\n\nClose with `Status: closed`.\n\nStatus: done\nAssignee: wren\n'
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/map.md': mapBody(),
+            '/repo/.scratch/seeds/issues/01-step.md': body,
+          },
+          '/repo',
+        )
+        expect(facts(snapshot.maps[0]!.tickets[0]!)).toEqual({
+          state: 'open',
+          claim: null,
+          role: null,
+          statusLine: null,
+        })
+      }),
+  )
+
+  it.effect('never lets the role gate the frontier: a ready-for-human ticket can be next', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        seeds('Status: ready-for-human', 'Status: open — needs-triage (blocked)\nBlocked by: 01'),
+        '/repo',
+      )
+      const map = snapshot.maps[0]!
+      expect(nextOf(map)?.number).toBe(1)
+      expect(map.tickets.map(placeOf)).toEqual(['frontier', 'blocked'])
     }),
   )
 })

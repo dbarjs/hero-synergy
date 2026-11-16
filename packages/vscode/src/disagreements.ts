@@ -23,16 +23,24 @@ export interface SessionOverlay {
   readonly disagreements: ReadonlyMap<string, DisagreementView>
 }
 
-/** The claim a row shows: a held ticket is unclaimed on the tracker, so it says so. */
+/** The Claim fact of a ticket no one has claimed. */
+const UNCLAIMED_TEXT = 'unclaimed'
+/** The Claim fact of a claim that names nobody, such as a local `Status: claimed` line alone. */
+const CLAIMED_TEXT = 'claimed'
+
+/**
+ * The Claim fact the Focus pane and the Detail show: who holds the claim, "claimed" when it names
+ * nobody, "unclaimed" when there is none. A held ticket is unclaimed on the tracker, so it says so.
+ */
 export const shownClaim = (
-  ticket: Ticket,
+  ticket: Pick<Ticket, 'claim'>,
   disagreement: DisagreementView | null,
-): ReadonlyArray<string> | null =>
-  disagreement?.kind === 'claim-pending' || disagreement?.kind === 'unclaimed'
-    ? null
-    : ticket.claim === null
-      ? null
-      : ticket.claim.by
+): string => {
+  if (disagreement?.kind === 'claim-pending' || disagreement?.kind === 'unclaimed')
+    return UNCLAIMED_TEXT
+  if (ticket.claim === null) return UNCLAIMED_TEXT
+  return ticket.claim.by.length === 0 ? CLAIMED_TEXT : ticket.claim.by.join(', ')
+}
 
 /** Lays the sessions over a snapshot; `keyOf` names a ticket's row, so the sessions can be found. */
 export function overlaySessions(

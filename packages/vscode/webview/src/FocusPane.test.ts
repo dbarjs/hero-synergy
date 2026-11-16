@@ -41,11 +41,23 @@ describe('the Focus pane', () => {
     expect(facts(wrapper)).toEqual({ State: 'open', Claim: 'unclaimed' })
   })
 
-  it('shows a claimed ticket with who holds the claim', () => {
+  it('shows a claim that names nobody, a Status: claimed line alone, as claimed', () => {
     const wrapper = render('map:3:ticket:4')
     expect(wrapper.find('.pane .title').text()).toBe('#4 Row density')
-    expect(facts(wrapper).State).toBe('open')
-    expect(facts(wrapper).Claim).not.toBe('unclaimed')
+    expect(facts(wrapper)).toEqual({ State: 'open', Claim: 'claimed' })
+  })
+
+  it('shows who holds a claim an Assignee line names', async () => {
+    const files = workspaceFiles(ROOT)
+    files[`${ROOT}/.scratch/cockpit-colors/issues/04-row-density.md`] =
+      '# Row density\n\nType: grilling\nStatus: open — claimed 2026-10-08\nAssignee: wren (watering roster)\n\n## Question\n\nHow dense?\n'
+    const named = await Effect.runPromise(
+      readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+    )
+    const wrapper = mount(Tree, {
+      props: { viewModel: buildViewModel(named, OPEN, 'map:3:ticket:4') },
+    })
+    expect(facts(wrapper)).toEqual({ State: 'open', Claim: 'wren' })
   })
 
   it('shows a closed ticket from the Decisions fold', () => {

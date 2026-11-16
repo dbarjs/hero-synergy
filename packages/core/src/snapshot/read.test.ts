@@ -495,4 +495,34 @@ describe('membership and order', () => {
     const [read] = snapshot.maps[0]!.tickets
     expect(read).toMatchObject({ state: 'open', claim: null, type: 'grilling', warnings: [] })
   })
+
+  test('on GitHub, Status, Assignee and Labels lines in a body give no state, claim, role or Status line', () => {
+    const lines = 'Status: closed — ready-for-human\nAssignee: wren\nLabels: needs-info\n\n'
+    const snapshot = readSnapshot({
+      ...base,
+      maps: [
+        { number: 1, title: 'A', ref: { tracker: 'github', url: url(1) }, body, children: [2, 3] },
+      ],
+      tickets: [
+        ticket(2, { body: `${lines}## Question\n\nQ?\n` }),
+        ticket(3, {
+          state: 'closed',
+          assignees: ['ana'],
+          body: `Status: open — claimed\n${lines}## Question\n\nQ?\n`,
+          lastComment: { body: 'Done.', author: 'ana', at: '2026-10-01T00:00:00Z' },
+        }),
+      ],
+    })
+    const [open, closed] = snapshot.maps[0]!.tickets
+    expect(open).toMatchObject({ state: 'open', claim: null, role: null, statusLine: null })
+    expect(closed).toMatchObject({
+      state: 'closed',
+      claim: { by: ['ana'] },
+      role: null,
+      statusLine: null,
+    })
+    for (const ticket of [open, closed]) {
+      expect(ticket?.warnings.map((warning) => warning.code)).not.toContain('unknown-status')
+    }
+  })
 })

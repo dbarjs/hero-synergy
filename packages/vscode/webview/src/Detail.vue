@@ -117,7 +117,7 @@ const neighbourTitle = (neighbour: NeighbourView): string =>
       </div>
       <div class="fact claim">
         <dt>Claim</dt>
-        <dd>{{ view.detail.claim === null ? 'unclaimed' : view.detail.claim.join(', ') }}</dd>
+        <dd>{{ view.detail.claim }}</dd>
       </div>
       <div v-if="view.detail.disagreement" class="fact disagreement">
         <dt>Tracker</dt>

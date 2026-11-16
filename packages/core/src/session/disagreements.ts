@@ -41,7 +41,9 @@ const sameLogin = (a: string, b: string): boolean => a.toLowerCase() === b.toLow
 /**
  * What a ticket and its session disagree about, if anything. `collectedAt` is when the snapshot
  * was collected (epoch milliseconds) and `me` the GitHub login of the person at this machine,
- * null when it is not known (a local tracker names nobody).
+ * null when it is not known. On a local tracker it is always null: the Cockpit asks for no login
+ * there, so a name on a local claim (its `Assignee:` line) is never compared with anyone and never
+ * raises `claimed-by-other`.
  */
 export function disagreementOf(
   ticket: Pick<Ticket, 'state' | 'claim'>,
