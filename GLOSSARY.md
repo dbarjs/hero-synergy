@@ -120,7 +120,7 @@ A window whose extension host runs inside a container the Cockpit can recognise:
 _Avoid_: sandbox, safe environment
 
 **Session**:
-One live Claude Code CLI process in a VS Code terminal for one ticket or action, named `#<number> <title>` after it, whoever started it. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
+One live Claude Code CLI process in a VS Code terminal, named `#<number> <title>` after the map, spec or ticket it works on, whoever started it; an Action with no issue, such as Chart a map, names it after itself. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
 
 **Bypassed session**:
@@ -181,11 +181,11 @@ _Avoid_: feature request, enhancement
 - A map decides and a spec is built: a finished map leads to a spec through `/to-spec`, and a ticket is never both kinds.
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
-- An action launches a session; a ticket has at most one live session.
+- An action launches a session; a map, a spec or a ticket has at most one live session.
 - Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike, and a whole-spec run bypasses only when its spec has open build tickets and every one is AFK. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
 - An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
 - A session emits status events.
-- A ticket's session is none, starting, live or ended; the ticket and its terminal hold the status, never a session id.
+- A map's, spec's or ticket's session is none, starting, live or ended; the item and its terminal hold the status, never a session id.
 - A live session's status comes from the registry; status events add failed, the ended reason and the session id.
 - The tracker alone says claimed, open or closed and blocked; the session side alone says alive and what status. Neither overrides the other.
 - The scout reports drift; the extension host reports health; both are warnings, shown in the same places. A warning never gates: the Cockpit says, it never stops.
