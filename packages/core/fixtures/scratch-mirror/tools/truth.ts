@@ -281,17 +281,39 @@ const lastComment = (
   return null
 }
 
-/** The ticket numbers a map's Decisions so far links, in order. */
+/** The target of the link a text starts with; the link's text may hold balanced brackets. */
+export function leadingLinkTarget(text: string): string | null {
+  if (!text.startsWith('[')) return null
+  let depth = 0
+  for (let index = 0; index < text.length; index++) {
+    const character = text[index]
+    if (character === '\\') index++
+    else if (character === '[') depth++
+    else if (character === ']' && --depth === 0) {
+      return /^\(([^)\s]+)\)/.exec(text.slice(index + 1))?.[1] ?? null
+    }
+  }
+  return null
+}
+
+/**
+ * The ticket each entry of a map's Decisions so far leads with, in order, once each, as the
+ * scout reads it: an entry is a top-level list item that is no task item, and a link inside
+ * its gist is never a decision.
+ */
 export function decisions(body: string): number[] {
   const numbers: number[] = []
   let inSection = false
   for (const line of body.split('\n')) {
     if (/^##\s/.test(line)) inSection = /^##\s+Decisions so far\b/i.test(line)
     if (!inSection) continue
-    for (const match of line.matchAll(/\]\((?:\.\/)?issues\/(\d+)-[^)]*\.md\)/g)) {
-      const number = Number(match[1])
-      if (!numbers.includes(number)) numbers.push(number)
-    }
+    const entry = /^[-*+]\s+(.*)$/.exec(line)?.[1]
+    if (entry === undefined || /^\[[ xX]\]\s/.test(entry)) continue
+    const target = leadingLinkTarget(entry)
+    const ticket = target === null ? null : /^(?:\.\/)?issues\/(\d+)-[^/]*\.md$/.exec(target)
+    if (ticket === null) continue
+    const number = Number(ticket[1])
+    if (!numbers.includes(number)) numbers.push(number)
   }
   return numbers
 }

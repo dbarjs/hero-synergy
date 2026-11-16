@@ -4,6 +4,7 @@ import {
   assignee,
   decisions,
   headerLines,
+  leadingLinkTarget,
   mapClosed,
   referencedTickets,
   resolution,
@@ -224,5 +225,30 @@ describe('maps', () => {
       '- [Later](issues/09-later.md)',
     ].join('\n')
     expect(decisions(body)).toEqual([3, 1])
+  })
+
+  it('reads each entry by the link that leads it, never a link inside its gist', () => {
+    const body = [
+      '## Decisions so far',
+      '',
+      '- [Vault](issues/03-vault.md) — kept; see [Ledger](issues/01-ledger.md)',
+      '- [Shelf](./issues/02-shelf.md) — done, after',
+      '  [Ledger](issues/01-ledger.md) closed',
+      '* [Ledger](issues/01-ledger.md): done',
+      '- [ ] [Draft](issues/05-draft.md) — a task item is no entry',
+      'A paragraph naming [Draft](issues/05-draft.md) is no entry.',
+      '- See [Draft](issues/05-draft.md) — no leading link',
+      '- [Notes](https://example.com/) — a leading link to no ticket, then [Draft](issues/05-draft.md)',
+      '- [Task: what `list[]` holds](issues/04-list.md) — brackets in the link text',
+    ].join('\n')
+    expect(decisions(body)).toEqual([3, 2, 1, 4])
+  })
+
+  it('finds the target of a leading link whose text holds balanced brackets', () => {
+    expect(leadingLinkTarget('[a `b[]` c](issues/01-x.md) — d')).toBe('issues/01-x.md')
+    expect(leadingLinkTarget('[a \\] b](issues/02-y.md)')).toBe('issues/02-y.md')
+    expect(leadingLinkTarget('[unclosed (issues/01-x.md)')).toBeNull()
+    expect(leadingLinkTarget('see [a](issues/01-x.md)')).toBeNull()
+    expect(leadingLinkTarget('[a] (issues/01-x.md)')).toBeNull()
   })
 })

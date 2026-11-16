@@ -263,6 +263,22 @@ describe('a local tracker', () => {
     expect(tickets.get(2)?.labels).toEqual([])
   })
 
+  test('reads the Labels line as a header line: a bold key counts, a line under a heading does not', () => {
+    const bodies = [
+      '# Bold labels\n\nType: task\n**Labels:** `ready-for-agent`\n\n## Question\n\nQ?\n',
+      '# Late labels\n\nType: task\n\n## Question\n\nQ?\n\nLabels: ready-for-agent\n',
+    ]
+    const snapshot = readSnapshot({
+      ...collected,
+      maps: [{ ...collected.maps[0]!, children: [1, 2] }],
+      tickets: bodies.map((body, index) => effort(index + 1, `ticket-${index + 1}`, body)),
+    })
+    expect(snapshot.maps[0]!.tickets.map((ticket) => [ticket.number, ticket.labels])).toEqual([
+      [1, ['ready-for-agent']],
+      [2, []],
+    ])
+  })
+
   test('resolves Blocked by numbers against the effort, with their file refs', () => {
     expect(tickets.get(2)?.blockedBy).toEqual([
       {
@@ -380,5 +396,24 @@ describe('membership and order', () => {
       { code: 'blockers-as-text-line' },
       { code: 'blocker-outside-map', detail: '#8 is not a ticket of any open map' },
     ])
+  })
+
+  test('on GitHub, a Status line and bold keys in a body raise none of the local codes', () => {
+    const snapshot = readSnapshot({
+      ...base,
+      maps: [
+        {
+          number: 1,
+          title: 'A',
+          ref: { tracker: 'github', url: url(1) },
+          body: `**Status:** **07 DONE 2026-10-01**\n\n${body}`,
+          children: [2],
+        },
+      ],
+      tickets: [ticket(2, { body: '**Status:** closed\n**Owner**: ana\n\n## Question\n\nQ?\n' })],
+    })
+    expect(snapshot.maps.map((map) => map.warnings)).toEqual([[]])
+    const [read] = snapshot.maps[0]!.tickets
+    expect(read).toMatchObject({ state: 'open', claim: null, type: 'grilling', warnings: [] })
   })
 })
