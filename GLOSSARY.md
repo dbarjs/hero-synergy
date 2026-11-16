@@ -24,9 +24,21 @@ _Avoid_: popover, inspector
 A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.md` in any casing on a local tracker) that indexes one effort's decisions. A local map is closed when its Status line starts with `DONE` or `destination reached`; a closed map is hidden.
 _Avoid_: board, plan, epic
 
+**Spec**:
+The issue `/to-spec` publishes (or `.scratch/<feature>/spec.md` on a local tracker): one buildable plan, split into build tickets by `/to-tickets`. It may come from a finished map or from a grilling session with no map.
+_Avoid_: PRD
+
 **Ticket**:
-A child issue of a map holding one question, typed by a `wayfinder:<type>` label (or, on a local tracker, a `Type:` or `Label:` header line): research, prototype, grilling or task.
+A child issue of a map or of a spec: a decision ticket or a build ticket.
 _Avoid_: card, story
+
+**Decision ticket**:
+A ticket of a map, holding one question, typed by a `wayfinder:<type>` label (or, on a local tracker, a `Type:` or `Label:` header line): research, prototype, grilling or task.
+_Avoid_: wayfinder ticket
+
+**Build ticket**:
+A ticket of a spec: one slice to build, with its acceptance criteria and a triage role.
+_Avoid_: spec ticket, story
 
 **Unmapped issue**:
 A tracker issue that is not a ticket of any map: on a local tracker, an issue file in an effort with no map, or one whose `Parent:` line names a PRD. Shown by effort, never on a frontier, hidden once closed.
@@ -165,7 +177,8 @@ _Avoid_: feature request, enhancement
 
 ### Relationships
 
-- A tracker holds many maps; a map holds many tickets.
+- A tracker holds many maps and many specs; a map holds decision tickets, a spec holds build tickets.
+- A map decides and a spec is built: a finished map leads to a spec through `/to-spec`, and a ticket is never both kinds.
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a ticket has at most one live session.
@@ -186,6 +199,7 @@ _Avoid_: feature request, enhancement
 ### Flagged ambiguities
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
+- "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Frontier, Claim, AFK ticket and Neighbourhood entries were written for decision tickets.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
