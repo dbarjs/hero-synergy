@@ -1,4 +1,5 @@
 import type { Ref, Ticket, Tracker, WayfinderMap } from '../snapshot/model.ts'
+import { BYPASS_ARGS } from './bypass.ts'
 
 /**
  * The command builder: from a ticket, its map, the tracker and the discovered
@@ -8,6 +9,10 @@ import type { Ref, Ticket, Tracker, WayfinderMap } from '../snapshot/model.ts'
  * `claude`; the host swaps in the resolved binary), and the one rendered form
  * the Focus pane shows and copies. The string is built once from the argv,
  * shell-quoted, with nothing elided. `--bg` is never used.
+ *
+ * Every builder of a Claude Code session takes `bypass` (default off): when on, the argv gains
+ * `--permission-mode bypassPermissions` right after `claude`, so the command shows it. Which
+ * Actions get it is decided in `./bypass.ts`; the installs never take it.
  */
 
 export interface Launch {
@@ -64,6 +69,13 @@ const renderEnv = (env: Readonly<Record<string, string>>): string | null => {
   return `env: ${entries.map(([name, value]) => `${name}=${shellQuote(value)}`).join(' ')}`
 }
 
+/** `claude`, the bypass flag when asked for, then the rest of the argv. */
+const claudeArgv = (bypass: boolean, ...rest: ReadonlyArray<string>): ReadonlyArray<string> => [
+  'claude',
+  ...(bypass ? BYPASS_ARGS : []),
+  ...rest,
+]
+
 const launch = (
   argv: ReadonlyArray<string>,
   cwd: string,
@@ -90,17 +102,18 @@ export function workTicket(
   context: LaunchContext,
   commands: Pick<SkillCommands, 'wayfinder'>,
   { map, ticket }: TicketTarget,
+  bypass = false,
 ): Launch {
   return launch(
-    [
-      'claude',
+    claudeArgv(
+      bypass,
       '-n',
       sessionName(ticket),
       ...(context.tracker === 'github' ? ['-w', String(ticket.number)] : []),
       '--plugin-dir',
       context.pluginPath,
       `${commands.wayfinder} ${refText(map.ref)} ${refText(ticket.ref)}`,
-    ],
+    ),
     context.repoRoot,
     ticketEnv(context, ticket),
   )
@@ -117,17 +130,18 @@ export function resumeById(
   context: LaunchContext,
   ticket: Pick<Ticket, 'number' | 'title'>,
   sessionId: string,
+  bypass = false,
 ): Launch {
   return launch(
-    [
-      'claude',
+    claudeArgv(
+      bypass,
       '--resume',
       sessionId,
       '-n',
       sessionName(ticket),
       '--plugin-dir',
       context.pluginPath,
-    ],
+    ),
     context.repoRoot,
     ticketEnv(context, ticket),
   )
@@ -137,8 +151,9 @@ export function resumeById(
 export function resumeByName(
   context: Pick<LaunchContext, 'repoRoot'>,
   ticket: Pick<Ticket, 'number' | 'title'>,
+  bypass = false,
 ): Launch {
-  return launch(['claude', '--resume', sessionName(ticket)], context.repoRoot)
+  return launch(claudeArgv(bypass, '--resume', sessionName(ticket)), context.repoRoot)
 }
 
 /** How an ended session is picked up again: by the id the Cockpit knows, else by the ticket's name. */
@@ -156,10 +171,11 @@ export function resumeEnded(
   context: LaunchContext,
   ticket: Pick<Ticket, 'number' | 'title'>,
   sessionId: string | null,
+  bypass = false,
 ): Resume {
   return sessionId === null
-    ? { by: 'name', launch: resumeByName(context, ticket) }
-    : { by: 'id', launch: resumeById(context, ticket, sessionId) }
+    ? { by: 'name', launch: resumeByName(context, ticket, bypass) }
+    : { by: 'id', launch: resumeById(context, ticket, sessionId, bypass) }
 }
 
 /** To spec, from a finished map: the to-spec command with the map's URL or path. Plain terminal. */
@@ -167,29 +183,36 @@ export function toSpec(
   context: Pick<LaunchContext, 'repoRoot'>,
   commands: Pick<SkillCommands, 'toSpec'>,
   map: Pick<WayfinderMap, 'ref'>,
+  bypass = false,
 ): Launch {
-  return launch(['claude', `${commands.toSpec} ${refText(map.ref)}`], context.repoRoot)
+  return launch(claudeArgv(bypass, `${commands.toSpec} ${refText(map.ref)}`), context.repoRoot)
 }
 
 /** Chart a map: the wayfinder command with no input; the session asks for the loose idea. Plain terminal. */
 export function chartMap(
   context: Pick<LaunchContext, 'repoRoot'>,
   commands: Pick<SkillCommands, 'wayfinder'>,
+  bypass = false,
 ): Launch {
-  return launch(['claude', '-n', 'Chart a map', commands.wayfinder], context.repoRoot)
+  return launch(claudeArgv(bypass, '-n', 'Chart a map', commands.wayfinder), context.repoRoot)
 }
 
 /** Run skill…: any discovered command by itself. Plain terminal. */
-export function runSkill(context: Pick<LaunchContext, 'repoRoot'>, command: string): Launch {
-  return launch(['claude', command], context.repoRoot)
+export function runSkill(
+  context: Pick<LaunchContext, 'repoRoot'>,
+  command: string,
+  bypass = false,
+): Launch {
+  return launch(claudeArgv(bypass, command), context.repoRoot)
 }
 
 /** Setup: the setup skill's command by itself, for a repo with no tracker doc. Plain terminal. */
 export function setup(
   context: Pick<LaunchContext, 'repoRoot'>,
   commands: Pick<SkillCommands, 'setup'>,
+  bypass = false,
 ): Launch {
-  return launch(['claude', commands.setup], context.repoRoot)
+  return launch(claudeArgv(bypass, commands.setup), context.repoRoot)
 }
 
 /** The two ways to install the skills; the empty state offers both and says to pick one. */

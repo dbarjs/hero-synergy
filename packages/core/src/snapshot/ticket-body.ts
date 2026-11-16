@@ -20,6 +20,8 @@ export interface TicketLines {
   readonly type: TypeLine | null
   /** The value of a `Status:` line. */
   readonly status: string | null
+  /** The labels a `Labels:` line names, comma- or space-separated, backticks dropped; null with no line. */
+  readonly labels: ReadonlyArray<string> | null
 }
 
 /**
@@ -56,6 +58,7 @@ export function readTicketBody(body: string): TicketBody {
   let blockedBy: TicketBody['blockedBy'] = null
   let type: TicketBody['type'] = null
   let status: string | null = null
+  let labels: ReadonlyArray<string> | null = null
 
   // The lines live at the top of the body, before any section.
   for (const raw of lines(found[0]?.text ?? '')) {
@@ -68,6 +71,8 @@ export function readTicketBody(body: string): TicketBody {
     if (typeLine?.[1] !== undefined && type === null) type = readType(typeLine[1], line)
     const statusLine = /^Status:\s*(.+?)\s*$/i.exec(line)
     if (statusLine?.[1] !== undefined && status === null) status = statusLine[1]
+    const labelsLine = /^Labels:\s*(.*)$/i.exec(line)
+    if (labelsLine?.[1] !== undefined && labels === null) labels = readLabels(labelsLine[1])
   }
 
   return {
@@ -76,6 +81,7 @@ export function readTicketBody(body: string): TicketBody {
     blockedBy,
     type,
     status,
+    labels,
     header: readHeaderLines(body),
     hasQuestion: question !== undefined,
     answer: answer === undefined || answer.text === '' ? null : answer.text,
@@ -87,10 +93,12 @@ export function headerTicketLines(header: ReadonlyArray<HeaderLine>): TicketLine
   const blockedBy = headerValue(header, 'blocked by')
   const type = headerValue(header, 'type')
   const status = headerValue(header, 'status')
+  const labels = headerValue(header, 'labels')
   return {
     blockedBy: blockedBy === null ? null : readBlockers(blockedBy),
     type: type === null || type === '' ? null : readType(type, `Type: ${type}`),
     status: status === null || status === '' ? null : status,
+    labels: labels === null ? null : readLabels(labels),
   }
 }
 
@@ -113,4 +121,12 @@ function readBlockers(value: string): BlockersLine {
     else slugs.push(token)
   }
   return { numbers, slugs }
+}
+
+/** A `Labels:` value, split on commas only: a label may hold a space (`good first issue`). */
+function readLabels(value: string): ReadonlyArray<string> {
+  return value
+    .split(',')
+    .map((token) => token.replace(/`/g, '').trim())
+    .filter((token) => token !== '')
 }

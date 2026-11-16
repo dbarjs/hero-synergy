@@ -23,6 +23,16 @@ describe("this repo's own map, recorded from the tracker", () => {
     for (const ticket of map.tickets) expect(ticket.warnings).toEqual([])
   })
 
+  test("carries each ticket's tracker labels", () => {
+    for (const ticket of map.tickets) {
+      const collected = heroSynergy.tickets.find((entry) => entry.number === ticket.number)
+      expect(ticket.labels).toEqual(collected?.labels)
+    }
+    expect(map.tickets.find((ticket) => ticket.number === 10)?.labels).toContain(
+      'wayfinder:research',
+    )
+  })
+
   test('reads the destination and the notes exactly', () => {
     expect(map.destination).toBe(
       'hero-synergy v0.1.0 fully decided: every question it depends on is resolved and every hard-to-reverse default has been challenged, so the result goes straight to `/to-spec`.\n\nThe product is the VS Code Cockpit described in [the seed](https://github.com/dbarjs/hero-synergy/blob/main/docs/seed.md#destination). Its five capabilities are the outer bound: a ticket may cut one down, but nothing is added.',
@@ -219,7 +229,7 @@ describe('a local tracker', () => {
       effort(
         3,
         'invoice-numbers',
-        '# Invoice numbers\n\nType: task\nBlocked by: 02, 01\n\n## Question\n\nOne sequence per tenant?\n',
+        '# Invoice numbers\n\nType: task\nLabels: wayfinder:task, `ready-for-human`\nBlocked by: 02, 01\n\n## Question\n\nOne sequence per tenant?\n',
       ),
     ],
   }
@@ -245,6 +255,49 @@ describe('a local tracker', () => {
     expect(tickets.get(2)?.claim).toEqual({ by: [] })
     expect(tickets.get(3)?.claim).toBeNull()
     expect(map.tickets.map((ticket) => ticket.type)).toEqual(['research', 'grilling', 'task'])
+  })
+
+  test('takes the labels from a Labels line, and none without one', () => {
+    expect(tickets.get(3)?.labels).toEqual(['wayfinder:task', 'ready-for-human'])
+    expect(tickets.get(1)?.labels).toEqual([])
+    expect(tickets.get(2)?.labels).toEqual([])
+  })
+
+  test('reads the Labels line as a header line: a bold key counts, a line under a heading does not', () => {
+    const bodies = [
+      '# Bold labels\n\nType: task\n**Labels:** `ready-for-agent`\n\n## Question\n\nQ?\n',
+      '# Late labels\n\nType: task\n\n## Question\n\nQ?\n\nLabels: ready-for-agent\n',
+    ]
+    const snapshot = readSnapshot({
+      ...collected,
+      maps: [{ ...collected.maps[0]!, children: [1, 2] }],
+      tickets: bodies.map((body, index) => effort(index + 1, `ticket-${index + 1}`, body)),
+    })
+    expect(snapshot.maps[0]!.tickets.map((ticket) => [ticket.number, ticket.labels])).toEqual([
+      [1, ['ready-for-agent']],
+      [2, []],
+    ])
+  })
+
+  test('splits a Labels line on commas only, so a label may hold a space', () => {
+    // A repo may rename ready-for-human to `human only`; splitting on spaces would lose it and
+    // bypass a ticket marked for a person.
+    const snapshot = readSnapshot({
+      ...collected,
+      maps: [{ ...collected.maps[0]!, children: [1] }],
+      tickets: [
+        effort(
+          1,
+          'ticket-1',
+          '# Spaced labels\n\nType: task\nLabels: wayfinder:task, `human only`,good first issue ,\n\n## Question\n\nQ?\n',
+        ),
+      ],
+    })
+    expect(snapshot.maps[0]!.tickets[0]!.labels).toEqual([
+      'wayfinder:task',
+      'human only',
+      'good first issue',
+    ])
   })
 
   test('resolves Blocked by numbers against the effort, with their file refs', () => {

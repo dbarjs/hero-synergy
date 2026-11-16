@@ -203,6 +203,59 @@ describe('ticketless Actions', () => {
   })
 })
 
+describe('bypass', () => {
+  const FLAG = ['--permission-mode', 'bypassPermissions']
+  const withFlag = (argv: ReadonlyArray<string>) => ['claude', ...FLAG, ...argv.slice(1)]
+  const builders = [
+    ['Work ticket', (bypass?: boolean) => workTicket(context('github'), commands, github, bypass)],
+    ['Launch fresh', (bypass?: boolean) => launchFresh(context('local'), commands, local, bypass)],
+    [
+      'Resume by id',
+      (bypass?: boolean) => resumeById(context('github'), github.ticket, 'abc-123', bypass),
+    ],
+    [
+      'Resume by name',
+      (bypass?: boolean) => resumeByName(context('github'), github.ticket, bypass),
+    ],
+    [
+      'an ended session by id',
+      (bypass?: boolean) => resumeEnded(context('github'), github.ticket, 'abc', bypass).launch,
+    ],
+    [
+      'an ended session by name',
+      (bypass?: boolean) => resumeEnded(context('github'), github.ticket, null, bypass).launch,
+    ],
+    ['To spec', (bypass?: boolean) => toSpec(context('github'), commands, github.map, bypass)],
+    ['Chart a map', (bypass?: boolean) => chartMap(context('github'), commands, bypass)],
+    ['Run skill', (bypass?: boolean) => runSkill(context('github'), '/grilling', bypass)],
+    [
+      'Setup',
+      (bypass?: boolean) =>
+        setup(context('github'), { setup: '/setup-matt-pocock-skills' }, bypass),
+    ],
+  ] as const
+
+  test.each(builders)('%s is off by default and adds the flag right after claude', (_, build) => {
+    const plain = build()
+    expect(build(false)).toEqual(plain)
+    expect(plain.argv).not.toContain('--permission-mode')
+    const bypassed = build(true)
+    expect(bypassed.argv).toEqual(withFlag(plain.argv))
+    expect(bypassed.command).toBe(renderCommand(bypassed.argv))
+    expect(bypassed.command).toContain('claude --permission-mode bypassPermissions ')
+    expect(bypassed.env).toEqual(plain.env)
+    expect(bypassed.cwd).toBe(plain.cwd)
+    expect(bypassed.argv).not.toContain('--dangerously-skip-permissions')
+  })
+
+  test('the installs take no bypass input and never carry the flag', () => {
+    expect(installPlugin.length).toBe(1)
+    expect(installWithNpx.length).toBe(1)
+    expect(installPlugin(context('github')).argv).not.toContain('--permission-mode')
+    expect(installWithNpx(context('github')).argv).not.toContain('--permission-mode')
+  })
+})
+
 describe('renderCommand', () => {
   test('quotes each word once and joins with spaces', () => {
     expect(renderCommand(['claude', 'a b', 'c'])).toBe("claude 'a b' c")

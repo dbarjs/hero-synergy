@@ -38,12 +38,14 @@ describe('the health table', () => {
       'hook-payload-unreadable',
       'plugin-manifest-unreadable',
       'skill-missing',
+      'bypass-refused-as-root',
     ] as const
     const quiet = [
       'claude-version-unreadable',
       'hook-reason-missing',
       'skill-installed-twice',
       'plugin-disabled',
+      'bypass-not-isolated',
     ] as const
     for (const code of loud) expect(healthLevel(code, null), code).toBe('loud')
     for (const code of quiet) expect(healthLevel(code, null), code).toBe('quiet')

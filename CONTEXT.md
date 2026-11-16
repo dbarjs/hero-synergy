@@ -33,7 +33,7 @@ A tracker issue that is not a ticket of any map: on a local tracker, an issue fi
 _Avoid_: orphan, stray ticket
 
 **AFK ticket**:
-A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent, unless it is marked HITL or ready for a human. A ticket with no type is not one.
+A ticket the agent works alone: a research or task ticket, or any ticket marked ready for an agent whatever its type, unless it is marked HITL or ready for a human, which wins even over ready for an agent. A ticket with no type is one only when marked ready for an agent.
 _Avoid_: autonomous ticket, unattended ticket
 
 **Frontier**:

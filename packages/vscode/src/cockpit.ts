@@ -1,7 +1,10 @@
 import {
   afterReload,
+  bypassHealth,
   checkClaudeVersion,
+  collectIsolationFacts,
   commandOf,
+  DEFAULT_TRIAGE_LABELS,
   type DiscoveredSkill,
   discoverSkills,
   FileSystem,
@@ -11,6 +14,8 @@ import {
   groupByTicket,
   type HealthContext,
   HINT_AFTER_MS,
+  type Isolation,
+  isolationOf,
   isRunning,
   isFinished,
   type Launch,
@@ -34,6 +39,8 @@ import {
   type Snapshot,
   type StatusEvent,
   ticketOfTerminalName,
+  type TriageLabels,
+  triageLabelsOf,
   userInvokedSkills,
   type WorktreeState,
 } from '@hero-synergy/core'
@@ -91,6 +98,7 @@ import {
   type Trigger,
 } from './refresh-policy.ts'
 import {
+  type BypassSettings,
   Clipboard,
   CollectProgress,
   EventsWatcher,
@@ -184,6 +192,11 @@ export interface Cockpit {
   readonly chartMap: Effect.Effect<void>
   /** `Hero Synergy: Run skill…`: a QuickPick of the user-invoked skills, then a plain terminal on the one chosen. */
   readonly runSkill: Effect.Effect<void>
+  /**
+   * A bypass setting changed: read both again, then plan every Action and the Health row afresh, so
+   * the shown command, Copy command and the spawned argv agree. Running sessions are left alone.
+   */
+  readonly settingsChanged: Effect.Effect<void>
 }
 
 /** A plain message in place of the maps, and what it needs to lead with an Action. */
@@ -359,7 +372,13 @@ export const makeCockpit = (
       readonly skills: ReadonlyArray<DiscoveredSkill> | null
       /** What discovery could not read: plugin manifests, skill files, doubled installs. */
       readonly warnings: ReadonlyArray<Raised>
-    }>({ claude: NOT_LAUNCHING.claude, skills: null, warnings: [] })
+      /** The repo's triage label strings, read beside the skills on every refresh. */
+      readonly triage: TriageLabels
+    }>({ claude: NOT_LAUNCHING.claude, skills: null, warnings: [], triage: DEFAULT_TRIAGE_LABELS })
+    // The bypass settings as last read: at creation and on every change, never at spawn time.
+    const bypassSettings = yield* Ref.make<BypassSettings>(yield* environment.bypassSettings)
+    // Whether the window is isolated, read once at activation; null before, which bypasses nothing.
+    const isolation = yield* Ref.make<Isolation | null>(null)
     // Health: what the host saw of the machine. Each source holds the entries its last look raised.
     // Null until `claude` was resolved once, so a window that never looked does not report it missing.
     const claudeFact = yield* Ref.make<ClaudeResolution | null>(null)
@@ -442,8 +461,27 @@ export const makeCockpit = (
           me: (yield* Ref.get(me)).login,
           worktrees: yield* Ref.get(worktrees),
           registryUnreadable: yield* Ref.get(registryUnreadable),
+          bypass: {
+            ...(yield* Ref.get(bypassSettings)),
+            isolation: (yield* Ref.get(isolation)) ?? NOT_LAUNCHING.bypass.isolation,
+          },
+          triage: found.triage,
         }
       })
+
+    /** What bypass adds to Health, once activation has read whether the window is isolated. */
+    const bypassRaised: Effect.Effect<ReadonlyArray<Raised>> = Effect.gen(function* () {
+      const isolated = yield* Ref.get(isolation)
+      if (isolated === null) return []
+      const settings = yield* Ref.get(bypassSettings)
+      return bypassHealth({
+        bypassPermissions: settings.mode,
+        onlyWhenIsolated: settings.onlyWhenIsolated,
+        isolation: isolated,
+        root: environment.root,
+        sandboxEnv: environment.sandboxEnv,
+      })
+    })
 
     /** Everything the host has raised about the machine, before dismissals, and the context its messages name. */
     const raisedNow: Effect.Effect<{
@@ -462,6 +500,7 @@ export const makeCockpit = (
           ...(found.skills !== null && commandOf(found.skills, 'wayfinder') === null
             ? [raise('skill-missing', undefined)]
             : []),
+          ...(yield* bypassRaised),
         ],
         context: { claude: yield* Ref.get(claudeVersion) },
       }
@@ -539,6 +578,15 @@ export const makeCockpit = (
           }${resolution.claude.shim ? ', an npm shim: best effort' : ''})`
         : `claude not resolved: ${resolution.reason}`
 
+    const describeIsolation = (isolated: Isolation): string =>
+      isolated.isolated
+        ? `isolated environment: ${
+            isolated.signal.kind === 'remote' ? isolated.signal.remoteName : isolated.signal.path
+          }`
+        : `not an isolated environment: ${isolated.remoteName ?? 'local window'}${
+            isolated.vetoedBy === null ? '' : `, vetoed by ${isolated.vetoedBy}`
+          }`
+
     const activated: Effect.Effect<void> = Effect.gen(function* () {
       options.log(
         `${environment.appName} (${environment.appHost}) ${environment.vscodeVersion} on ${environment.platform}`,
@@ -546,6 +594,14 @@ export const makeCockpit = (
       const resolution = yield* resolveNow
       yield* Ref.set(claudeFact, resolution)
       options.log(describeResolution(resolution))
+      // The isolation facts never change while the window is open, so they are read once, here.
+      const isolated = isolationOf(
+        yield* collectIsolationFacts(environment.remoteName).pipe(
+          Effect.provideService(FileSystem, fs),
+        ),
+      )
+      yield* Ref.set(isolation, isolated)
+      options.log(describeIsolation(isolated))
       // The last good snapshot names the repo, so the events file is read without a collect.
       // Nothing is published: the Tree is not registered yet.
       if (cached !== null) yield* startEvents(cached.snapshot.repoRoot, false)
@@ -629,8 +685,10 @@ export const makeCockpit = (
           home: environment.home,
           plugins: plugins.value,
         }).pipe(Effect.provideService(FileSystem, fs))
+        const triage = yield* triageLabelsOf(repoRoot).pipe(Effect.provideService(FileSystem, fs))
         yield* Ref.set(discovery, {
           claude,
+          triage,
           skills: inventory.skills,
           warnings: [...plugins.warnings, ...inventory.warnings].map((warning) =>
             raise(warning.code, warning.detail),
@@ -1396,7 +1454,11 @@ export const makeCockpit = (
                 true,
                 new Map(map).set(
                   key,
-                  reduceSession(map.get(key), { type: 'launched', at: launchedAt })!,
+                  reduceSession(map.get(key), {
+                    type: 'launched',
+                    at: launchedAt,
+                    bypassed: planned.bypassed,
+                  })!,
                 ),
               ] as const)
             : ([false, map] as const),
@@ -1426,6 +1488,19 @@ export const makeCockpit = (
           ),
         )
       })
+
+    const settingsChanged: Effect.Effect<void> = Effect.gen(function* () {
+      const before = yield* Ref.get(bypassSettings)
+      const after = yield* environment.bypassSettings
+      if (before.mode === after.mode && before.onlyWhenIsolated === after.onlyWhenIsolated) return
+      yield* Ref.set(bypassSettings, after)
+      options.log(
+        `heroSynergy.sessions.bypassPermissions is ${after.mode}${
+          after.onlyWhenIsolated ? ', only when isolated' : ''
+        }`,
+      )
+      yield* publish
+    })
 
     /** `Hero Synergy: Chart a map`: the wayfinder skill with no input, in a plain terminal. */
     const chartMapCommand: Effect.Effect<void> = Effect.gen(function* () {
@@ -1515,6 +1590,7 @@ export const makeCockpit = (
       checkClaude,
       chartMap: chartMapCommand,
       runSkill: runSkillCommand,
+      settingsChanged,
       show: trigger('automatic'),
       focus: trigger('automatic').pipe(Effect.andThen(ensureRegistryWatch)),
       visible,

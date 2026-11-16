@@ -15,6 +15,7 @@
           "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/2" },
           "state": "open",
           "type": "grilling",
+          "labels": ["wayfinder:grilling"],
           "claim": { "by": ["ana"] },
           "blockedBy": [
             {
@@ -36,6 +37,7 @@
           "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/3" },
           "state": "closed",
           "type": "research",
+          "labels": ["wayfinder:research"],
           "claim": null,
           "blockedBy": [],
           "body": "Which database should hold the ledger?\n",
@@ -54,6 +56,7 @@
           "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/5" },
           "state": "closed",
           "type": null,
+          "labels": [],
           "claim": null,
           "blockedBy": [],
           "body": "## Question\n\nDoes an inline PDF preview help support staff?\n",
@@ -108,6 +111,7 @@
       "ref": { "tracker": "github", "url": "https://github.com/acme/billing/issues/9" },
       "state": "open",
       "type": "grilling",
+      "labels": ["wayfinder:grilling"],
       "claim": null,
       "blockedBy": [],
       "body": "## Question\n\nWhich role may approve a manual credit above 1,000?\n",

@@ -10,6 +10,7 @@ import {
   registerActionCommands,
   registerRefreshCommand,
   registerRefreshTriggers,
+  registerSettingsTrigger,
   registerTreeView,
 } from './vscode/tree-view.ts'
 import {
@@ -152,6 +153,7 @@ export async function activate(context: ExtensionContext): Promise<ExtensionApi>
     onFocus: () => run(cockpit.focus),
     onScratchChange: () => run(cockpit.scratchChanged),
   })
+  registerSettingsTrigger(context, () => run(cockpit.settingsChanged))
   // The floor check is one `claude --version`; it runs beside activation so a slow `claude` never holds it up.
   run(cockpit.checkClaude)
 
