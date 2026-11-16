@@ -170,6 +170,23 @@ describe('the drift table', () => {
         "The ticket's Status line starts with a word this version does not read; the ticket reads as open: build half DONE 2026-10-02; check half OPEN.",
       hint: 'A Status line starts with open, claimed, closed, done, resolved or wontfix, or a triage role: needs-triage, needs-info, ready-for-agent or ready-for-human.',
     },
+    {
+      code: 'resolution-outside-answer',
+      level: 'quiet',
+      message: 'The resolution is not under ## Answer.',
+      detail: 'Resolution heading under ## Comments',
+      withDetail: 'The resolution is not under ## Answer: Resolution heading under ## Comments.',
+      hint: "A local decision ticket's resolution goes under an ## Answer heading.",
+    },
+    {
+      code: 'resolution-from-last-comment',
+      level: 'quiet',
+      message: 'The ticket has no Answer or Resolution section; its last comment stands in.',
+      detail: 'dated comment',
+      withDetail:
+        'The ticket has no Answer or Resolution section; its last comment stands in: dated comment.',
+      hint: "A local decision ticket's resolution goes under an ## Answer heading.",
+    },
   ] as const)(
     '$code: words the local tracker reader raises',
     ({ code, level, message, detail, withDetail, hint }) => {
@@ -183,4 +200,14 @@ describe('the drift table', () => {
       })
     },
   )
+
+  it('names the Resolution heading in closed-no-resolution’s hint, and stays loud', () => {
+    expect(driftEntryOf({ code: 'closed-no-resolution' })).toEqual({
+      code: 'closed-no-resolution',
+      level: 'loud',
+      message: 'The ticket is closed with no answer.',
+      detail: null,
+      hint: 'A closed decision ticket ends with its resolution: a comment on GitHub; locally an ## Answer section or a Resolution heading.',
+    })
+  })
 })

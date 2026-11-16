@@ -419,6 +419,66 @@ describe('the Detail of the fixture workspace', () => {
     expect(detail?.kind === 'ticket' && detail.resolution?.body).toContain('Codicons')
   })
 
+  it('shows a closed local ticket’s resolution from each placement, and how sure the reading is', async () => {
+    // One closed ticket per placement #138 reads, under the Question every ticket has.
+    const placements = [
+      ['## Answer\n\nYes.', null],
+      ['## Resolution (2026-10-01)\n\nYes.', 'Resolution heading'],
+      [
+        '## Comments\n\n### Resolution (2026-10-02)\n\nYes.',
+        'Resolution heading under ## Comments',
+      ],
+      ['## Comments\n\n**Resolution — 2026-10-03**\nYes.', 'bold Resolution label'],
+      ['## Comments\n\n- 2026-10-04 (wren): yes.', 'dated comment'],
+      ['## Comments\n\nYes.', 'comment text'],
+    ] as const
+    const files = {
+      [`${ROOT}/.scratch/returns/map.md`]:
+        '# Returns\n\n## Destination\n\nd\n\n## Notes\n\n## Decisions so far\n\n## Not yet specified\n\n## Out of scope\n',
+      ...Object.fromEntries(
+        placements.map(([rest], index) => [
+          `${ROOT}/.scratch/returns/issues/0${index + 1}-returns.md`,
+          `# Returns ${index + 1}\n\nType: grilling\nStatus: closed\n\n## Question\n\nSame day?\n\n${rest}\n`,
+        ]),
+      ),
+    }
+    const snapshot = await Effect.runPromise(
+      readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+    )
+    const shown = placements.map((_, index) => {
+      const detail = detailOf(snapshot, `map:1:ticket:${index + 1}`)
+      if (detail?.kind !== 'ticket') throw new Error(`no ticket ${index + 1}`)
+      const resolutionDrift = detail.drift
+        .flatMap((group) => group.entries)
+        .filter((entry) => entry.code.startsWith('resolution-'))
+        .map(({ level, detail: form }) => ({ level, form }))
+      return { resolution: detail.resolution, drift: resolutionDrift }
+    })
+    expect(shown).toEqual([
+      { resolution: { body: 'Yes.', author: null, at: null }, drift: [] },
+      {
+        resolution: { body: 'Yes.', author: null, at: '2026-10-01' },
+        drift: [{ level: 'quiet', form: 'Resolution heading' }],
+      },
+      {
+        resolution: { body: 'Yes.', author: null, at: '2026-10-02' },
+        drift: [{ level: 'quiet', form: 'Resolution heading under ## Comments' }],
+      },
+      {
+        resolution: { body: 'Yes.', author: null, at: '2026-10-03' },
+        drift: [{ level: 'quiet', form: 'bold Resolution label' }],
+      },
+      {
+        resolution: { body: '- 2026-10-04 (wren): yes.', author: 'wren', at: '2026-10-04' },
+        drift: [{ level: 'quiet', form: 'dated comment' }],
+      },
+      {
+        resolution: { body: 'Yes.', author: null, at: null },
+        drift: [{ level: 'quiet', form: 'comment text' }],
+      },
+    ])
+  })
+
   it('keeps a closed blocker as a neighbour, since the Detail shows every blocker', async () => {
     const snapshot = await fixtureSnapshot()
     const detail = detailOf(snapshot, 'map:2:ticket:3')

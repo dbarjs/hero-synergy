@@ -150,7 +150,18 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
   'closed-no-resolution': {
     level: 'loud',
     message: () => 'The ticket is closed with no answer.',
-    hint: 'A closed ticket ends with a resolution comment (an ## Answer section locally).',
+    hint: 'A closed decision ticket ends with its resolution: a comment on GitHub; locally an ## Answer section or a Resolution heading.',
+  },
+  'resolution-outside-answer': {
+    level: 'quiet',
+    message: (detail) => `The resolution is not under ## Answer${quoted(detail)}.`,
+    hint: "A local decision ticket's resolution goes under an ## Answer heading.",
+  },
+  'resolution-from-last-comment': {
+    level: 'quiet',
+    message: (detail) =>
+      `The ticket has no Answer or Resolution section; its last comment stands in${quoted(detail)}.`,
+    hint: "A local decision ticket's resolution goes under an ## Answer heading.",
   },
   'unknown-status': {
     level: 'loud',

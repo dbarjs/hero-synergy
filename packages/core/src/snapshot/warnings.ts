@@ -41,6 +41,8 @@ export const warningCodes = [
   'claim-legacy-label',
   'no-question-heading',
   'closed-no-resolution',
+  'resolution-outside-answer',
+  'resolution-from-last-comment',
   'closed-unrecorded',
   'no-map',
   'map-line-disagrees',

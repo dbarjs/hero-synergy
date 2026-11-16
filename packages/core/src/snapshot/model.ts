@@ -143,7 +143,10 @@ export type ModeNote = typeof ModeNote.Type
 export type Claim = typeof Claim.Type
 /** A ticket this ticket waits on, with enough to render and gate on it wherever it lives. */
 export type Blocker = typeof Blocker.Type
-/** The answer: the last comment on GitHub, the `## Answer` section locally. */
+/**
+ * A closed ticket's one answer: the last comment on GitHub; locally its `## Answer` section, else
+ * its last Resolution heading or bold label, else its last comment under `## Comments` (#138).
+ */
 export type Resolution = typeof Resolution.Type
 /** One line of the map's Decisions so far. */
 export type Decision = typeof Decision.Type

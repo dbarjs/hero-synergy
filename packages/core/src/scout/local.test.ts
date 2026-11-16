@@ -1502,6 +1502,222 @@ describe("a local ticket's blockers", () => {
   )
 })
 
+describe("a local ticket's resolution", () => {
+  const RESOLUTION_CODES = [
+    'resolution-outside-answer',
+    'resolution-from-last-comment',
+    'closed-no-resolution',
+  ]
+  /** A seed-library issue: its Status line, then its body after the question. */
+  const issue = (status: string, rest: string) =>
+    `# Returns\n\nType: grilling\nStatus: ${status}\n\n## Question\n\nDo returns go back the same day?\n\n${rest}`
+  /** Each body becomes an issue file of one map, `seeds`, numbered in order from 01; read with nothing hidden. */
+  const ticketsOf = (...bodies: string[]) =>
+    efforts({
+      '/repo/.scratch/seeds/map.md': mapBody(),
+      ...Object.fromEntries(
+        bodies.map((body, index) => [`/repo/.scratch/seeds/issues/0${index + 1}-returns.md`, body]),
+      ),
+    }).pipe(Effect.map((read) => read[0]!.map!.tickets))
+  const reading = (ticket: Ticket) => ({
+    resolution: ticket.resolution,
+    drift: ticket.warnings.filter((warning) => RESOLUTION_CODES.includes(warning.code)),
+  })
+
+  it.effect('gives an open ticket none, whatever its Answer, labels or comments hold', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        issue('open', '## Answer\n\nYes.\n'),
+        issue('claimed', '## Comments\n\n### Resolution (2026-10-01)\n\nYes.\n'),
+        issue('ready-for-human', '## Comments\n\n- 2026-10-02 (wren): asked the members.\n'),
+      )
+      for (const ticket of tickets) expect(reading(ticket)).toEqual({ resolution: null, drift: [] })
+    }),
+  )
+
+  it.effect("lets a reopened ticket's second Resolution label win", () =>
+    Effect.gen(function* () {
+      const [ticket] = yield* ticketsOf(
+        issue(
+          'closed 2026-10-04 (reopened)',
+          '## Resolution (2026-10-01)\n\nYes.\n\n## Comments\n\n**Resolution — 2026-10-04:** no, a week in the dry box.\n',
+        ),
+      )
+      expect(reading(ticket!)).toEqual({
+        resolution: { body: 'no, a week in the dry box.', author: null, at: '2026-10-04' },
+        drift: [{ code: 'resolution-outside-answer', detail: 'bold Resolution label' }],
+      })
+    }),
+  )
+
+  it.effect('reads the second-language word accented or not, in any case', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        issue('done', '## RESOLUÇÃO\n\nSim.\n'),
+        issue('done', '## Comments\n\n### resolucao (2026-10-05)\n\nSim.\n'),
+        issue('done', '## Comments\n\n**Resolucao:** sim.\n'),
+      )
+      expect(tickets.map((ticket) => reading(ticket).drift[0]?.detail)).toEqual([
+        'Resolution heading',
+        'Resolution heading under ## Comments',
+        'bold Resolution label',
+      ])
+      expect(tickets.map((ticket) => ticket.resolution?.body)).toEqual(['Sim.', 'Sim.', 'sim.'])
+    }),
+  )
+
+  it.effect(
+    'never reads a bold Resolved or Done, a Decision section or a word that only starts with Resolution',
+    () =>
+      Effect.gen(function* () {
+        const tickets = yield* ticketsOf(
+          issue(
+            'closed',
+            '## Decision\n\nYes.\n\n## Comments\n\n**Resolved** yes.\n\n**Done.** Shelved.\n',
+          ),
+          issue('closed', '## Resolutions considered\n\nYes, or no.\n'),
+        )
+        expect(tickets.map(reading)).toEqual([
+          {
+            resolution: { body: '**Resolved** yes.\n\n**Done.** Shelved.', author: null, at: null },
+            drift: [{ code: 'resolution-from-last-comment', detail: 'comment text' }],
+          },
+          { resolution: null, drift: [{ code: 'closed-no-resolution' }] },
+        ])
+      }),
+  )
+
+  it.effect('reads no label inside a code fence, nor a bold label inside a paragraph', () =>
+    Effect.gen(function* () {
+      const tickets = yield* ticketsOf(
+        issue(
+          'closed',
+          '## Comments\n\n```md\n## Answer\n\nYes.\n\n### Resolution (2026-10-06)\n\nYes.\n```\n\n- 2026-10-07 (wren): shelved.\n',
+        ),
+        issue('closed', '## Comments\n\nWe weighed it.\n**Resolution:** yes.\n'),
+      )
+      expect(tickets.map(reading)).toEqual([
+        {
+          resolution: { body: '- 2026-10-07 (wren): shelved.', author: 'wren', at: '2026-10-07' },
+          drift: [{ code: 'resolution-from-last-comment', detail: 'dated comment' }],
+        },
+        {
+          resolution: { body: 'We weighed it.\n**Resolution:** yes.', author: null, at: null },
+          drift: [{ code: 'resolution-from-last-comment', detail: 'comment text' }],
+        },
+      ])
+    }),
+  )
+
+  it.effect(
+    'passes over a candidate with nothing in it: an empty Answer, an empty last label',
+    () =>
+      Effect.gen(function* () {
+        const tickets = yield* ticketsOf(
+          issue('closed', '## Answer\n\n## Comments\n\n### Resolution (2026-10-08)\n\nYes.\n'),
+          issue('closed', '## Resolution (2026-10-08)\n\nYes.\n\n## Comments\n\n**Resolution**\n'),
+          issue('closed', '## Answer\n\n<!-- the answer goes here -->\n'),
+        )
+        expect(tickets.map(reading)).toEqual([
+          {
+            resolution: { body: 'Yes.', author: null, at: '2026-10-08' },
+            drift: [
+              { code: 'resolution-outside-answer', detail: 'Resolution heading under ## Comments' },
+            ],
+          },
+          {
+            resolution: { body: 'Yes.', author: null, at: '2026-10-08' },
+            drift: [{ code: 'resolution-outside-answer', detail: 'Resolution heading' }],
+          },
+          { resolution: null, drift: [{ code: 'closed-no-resolution' }] },
+        ])
+      }),
+  )
+
+  it.effect(
+    'runs a heading to the next heading of its level or higher, and never includes the label',
+    () =>
+      Effect.gen(function* () {
+        const [nested, bold] = yield* ticketsOf(
+          issue(
+            'closed',
+            '## Comments\n\n### Resolution (2026-10-09)\n\nYes.\n\n#### Why\n\nThe shelf is dry.\n\n### Follow-up\n\nTell the members.\n',
+          ),
+          issue(
+            'closed',
+            '## Comments\n\n**Resolution** (2026-10-10): yes,\nafter a dry check.\n\n- the shelf is dry\n\n### Follow-up\n\nTell the members.\n',
+          ),
+        )
+        expect(nested!.resolution).toEqual({
+          body: 'Yes.\n\n#### Why\n\nThe shelf is dry.',
+          author: null,
+          at: '2026-10-09',
+        })
+        expect(bold!.resolution).toEqual({
+          body: '(2026-10-10): yes,\nafter a dry check.\n\n- the shelf is dry',
+          author: null,
+          at: '2026-10-10',
+        })
+      }),
+  )
+
+  it.effect(
+    'takes a dated item with its continuation lines, and its byline from its own line only',
+    () =>
+      Effect.gen(function* () {
+        const [dated, bolded, subsection] = yield* ticketsOf(
+          issue(
+            'closed',
+            '## Comments\n\n- 2026-10-10 (robin): weighed it.\n- 2026-10-11 (wren): yes, the same day;\n  robin agrees as of 2026-10-12 (robin).\n\n  The dry box is for gifts.\n\nThanks, all.\n',
+          ),
+          issue('closed', '## Comments\n\n* **2026-10-13** (ana): yes.\n'),
+          issue(
+            'closed',
+            '## Comments\n\n- 2026-10-14 (wren): asked.\n\n### Session 2026-10-15\n\nYes, decided with robin.\n',
+          ),
+        )
+        expect(dated!.resolution).toEqual({
+          body: '- 2026-10-11 (wren): yes, the same day;\n  robin agrees as of 2026-10-12 (robin).\n\n  The dry box is for gifts.',
+          author: 'wren',
+          at: '2026-10-11',
+        })
+        expect(bolded!.resolution).toEqual({
+          body: '* **2026-10-13** (ana): yes.',
+          author: 'ana',
+          at: '2026-10-13',
+        })
+        // A `###` subsection that is no Resolution label stands in by its text, with no byline.
+        expect(reading(subsection!)).toEqual({
+          resolution: { body: 'Yes, decided with robin.', author: null, at: null },
+          drift: [{ code: 'resolution-from-last-comment', detail: 'comment text' }],
+        })
+      }),
+  )
+
+  it.effect(
+    'reads the last Comments section of several, and says closed-no-resolution when it is empty',
+    () =>
+      Effect.gen(function* () {
+        const tickets = yield* ticketsOf(
+          issue(
+            'closed',
+            '## Comments\n\n- 2026-10-16 (wren): yes.\n\n## Comments\n\nNo, in the end.\n',
+          ),
+          issue('closed', '## Comments\n\n- 2026-10-16 (wren): yes.\n\n## Comments\n'),
+          issue('closed', 'Swept on 2026-10-17.\n'),
+        )
+        expect(tickets.map(reading)).toEqual([
+          {
+            resolution: { body: 'No, in the end.', author: null, at: null },
+            drift: [{ code: 'resolution-from-last-comment', detail: 'comment text' }],
+          },
+          { resolution: null, drift: [{ code: 'closed-no-resolution' }] },
+          { resolution: null, drift: [{ code: 'closed-no-resolution' }] },
+        ])
+      }),
+  )
+})
+
 describe('readLocalTracker on the edges', () => {
   it.effect('a repo with no .scratch has no maps and no error', () =>
     Effect.gen(function* () {
