@@ -53,7 +53,7 @@ The open, unblocked, unclaimed tickets of a map or a spec. The first one in its 
 _Avoid_: backlog, ready list
 
 **Claim**:
-A ticket marked as taken, made by the session before any work: an assignee on GitHub; locally, a `claimed` Status line, `claimed` after `open` on it, or a name on an open ticket's `Assignee:` line. A decision ticket's session always claims; a build ticket's session claims only when the repo's agent docs tell it to. A closed ticket is never claimed.
+A ticket marked as taken: on GitHub an assignee, made by the session before any work, or an open pull request shown on the ticket; locally, a `claimed` Status line, `claimed` after `open` on it, or a name on an open ticket's `Assignee:` line. A decision ticket's session always claims; a build ticket's session claims only when the repo's agent docs tell it to. A closed ticket is never claimed.
 _Avoid_: lock, reservation
 
 **Triage role**:
@@ -85,7 +85,7 @@ A map with open tickets and none takeable, every one claimed or blocked; or a ma
 _Avoid_: blocked map, idle
 
 **Needs you**:
-A session waiting for you, needing approval or failed. It counts for the badge, puts its map first, and is the one session fact the host hands the derived functions.
+A session waiting for you, needing approval or failed. It counts for the badge, puts its map first, and is the one session fact the host hands the derived functions. A pull request waiting for a merge never needs you.
 _Avoid_: attention, alert
 
 **Fog**:
@@ -138,6 +138,10 @@ _Avoid_: log line, heartbeat
 **Worktree**:
 The git worktree a ticket session runs in, created by `claude -w` at `.claude/worktrees/<slug>` on branch `worktree-<slug>`. Sessions on a local tracker have none.
 _Avoid_: sandbox, checkout
+
+**Pull request**:
+A GitHub pull request, shown on each ticket or unmapped issue it closes by keyword or, when it closes none, on the ticket its `worktree-<number>` branch is named after. Only open ones are shown, each in one state: draft, conflicts, checks failing, changes requested, checks running, review required, out of date, merge blocked, ready to merge, or open while GitHub has yet to say. A ticket with an open one is in review. The Cockpit opens it and never merges it; a local tracker has none.
+_Avoid_: PR, merge request
 
 **Action**:
 Anything the Cockpit offers that spawns a process in a terminal, always shown with the exact command it will run. A user-invoked skill is the common case; Resume and an install command are Actions too. Opening an issue or focusing a terminal is a button, not an Action.
@@ -194,6 +198,7 @@ _Avoid_: feature request, enhancement
 - The Cockpit has one tree and at most one detail; both show the same selection.
 - A ticket session on a GitHub tracker runs in its own worktree; the Cockpit shows the worktree but never creates, merges or removes it.
 - A build ticket's session commits on its worktree branch and stops there; the claim, the push, the pull request and the close follow the repo's own agent docs, never the Cockpit.
+- An open pull request claims the open ticket it is shown on, and the merge of one that closes its ticket by keyword closes the ticket; the Cockpit opens a pull request but never merges, approves or closes one.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
 - The canary runs the Cockpit's own checks against the newest upstreams and files an upstream break on the tracker; the Cockpit at runtime reports health. The same contract can surface as either, in different places.
 - An upstream review moves an upstream's last-checked date and tested ceiling; it never moves the floor, and the canary never writes the register.
@@ -204,6 +209,7 @@ _Avoid_: feature request, enhancement
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Neighbourhood entry was written for decision tickets.
 - "Parent" names four things: the tracker's native parent, a `## Parent` section, a local `Parent:` header line and a `Part of #n` line. Say "native parent" for the first. The native parent, or locally the effort, decides a ticket's kind.
+- "In review" means a ticket has an open pull request, whether or not anyone reviews it; "review required" and "changes requested" are GitHub's review decision on that pull request. "Blocked" stays a ticket waiting on a blocker: a pull request GitHub won't merge yet is "merge blocked".
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
