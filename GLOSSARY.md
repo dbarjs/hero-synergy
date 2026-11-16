@@ -80,12 +80,16 @@ _Avoid_: dependency graph, dependants
 An open map with at least one ticket, every ticket closed and no fog left: nothing left to decide, ready for `/to-spec`. Folded away in the Tree.
 _Avoid_: done, complete, closed (a closed map is hidden)
 
-**Stuck map**:
-A map with open tickets and none takeable, every one claimed or blocked; or a map with no ticket and no fog. Fog on a stuck map waits for its open tickets.
+**Built spec**:
+An open spec with at least one build ticket and every one closed: nothing left to build. It folds away in the Tree like a finished map; closing the spec hides it.
+_Avoid_: finished spec, done, complete
+
+**Stuck**:
+A map or spec with open tickets and none takeable, every one claimed or blocked; or a map with no ticket and no fog. Fog on a stuck map waits for its open tickets.
 _Avoid_: blocked map, idle
 
 **Needs you**:
-A session waiting for you, needing approval or failed. It counts for the badge, puts its map first, and is the one session fact the host hands the derived functions.
+A session waiting for you, needing approval or failed. It counts for the badge, puts its map's or spec's row first, and is the one session fact the host hands the derived functions.
 _Avoid_: attention, alert
 
 **Fog**:
@@ -180,6 +184,8 @@ _Avoid_: feature request, enhancement
 - A tracker holds many maps and many specs; a map holds decision tickets, a spec holds build tickets.
 - A map decides and a spec is built: a finished map leads to a spec through `/to-spec`, and a ticket is never both kinds.
 - A spec names at most one map; a map may lead to several specs.
+- Once a spec is open, its row stands for its map too: the map rides inside it, inside each of its open specs when it has two, and the map's open tickets count toward the row.
+- The Tree says a stuck map is deciding, and a stuck spec building, while a session is live on one of its tickets; both still rank as stuck.
 - A map with no open ticket and fog left offers Graduate fog, and To spec too once it has a ticket; a finished map offers To spec. A finished map has no fog.
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
@@ -204,6 +210,7 @@ _Avoid_: feature request, enhancement
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Neighbourhood entry was written for decision tickets.
 - "Parent" names four things: the tracker's native parent, a `## Parent` section, a local `Parent:` header line and a `Part of #n` line. Say "native parent" for the first. The native parent, or locally the effort, decides a ticket's kind.
+- "Finished", "built" and "closed": a map is finished, a spec is built, and either one closed on the tracker is hidden. The Tree's Finished fold holds finished maps and built specs.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
