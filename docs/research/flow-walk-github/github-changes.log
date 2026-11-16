@@ -1,0 +1,171 @@
+===== 21:14:23
+ref main 5311407
+issue #1 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[2,3,4] blockedBy=[] comments=0 boxes=0/0 bodyLength=1289 closedBy=[] :: Word, line and character counts
+issue #2 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=1 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=54 closedBy=[] :: What is a line?
+issue #3 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=1 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=64 closedBy=[] :: What is a character?
+issue #4 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=1 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=103 closedBy=[] :: What does `tally all` print?
+issue #5 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[6,7,8] blockedBy=[] comments=0 boxes=0/0 bodyLength=1389 closedBy=[] :: Sentence and paragraph counts
+issue #6 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=5 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=62 closedBy=[] :: What is a sentence?
+issue #7 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=5 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=64 closedBy=[] :: What is a paragraph?
+issue #8 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=5 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=109 closedBy=[] :: What does `tally structure` print?
+===== 21:18:06
+issue #9 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=12649 closedBy=[] :: Spec: sentence and paragraph counts (`sentences`, `paragraphs`, `structure`)
+===== 21:18:39
+issue #10 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=11143 closedBy=[] :: Spec: word, line and character counts
+===== 21:22:23
+issue #10 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[11,12] blockedBy=[] comments=0 boxes=0/0 bodyLength=11143 closedBy=[] :: Spec: word, line and character counts
+issue #11 OPEN assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=2164 closedBy=[] :: `tally words <file>` prints the word count
+issue #12 OPEN assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[11 OPEN] comments=0 boxes=0/10 bodyLength=1790 closedBy=[] :: `tally lines <file>` prints the line count
+issue #13 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/11 bodyLength=1886 closedBy=[] :: `tally characters <file>` prints the character count
+===== 21:22:36
+issue #9 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[14,16] blockedBy=[] comments=0 boxes=0/0 bodyLength=12649 closedBy=[] :: Spec: sentence and paragraph counts (`sentences`, `paragraphs`, `structure`)
+issue #10 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[11,12,13,15] blockedBy=[] comments=0 boxes=0/0 bodyLength=11143 closedBy=[] :: Spec: word, line and character counts
+issue #13 OPEN assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[11 OPEN] comments=0 boxes=0/11 bodyLength=1886 closedBy=[] :: `tally characters <file>` prints the character count
+issue #14 OPEN assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[] comments=0 boxes=0/7 bodyLength=2874 closedBy=[] :: `tally sentences <file>` reports a file's sentence count
+issue #15 OPEN assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[13 OPEN, 11 OPEN, 12 OPEN] comments=0 boxes=0/9 bodyLength=2172 closedBy=[] :: `tally all <file>` prints words, lines and characters in one report
+issue #16 OPEN assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[14 OPEN] comments=0 boxes=0/7 bodyLength=2532 closedBy=[] :: `tally paragraphs <file>` reports a file's paragraph count
+issue #17 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/7 bodyLength=2598 closedBy=[] :: `tally structure <file>` reports sentences and paragraphs in one report
+===== 21:22:47
+issue #9 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[14,16,17] blockedBy=[] comments=0 boxes=0/0 bodyLength=12649 closedBy=[] :: Spec: sentence and paragraph counts (`sentences`, `paragraphs`, `structure`)
+issue #17 OPEN assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[16 OPEN, 14 OPEN] comments=0 boxes=0/7 bodyLength=2598 closedBy=[] :: `tally structure <file>` reports sentences and paragraphs in one report
+===== 21:47:35
+ref spec-9-sentence-paragraph-counts 806aac4
+===== 21:48:08
+issue #14 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[] comments=1 boxes=0/7 bodyLength=2874 closedBy=[] :: `tally sentences <file>` reports a file's sentence count
+issue #16 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[14 CLOSED] comments=1 boxes=0/7 bodyLength=2532 closedBy=[] :: `tally paragraphs <file>` reports a file's paragraph count
+issue #17 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=9 sub=[] blockedBy=[16 CLOSED, 14 CLOSED] comments=1 boxes=0/7 bodyLength=2598 closedBy=[] :: `tally structure <file>` reports sentences and paragraphs in one report
+===== 21:49:51
+ref spec-10-counts cb65cfb
+===== 21:50:14
+issue #11 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[] comments=1 boxes=0/8 bodyLength=2164 closedBy=[] :: `tally words <file>` prints the word count
+issue #12 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[11 CLOSED] comments=1 boxes=0/10 bodyLength=1790 closedBy=[] :: `tally lines <file>` prints the line count
+issue #13 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[11 CLOSED] comments=1 boxes=0/11 bodyLength=1886 closedBy=[] :: `tally characters <file>` prints the character count
+issue #15 OPEN assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[13 CLOSED, 11 CLOSED, 12 CLOSED] comments=1 boxes=0/9 bodyLength=2172 closedBy=[] :: `tally all <file>` prints words, lines and characters in one report
+===== 21:50:25
+issue #10 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[11,12,13,15] blockedBy=[] comments=1 boxes=0/0 bodyLength=11143 closedBy=[] :: Spec: word, line and character counts
+issue #15 CLOSED/COMPLETED assignees=[] labels=[ready-for-agent] parent=10 sub=[] blockedBy=[13 CLOSED, 11 CLOSED, 12 CLOSED] comments=1 boxes=0/9 bodyLength=2172 closedBy=[] :: `tally all <file>` prints words, lines and characters in one report
+===== 21:52:32
+ref main 01f5a8b
+issue #18 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=1408 closedBy=[] :: Longest word and longest line
+===== 21:52:44
+issue #18 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[19,20] blockedBy=[] comments=0 boxes=0/0 bodyLength=1408 closedBy=[] :: Longest word and longest line
+issue #19 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-word` report?
+issue #20 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-line` report?
+===== 21:52:55
+issue #18 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[19,20,21] blockedBy=[] comments=0 boxes=0/0 bodyLength=1408 closedBy=[] :: Longest word and longest line
+issue #21 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally longest` print?
+issue #22 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=1285 closedBy=[] :: Digit and punctuation counts
+===== 21:53:07
+issue #22 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[23,24] blockedBy=[] comments=0 boxes=0/0 bodyLength=1285 closedBy=[] :: Digit and punctuation counts
+issue #23 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=56 closedBy=[] :: What is a digit?
+issue #24 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=72 closedBy=[] :: What is a punctuation mark?
+===== 21:53:20
+issue #19 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-word` report?
+issue #20 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-line` report?
+issue #21 OPEN assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally longest` print?
+issue #22 OPEN assignees=[] labels=[wayfinder:map] parent=- sub=[23,24,25] blockedBy=[] comments=0 boxes=0/0 bodyLength=1285 closedBy=[] :: Digit and punctuation counts
+issue #23 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=56 closedBy=[] :: What is a digit?
+issue #25 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally symbols` print?
+===== 21:53:31
+issue #19 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-word` report?
+issue #20 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=59 closedBy=[] :: What does `tally longest-line` report?
+issue #21 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=18 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally longest` print?
+issue #24 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=72 closedBy=[] :: What is a punctuation mark?
+issue #25 OPEN assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally symbols` print?
+===== 21:53:43
+issue #23 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=56 closedBy=[] :: What is a digit?
+issue #24 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=72 closedBy=[] :: What is a punctuation mark?
+issue #25 CLOSED/COMPLETED assignees=[] labels=[wayfinder:grilling] parent=22 sub=[] blockedBy=[] comments=1 boxes=0/0 bodyLength=107 closedBy=[] :: What does `tally symbols` print?
+===== 21:57:09
+issue #26 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=16593 closedBy=[] :: Spec: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 21:58:19
+issue #27 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=19495 closedBy=[] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 21:58:43
+issue #27 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:02:46
+issue #27 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[28] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+issue #28 OPEN assignees=[] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[] comments=0 boxes=0/9 bodyLength=4558 closedBy=[] :: `tally longest-word <file>` reports the length of the file's longest word
+issue #29 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[] blockedBy=[28 OPEN] comments=0 boxes=0/7 bodyLength=3551 closedBy=[] :: `tally longest-line <file>` reports the length of the file's longest line
+===== 22:02:58
+issue #26 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[31,32] blockedBy=[] comments=0 boxes=0/0 bodyLength=16593 closedBy=[] :: Spec: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+issue #27 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[28,29,30] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+issue #29 OPEN assignees=[] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN] comments=0 boxes=0/7 bodyLength=3551 closedBy=[] :: `tally longest-line <file>` reports the length of the file's longest line
+issue #30 OPEN assignees=[] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN, 29 OPEN] comments=0 boxes=0/12 bodyLength=2739 closedBy=[] :: `tally longest <file>` prints longest-word and longest-line in one report
+issue #31 OPEN assignees=[] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=3888 closedBy=[] :: `tally digits <file>` reports a file's digit count
+issue #32 OPEN assignees=[] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=4631 closedBy=[] :: `tally punctuation <file>` reports a file's punctuation mark count
+===== 22:03:10
+issue #26 OPEN assignees=[] labels=[ready-for-agent] parent=- sub=[31,32,33] blockedBy=[] comments=0 boxes=0/0 bodyLength=16593 closedBy=[] :: Spec: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+issue #33 OPEN assignees=[] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[31 OPEN, 32 OPEN] comments=0 boxes=0/8 bodyLength=3351 closedBy=[] :: `tally symbols <file>` reports digits and punctuation in one report
+===== 22:05:19
+issue #27 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=- sub=[28,29,30] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:05:31
+issue #26 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=- sub=[31,32,33] blockedBy=[] comments=0 boxes=0/0 bodyLength=16593 closedBy=[] :: Spec: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+issue #28 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[] comments=0 boxes=0/9 bodyLength=4558 closedBy=[] :: `tally longest-word <file>` reports the length of the file's longest word
+issue #29 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN] comments=0 boxes=0/7 bodyLength=3551 closedBy=[] :: `tally longest-line <file>` reports the length of the file's longest line
+issue #30 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN, 29 OPEN] comments=0 boxes=0/12 bodyLength=2739 closedBy=[] :: `tally longest <file>` prints longest-word and longest-line in one report
+issue #31 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=3888 closedBy=[] :: `tally digits <file>` reports a file's digit count
+issue #32 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=4631 closedBy=[] :: `tally punctuation <file>` reports a file's punctuation mark count
+===== 22:05:43
+issue #33 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[31 OPEN, 32 OPEN] comments=0 boxes=0/8 bodyLength=3351 closedBy=[] :: `tally symbols <file>` reports digits and punctuation in one report
+===== 22:11:44
+ref spec-26-digit-punctuation-counts 92a3166
+===== 22:12:19
+ref spec-27-longest 4112199
+===== 22:12:30
+issue #27 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=- sub=[28,29,30] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[34] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+issue #28 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[] comments=0 boxes=0/9 bodyLength=4558 closedBy=[34] :: `tally longest-word <file>` reports the length of the file's longest word
+issue #29 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN] comments=0 boxes=0/7 bodyLength=3551 closedBy=[34] :: `tally longest-line <file>` reports the length of the file's longest line
+issue #30 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 OPEN, 29 OPEN] comments=0 boxes=0/12 bodyLength=2739 closedBy=[34] :: `tally longest <file>` prints longest-word and longest-line in one report
+pull #34 OPEN draft=true spec-27-longest->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[27,28,29,30] commits=2 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:12:42
+issue #26 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=- sub=[31,32,33] blockedBy=[] comments=0 boxes=0/0 bodyLength=16593 closedBy=[35] :: Spec: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+issue #31 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=3888 closedBy=[35] :: `tally digits <file>` reports a file's digit count
+issue #32 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[] comments=0 boxes=0/8 bodyLength=4631 closedBy=[35] :: `tally punctuation <file>` reports a file's punctuation mark count
+issue #33 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=26 sub=[] blockedBy=[31 OPEN, 32 OPEN] comments=0 boxes=0/8 bodyLength=3351 closedBy=[35] :: `tally symbols <file>` reports digits and punctuation in one report
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[26,31,32,33] commits=2 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:14:20
+ref spec-26-digit-punctuation-counts badff98
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[26,31,32,33] commits=5 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:14:33
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[26,31,32,33] commits=5 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:17:19
+ref spec-27-longest b598079
+pull #34 OPEN draft=true spec-27-longest->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[27,28,29,30] commits=4 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:17:31
+pull #34 OPEN draft=true spec-27-longest->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[27,28,29,30] commits=4 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:19:06
+ref spec-26-digit-punctuation-counts bfb45d4
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[26,31,32,33] commits=9 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:19:18
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[26,31,32,33] commits=9 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:21:45
+ref spec-27-longest 284ad7f
+pull #34 OPEN draft=true spec-27-longest->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[27,28,29,30] commits=6 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:21:57
+pull #34 OPEN draft=true spec-27-longest->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[27,28,29,30] commits=6 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:30:10
+ref spec-26-digit-punctuation-counts 7751fd6
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[26,31,32,33] commits=14 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:30:22
+pull #35 OPEN draft=true spec-26-digit-punctuation-counts->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[26,31,32,33] commits=14 comments=0 assignees=[dbarjs] bodyLength=1314 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:30:34
+pull #35 OPEN draft=false spec-26-digit-punctuation-counts->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[26,31,32,33] commits=14 comments=0 assignees=[dbarjs] bodyLength=4096 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:34:52
+ref spec-27-longest 7001412
+pull #34 OPEN draft=true spec-27-longest->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[27,28,29,30] commits=11 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:35:04
+pull #34 OPEN draft=true spec-27-longest->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[27,28,29,30] commits=11 comments=0 assignees=[dbarjs] bodyLength=1897 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:35:27
+pull #34 OPEN draft=false spec-27-longest->main mergeable=MERGEABLE mergeState=CLEAN review=- closes=[27,28,29,30] commits=11 comments=0 assignees=[dbarjs] bodyLength=3176 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+===== 22:37:04
+ref main 2eb5db6
+issue #27 CLOSED/COMPLETED assignees=[dbarjs] labels=[ready-for-agent] parent=- sub=[28,29,30] blockedBy=[] comments=0 boxes=0/0 bodyLength=19530 closedBy=[34] :: Spec: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+issue #28 CLOSED/COMPLETED assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[] comments=0 boxes=0/9 bodyLength=4558 closedBy=[34] :: `tally longest-word <file>` reports the length of the file's longest word
+issue #29 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 CLOSED] comments=0 boxes=0/7 bodyLength=3551 closedBy=[34] :: `tally longest-line <file>` reports the length of the file's longest line
+issue #30 OPEN assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 CLOSED, 29 CLOSED] comments=0 boxes=0/12 bodyLength=2739 closedBy=[34] :: `tally longest <file>` prints longest-word and longest-line in one report
+pull #34 MERGED draft=false spec-27-longest->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[27,28,29,30] commits=11 comments=0 assignees=[dbarjs] bodyLength=3176 :: tally: longest word and longest line (`longest-word`, `longest-line`, `longest`)
+pull #35 OPEN draft=false spec-26-digit-punctuation-counts->main mergeable=UNKNOWN mergeState=UNKNOWN review=- closes=[26,31,32,33] commits=14 comments=0 assignees=[dbarjs] bodyLength=4096 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
+===== 22:37:16
+issue #29 CLOSED/COMPLETED assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 CLOSED] comments=0 boxes=0/7 bodyLength=3551 closedBy=[34] :: `tally longest-line <file>` reports the length of the file's longest line
+issue #30 CLOSED/COMPLETED assignees=[dbarjs] labels=[ready-for-agent] parent=27 sub=[] blockedBy=[28 CLOSED, 29 CLOSED] comments=0 boxes=0/12 bodyLength=2739 closedBy=[34] :: `tally longest <file>` prints longest-word and longest-line in one report
+pull #35 OPEN draft=false spec-26-digit-punctuation-counts->main mergeable=CONFLICTING mergeState=DIRTY review=- closes=[26,31,32,33] commits=14 comments=0 assignees=[dbarjs] bodyLength=4096 :: tally: digit and punctuation counts (`digits`, `punctuation`, `symbols`)
