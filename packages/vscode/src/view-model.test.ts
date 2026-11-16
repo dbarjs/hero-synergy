@@ -208,6 +208,28 @@ describe('the Detail of the fixture workspace', () => {
     ])
   })
 
+  it('lists what a Blocks line names under "clears the way for", and the named ticket waits on it', async () => {
+    // The contrast audit writes the edge on its own side: `Blocks: 02`, and Dark mode never names it.
+    const files = {
+      ...workspaceFiles(ROOT),
+      [`${ROOT}/.scratch/cockpit-colors/issues/03-contrast-audit.md`]:
+        '# Contrast audit\n\nType: task\nBlocks: 02 (dark mode needs the measures)\n\n## Question\n\nMeasure it.\n',
+    }
+    const snapshot = await Effect.runPromise(
+      readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+    )
+    const audit = detailOf(snapshot, 'map:3:ticket:3')
+    expect(audit?.kind === 'ticket' && audit.clearsWayFor).toEqual([
+      { number: 2, title: 'Dark mode', state: 'open', key: 'map:3:ticket:2' },
+    ])
+    const darkMode = detailOf(snapshot, 'map:3:ticket:2')
+    expect(darkMode).toMatchObject({ kind: 'ticket', place: 'blocked' })
+    expect(darkMode?.kind === 'ticket' && darkMode.waitsOn).toEqual([
+      { number: 1, title: 'Palette', state: 'open', key: 'map:3:ticket:1' },
+      { number: 3, title: 'Contrast audit', state: 'open', key: 'map:3:ticket:3' },
+    ])
+  })
+
   it('shows a closed ticket with its resolution', async () => {
     const snapshot = await fixtureSnapshot()
     const detail = detailOf(snapshot, 'map:3:ticket:5')

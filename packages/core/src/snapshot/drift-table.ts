@@ -105,6 +105,22 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
     message: (detail) => `The ticket is blocked by names, not numbers${quoted(detail)}.`,
     hint: 'A blocker is a ticket number, or the tracker’s own blocked-by link.',
   },
+  'blockers-not-template': {
+    level: 'quiet',
+    message: (detail) =>
+      `The ticket's Blocked by line is not in the template's form${quoted(detail)}.`,
+    hint: 'A local ticket lists its blockers as "Blocked by: NN, NN".',
+  },
+  'blocks-line': {
+    level: 'quiet',
+    message: (detail) => `The ticket names the tickets it blocks${quoted(detail)}.`,
+    hint: 'Blockers go on the waiting ticket\'s "Blocked by:" line; the Cockpit reads both sides.',
+  },
+  'blocker-unread': {
+    level: 'loud',
+    message: (detail) => `A Blocked by item names no ticket${quoted(detail)}.`,
+    hint: 'Each item of a Blocked by line starts with a ticket number, a ticket file name or a link to one.',
+  },
   'no-map': {
     level: 'loud',
     message: () => 'The ticket belongs to no map.',

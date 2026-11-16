@@ -1,8 +1,9 @@
 import { type HeaderLine, headerValue, readHeaderLines } from './header-lines.ts'
 import { firstH1, lines, sections } from './markdown.ts'
 import type { TicketType } from './model.ts'
+import { type ReferenceLine, readReferenceLine } from './reference-line.ts'
 
-/** A `Blocked by:` value: the numbers it holds and the tokens that are not numbers. */
+/** A GitHub `Blocked by:` text line: the numbers it holds and the tokens that are not numbers. */
 export interface BlockersLine {
   readonly numbers: ReadonlyArray<number>
   readonly slugs: ReadonlyArray<string>
@@ -88,14 +89,25 @@ export function readTicketBody(body: string): TicketBody {
   }
 }
 
-/** The same lines read from a local ticket's header lines, where a bold key counts too. */
-export function headerTicketLines(header: ReadonlyArray<HeaderLine>): TicketLines {
+/**
+ * A local ticket's lines, read from its header lines, where a bold key counts too. Its
+ * `Blocked by:` and `Blocks:` values are read by the local item grammar, not GitHub's text fallback.
+ */
+export interface LocalTicketLines extends Omit<TicketLines, 'blockedBy'> {
+  readonly blockedBy: ReferenceLine | null
+  readonly blocks: ReferenceLine | null
+}
+
+/** The same lines read from a local ticket's header lines. */
+export function headerTicketLines(header: ReadonlyArray<HeaderLine>): LocalTicketLines {
   const blockedBy = headerValue(header, 'blocked by')
+  const blocks = headerValue(header, 'blocks')
   const type = headerValue(header, 'type')
   const status = headerValue(header, 'status')
   const labels = headerValue(header, 'labels')
   return {
-    blockedBy: blockedBy === null ? null : readBlockers(blockedBy),
+    blockedBy: blockedBy === null ? null : readReferenceLine(blockedBy),
+    blocks: blocks === null ? null : readReferenceLine(blocks),
     type: type === null || type === '' ? null : readType(type, `Type: ${type}`),
     status: status === null || status === '' ? null : status,
     labels: labels === null ? null : readLabels(labels),

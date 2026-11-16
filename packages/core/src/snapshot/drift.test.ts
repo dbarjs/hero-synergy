@@ -216,6 +216,47 @@ describe('the drift catalogue', () => {
     expect(blocked.blockedBy).toEqual([])
   })
 
+  test('blockers-not-template: the linked blocker is read, its note is not, and the raw value rides in the detail', () => {
+    const snapshot = read('blockers-not-template')
+    const blocked = ticket(snapshot, 2)
+    // The note says closed; the blocker's own file says open, and its file wins.
+    expect(blocked.blockedBy).toEqual([
+      {
+        number: 1,
+        title: 'Tax rule',
+        state: 'open',
+        ref: { tracker: 'local', path: '.scratch/billing-rewrite/issues/01-tax-rule.md' },
+      },
+    ])
+    expect(blocked.warnings).toEqual([
+      {
+        code: 'blockers-not-template',
+        detail: '[Tax rule](01-tax-rule.md) (closed 2026-10-01 — see 03)',
+      },
+    ])
+    expect(codesOf(ticket(snapshot, 1))).toEqual([])
+  })
+
+  test('blocks-line: the blocking ticket is noted, and the blocked one waits on it', () => {
+    const snapshot = read('blocks-line')
+    expect(ticket(snapshot, 1).warnings).toEqual([
+      { code: 'blocks-line', detail: '02 (the refund needs the rule)' },
+    ])
+    expect(ticket(snapshot, 1).blockedBy).toEqual([])
+    const blocked = ticket(snapshot, 2)
+    expect(blocked.blockedBy.map((blocker) => [blocker.number, blocker.state])).toEqual([
+      [1, 'open'],
+    ])
+    expect(codesOf(blocked)).toEqual([])
+  })
+
+  test('blocker-unread: the item rides in the detail and no blocker is read', () => {
+    const snapshot = read('blocker-unread')
+    const blocked = ticket(snapshot, 2)
+    expect(blocked.warnings).toEqual([{ code: 'blocker-unread', detail: 'sign-off from finance' }])
+    expect(blocked.blockedBy).toEqual([])
+  })
+
   test('type-as-line: the line gives the type on GitHub, quietly', () => {
     const snapshot = read('type-as-line')
     const typed = ticket(snapshot, 2)

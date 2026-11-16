@@ -156,7 +156,7 @@ describe('the local reader on the scratch mirror', () => {
   const efforts = Effect.runSync(readLocalEfforts(ROOT).pipe(Effect.provide(files)))
 
   it.each(truth)('agrees with the truth of $path', (file) => {
-    expect(scoutColumns(efforts, file.path)).toEqual(truthColumns(file))
+    expect(scoutColumns(efforts, file.path)).toEqual(truthColumns(file, truth))
   })
 
   it.effect('shows the 20 open maps in directory order and hides the 15 closed ones', () =>

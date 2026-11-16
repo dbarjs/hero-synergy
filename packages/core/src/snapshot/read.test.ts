@@ -448,6 +448,35 @@ describe('membership and order', () => {
     ])
   })
 
+  test('on GitHub, a Blocked by line keeps its own reading, and a Blocks line adds no edge and no local code', () => {
+    const snapshot = readSnapshot({
+      ...base,
+      maps: [
+        {
+          number: 1,
+          title: 'A',
+          ref: { tracker: 'github', url: url(1) },
+          body,
+          children: [2, 3, 4],
+        },
+      ],
+      tickets: [
+        ticket(2, { body: 'Blocked by: #3 #4 (closed)\n\n## Question\n\nQ?\n' }),
+        ticket(3, { body: 'Blocks: #2, #4\n\n## Question\n\nQ?\n' }),
+        ticket(4),
+      ],
+    })
+    const [two, three, four] = snapshot.maps[0]!.tickets
+    // Whitespace still splits the text fallback, and its other tokens are still slugs.
+    expect(two?.blockedBy.map((b) => b.number)).toEqual([3, 4])
+    expect(two?.warnings).toEqual([
+      { code: 'blockers-as-text-line' },
+      { code: 'blockers-as-slugs', detail: '(closed)' },
+    ])
+    expect(three?.warnings).toEqual([])
+    expect(four?.blockedBy).toEqual([])
+  })
+
   test('on GitHub, a Status line and bold keys in a body raise none of the local codes', () => {
     const snapshot = readSnapshot({
       ...base,
