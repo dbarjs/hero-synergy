@@ -209,6 +209,7 @@ _Avoid_: feature request, enhancement
 - An action launches a session; a map, a spec or a ticket has at most one live session.
 - Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike, and a whole-spec run bypasses only when its spec has open build tickets and every one is AFK. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
 - An action's command name follows where its skill was found: `/<name>` for a project or personal skill, `/<plugin>:<name>` for a plugin skill.
+- A skill the Cockpit launches that is not installed greys its actions, and is a health warning only while one of them is on offer: loud when a row or the empty tree is left with no way forward, quiet when another action still starts the work.
 - A session emits status events.
 - A map's, spec's or ticket's session is none, starting, live or ended; the item and its terminal hold the status, never a session id.
 - A live session's status comes from the registry; status events add failed, the ended reason and the session id.
@@ -221,7 +222,9 @@ _Avoid_: feature request, enhancement
 - An open pull request claims the open ticket it is shown on, and the merge of one that closes its ticket by keyword closes the ticket; the Cockpit opens a pull request but never merges, approves or closes one.
 - A pull request waiting for a merge never needs you: a stuck map or spec with open tickets in review says so, and still ranks as stuck.
 - An upstream has one floor and one tested ceiling; the Cockpit relies on its contracts and never gates on its version.
+- A skill that arrived after the floor greys its action on an older release; it never moves the floor.
 - The canary runs the Cockpit's own checks against the newest upstreams and files an upstream break on the tracker; the Cockpit at runtime reports health. The same contract can surface as either, in different places.
+- The canary reads the names of the skills the Cockpit launches and the template lines the scout keys on; the text a session runs is never watched.
 - An upstream review moves an upstream's last-checked date and tested ceiling; it never moves the floor, and the canary never writes the register.
 - An upstream review starts from what the canary last passed and files issues; it never charts a map, changes code or updates the machine.
 
