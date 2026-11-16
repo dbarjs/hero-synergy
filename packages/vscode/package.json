@@ -47,6 +47,7 @@
   "scripts": {
     "build": "vp pack && vp build",
     "typecheck": "vue-tsc --noEmit -p webview",
+    "prototype": "vp dev --host --port 5202 --strictPort",
     "test:integration": "vp run build && vscode-test",
     "capture": "vp run build && node test/capture/capture.mts",
     "refresh-media": "node test/capture/refresh-media.mts",
