@@ -3,8 +3,10 @@ import { Effect } from 'effect'
 
 import { fixtureRepo as seed } from '../../fixtures/local-tracker/seed.ts'
 import { FileSystem } from '../file-system.ts'
+import { isFinished } from '../snapshot/derive.ts'
+import { driftEntryOf } from '../snapshot/drift-table.ts'
 import { decodeSnapshot, encodeSnapshot, type Snapshot } from '../snapshot/model.ts'
-import { collectLocal, readLocalTracker } from './local.ts'
+import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
 
 const ROOT = '/home/ana/billing'
 const fixtureRepo = (root: string = ROOT) => seed(root)
@@ -202,6 +204,243 @@ describe('readLocalTracker on the fixture repo', () => {
         }
       }
     }),
+  )
+})
+
+const SECTIONS =
+  '## Destination\n\nA seed library.\n\n## Notes\n\n- Dry shelves.\n\n## Decisions so far\n\n## Not yet specified\n\n## Out of scope\n'
+const mapBody = (header = '') => `# Seed library\n\n${header}\n\n${SECTIONS}`
+const ticketBody = (title: string, status = 'Status: claimed') =>
+  `# ${title}\n\nType: task\n${status}\n\n## Question\n\nq\n`
+
+const efforts = (files: Record<string, string>, root = '/repo') =>
+  readLocalEfforts(root).pipe(Effect.provide(FileSystem.inMemory(files)), Effect.orDie)
+
+describe('a local map file', () => {
+  it.effect.each(['MAP.md', 'Map.md', 'map.md'])(
+    'is found as %s on a case-sensitive disk, with no drift',
+    (name) =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            [`/repo/.scratch/seeds/${name}`]: mapBody('Status: in progress'),
+            '/repo/.scratch/seeds/issues/01-shelf.md': ticketBody('Shelf'),
+          },
+          '/repo',
+        )
+        expect(snapshot.maps).toHaveLength(1)
+        const [map] = snapshot.maps
+        expect(map!.ref).toEqual({ tracker: 'local', path: `.scratch/seeds/${name}` })
+        expect(map!.title).toBe('Seed library')
+        expect(map!.warnings).toEqual([])
+        expect(map!.tickets.map((ticket) => ticket.title)).toEqual(['Shelf'])
+        expect(snapshot.unmapped).toEqual([])
+      }),
+  )
+
+  it.effect('beside another casing, reads map.md and names both in a loud map-file-ambiguous', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/seeds/MAP.md': '# Upper\n\n' + SECTIONS,
+          '/repo/.scratch/seeds/map.md': '# Lower\n\n' + SECTIONS,
+          '/repo/.scratch/seeds/issues/01-shelf.md': ticketBody('Shelf'),
+        },
+        '/repo',
+      )
+      const [map] = snapshot.maps
+      expect(map!.ref).toEqual({ tracker: 'local', path: '.scratch/seeds/map.md' })
+      expect(map!.title).toBe('Lower')
+      expect(map!.warnings).toEqual([
+        { code: 'map-file-ambiguous', detail: 'MAP.md, map.md; read map.md' },
+      ])
+      expect(driftEntryOf(map!.warnings[0]!).level).toBe('loud')
+      expect(map!.tickets).toHaveLength(1)
+    }),
+  )
+
+  it.effect('without map.md among the casings, reads the first name in byte order', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/seeds/Map.md': '# Title case\n\n' + SECTIONS,
+          '/repo/.scratch/seeds/MAP.md': '# Upper\n\n' + SECTIONS,
+        },
+        '/repo',
+      )
+      expect(snapshot.maps.map((map) => [map.ref, map.title, map.warnings])).toEqual([
+        [
+          { tracker: 'local', path: '.scratch/seeds/MAP.md' },
+          'Upper',
+          [{ code: 'map-file-ambiguous', detail: 'MAP.md, Map.md; read MAP.md' }],
+        ],
+      ])
+    }),
+  )
+
+  it.effect('is never a directory named map.md, nor a map file below the effort directory', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/seeds/map.md/notes.md': '# Not a map\n',
+          '/repo/.scratch/seeds/research/MAP.md': '# Not a map either\n\n' + SECTIONS,
+          '/repo/.scratch/seeds/issues/01-shelf.md': ticketBody('Shelf'),
+        },
+        '/repo',
+      )
+      expect(snapshot.maps).toEqual([])
+      expect(snapshot.unmapped.map((ticket) => ticket.title)).toEqual(['Shelf'])
+    }),
+  )
+
+  it.effect('with a bold key raises one header-key-bold naming the bold keys in order', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/seeds/MAP.md': mapBody(
+            '**Label:** wayfinder:map\nCharted: 2025-07-07\n**Status**: charted 2025-07-07',
+          ),
+        },
+        '/repo',
+      )
+      expect(snapshot.maps[0]!.warnings).toEqual([
+        { code: 'header-key-bold', detail: 'Label, Status' },
+      ])
+    }),
+  )
+})
+
+describe("a local map's own state", () => {
+  it.effect('hides a closed map with its tickets, and the other maps keep their numbers', () =>
+    Effect.gen(function* () {
+      const files = {
+        '/repo/.scratch/a-done/MAP.md': mapBody('Status: **DONE 2025-07-01** — 01 closed.'),
+        '/repo/.scratch/a-done/issues/01-shelf.md': ticketBody('Shelf', 'Status: resolved'),
+        '/repo/.scratch/b-open/MAP.md': mapBody('Status: in progress 2025-07-05'),
+        '/repo/.scratch/b-open/issues/01-fill.md': ticketBody('Fill'),
+        '/repo/.scratch/c-reached/map.md': mapBody('Status: destination reached 2025-07-04'),
+        '/repo/.scratch/d-no-status/map.md': mapBody(),
+      }
+      const snapshot = yield* read(files, '/repo')
+      expect(snapshot.maps.map((map) => [map.number, map.ref])).toEqual([
+        [2, { tracker: 'local', path: '.scratch/b-open/MAP.md' }],
+        [4, { tracker: 'local', path: '.scratch/d-no-status/map.md' }],
+      ])
+      expect(snapshot.maps[0]!.tickets.map((ticket) => ticket.title)).toEqual(['Fill'])
+      expect(snapshot.unmapped).toEqual([])
+
+      const read_ = yield* efforts(files)
+      expect(read_.map((effort) => [effort.directory, effort.mapState])).toEqual([
+        ['a-done', 'closed'],
+        ['b-open', 'open'],
+        ['c-reached', 'closed'],
+        ['d-no-status', 'open'],
+      ])
+      expect(read_[0]!.map!.number).toBe(1)
+      expect(read_[0]!.map!.tickets.map((ticket) => [ticket.title, ticket.state])).toEqual([
+        ['Shelf', 'closed'],
+      ])
+    }),
+  )
+
+  it.effect('still finishes an open map whose tickets are all closed', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/seeds/MAP.md': mapBody(
+            'Status: **route walked 2025-07-12** — 01 closed.',
+          ),
+          '/repo/.scratch/seeds/issues/01-shelf.md': ticketBody('Shelf', 'Status: resolved'),
+        },
+        '/repo',
+      )
+      const [map] = snapshot.maps
+      expect(map!.warnings).toEqual([])
+      expect(isFinished(map!)).toBe(true)
+    }),
+  )
+
+  it.effect(
+    'reads a DONE later in the line, a heading and a Frontier line as nothing; an unknown lead is quiet',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/a/MAP.md': mapBody('Status: **07 DONE 2025-04-19** (uncommitted)'),
+            '/repo/.scratch/b/MAP.md': mapBody('Status: The shelf work **DONE 2025-07-10**'),
+            '/repo/.scratch/c/MAP.md':
+              '# Seed library\n\nFrontier: empty\n\n## Destination reached\n\nAll done.\n\n' +
+              SECTIONS,
+          },
+          '/repo',
+        )
+        expect(snapshot.maps.map((map) => [map.number, map.warnings])).toEqual([
+          [1, [{ code: 'map-status-unknown', detail: '07' }]],
+          [2, [{ code: 'map-status-unknown', detail: 'The' }]],
+          [3, []],
+        ])
+        expect(driftEntryOf(snapshot.maps[0]!.warnings[0]!).level).toBe('quiet')
+      }),
+  )
+
+  it.effect('never reads a Status line after the first H2, in a fence or in inline code', () =>
+    Effect.gen(function* () {
+      const snapshot = yield* read(
+        {
+          '/repo/.scratch/a/MAP.md': `# Seed library\n\n${SECTIONS}\nStatus: DONE 2025-07-01\n`,
+          '/repo/.scratch/b/MAP.md': `# Seed library\n\n\`\`\`\nStatus: DONE 2025-07-01\n\`\`\`\n\n${SECTIONS}`,
+          '/repo/.scratch/c/MAP.md': `# Seed library\n\n\`Status: DONE 2025-07-01\`\n\n${SECTIONS}`,
+        },
+        '/repo',
+      )
+      expect(snapshot.maps.map((map) => [map.number, map.warnings])).toEqual([
+        [1, []],
+        [2, []],
+        [3, []],
+      ])
+    }),
+  )
+})
+
+describe('other Markdown under .scratch', () => {
+  it.effect('an effort holding only a PRD raises nothing and adds no map', () =>
+    Effect.gen(function* () {
+      const files = {
+        '/repo/.scratch/only-prd/PRD.md': '# A PRD\n\nStatus: DONE\nMap: ../other/MAP.md\n',
+      }
+      const snapshot = yield* read(files, '/repo')
+      expect(snapshot.maps).toEqual([])
+      expect(snapshot.unmapped).toEqual([])
+      expect(snapshot.warnings).toEqual([])
+      expect(yield* efforts(files)).toEqual([
+        { directory: 'only-prd', map: null, mapState: null, unmapped: [] },
+      ])
+    }),
+  )
+
+  it.effect(
+    'never reads PRDs, specs, research write-ups, asset notes, handoffs or checklists as tickets',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/MAP.md': mapBody(),
+            '/repo/.scratch/seeds/PRD.md': '# PRD\n\nStatus: open\n',
+            '/repo/.scratch/seeds/spec.md': '# Spec\n\nType: task\n',
+            '/repo/.scratch/seeds/handoff-shelf.md': '# Handoff\n',
+            '/repo/.scratch/seeds/qa-checklist.md': '# QA\n\n- [ ] dry\n',
+            '/repo/.scratch/seeds/research/01-catalogues.md': '# Research\n\nTicket: 01\n',
+            '/repo/.scratch/seeds/assets/01-research/shapes.md': '# Shapes\n',
+            '/repo/.scratch/seeds/assets/photo.md': '# Photo\n',
+            '/repo/.scratch/seeds/issues/01-shelf.md': ticketBody('Shelf'),
+          },
+          '/repo',
+        )
+        expect(snapshot.maps.map((map) => map.tickets.map((ticket) => ticket.ref))).toEqual([
+          [{ tracker: 'local', path: '.scratch/seeds/issues/01-shelf.md' }],
+        ])
+        expect(snapshot.unmapped).toEqual([])
+      }),
   )
 })
 

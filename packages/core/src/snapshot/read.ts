@@ -1,4 +1,6 @@
+import { boldKeysOf, readHeaderLines } from './header-lines.ts'
 import { readMapBody } from './map-body.ts'
+import { readMapStatus } from './map-status.ts'
 import { firstH1 } from './markdown.ts'
 import type {
   Blocker,
@@ -13,7 +15,7 @@ import type {
   Tracker,
   WayfinderMap,
 } from './model.ts'
-import { readTicketBody } from './ticket-body.ts'
+import { headerTicketLines, readTicketBody } from './ticket-body.ts'
 import type { DriftWarning } from './warnings.ts'
 
 /**
@@ -28,6 +30,11 @@ export interface CollectedMap {
   readonly body: string
   /** The children the tracker keeps, in map order: native sub-issues, local files by number. Empty when it keeps none. */
   readonly children: ReadonlyArray<number>
+  /**
+   * Every map file a local effort holds, `map.md` in any casing, in byte order, when it holds
+   * more than one; `ref` names the one read. Absent on GitHub and in an effort with one map file.
+   */
+  readonly mapFiles?: ReadonlyArray<string>
 }
 
 /** What a tracker reports about a ticket before its body is read. */
@@ -186,7 +193,7 @@ export function readSnapshot(collected: Collected): Snapshot {
   const maps: WayfinderMap[] = collected.maps.map((map) => {
     const body = bodies.get(map.number)
     if (body === undefined) throw new Error(`map #${map.number} was not read`)
-    const mapWarnings = [...body.warnings]
+    const mapWarnings = [...(onGitHub ? [] : localMapWarnings(map)), ...body.warnings]
     for (const decision of body.decisions) {
       const linked = decision.number === null ? undefined : byNumber.get(decision.number)
       if (linked?.state === 'open') {
@@ -246,10 +253,32 @@ export function readSnapshot(collected: Collected): Snapshot {
   }
 }
 
+/** What a local map's file and header lines raise: several map files, bold keys, a Status word this version does not read. */
+function localMapWarnings(map: CollectedMap): DriftWarning[] {
+  const warnings: DriftWarning[] = []
+  const files = map.mapFiles ?? []
+  if (files.length > 1)
+    warnings.push({
+      code: 'map-file-ambiguous',
+      detail: `${files.join(', ')}; read ${fileOf(map.ref)}`,
+    })
+  const bold = boldKeysOf(readHeaderLines(map.body))
+  if (bold.length > 0) warnings.push({ code: 'header-key-bold', detail: bold.join(', ') })
+  const status = readMapStatus(map.body)
+  if (status.unknown !== null) warnings.push({ code: 'map-status-unknown', detail: status.unknown })
+  return warnings
+}
+
 /** The parts of a ticket that need no other item: title, state, type, claim, resolution, and the lines it carries. */
 function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   const warnings: DriftWarning[] = []
   const body = readTicketBody(ticket.body)
+  // A local ticket's facts sit on its header lines; GitHub reads its text fallbacks from any line.
+  const lines = onGitHub ? body : headerTicketLines(body.header)
+  if (!onGitHub) {
+    const bold = boldKeysOf(body.header)
+    if (bold.length > 0) warnings.push({ code: 'header-key-bold', detail: bold.join(', ') })
+  }
 
   let title = ticket.title
   if (title === null) {
@@ -264,9 +293,9 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   if (partOf !== null)
     warnings.push({ code: 'parent-as-part-of-line', detail: `Part of #${partOf}` })
 
-  const textBlockers = body.blockedBy?.numbers ?? []
+  const textBlockers = lines.blockedBy?.numbers ?? []
   if (onGitHub && textBlockers.length > 0) warnings.push({ code: 'blockers-as-text-line' })
-  const slugs = body.blockedBy?.slugs ?? []
+  const slugs = lines.blockedBy?.slugs ?? []
   if (slugs.length > 0) warnings.push({ code: 'blockers-as-slugs', detail: slugs.join(', ') })
 
   let type: TicketType | null = null
@@ -279,21 +308,21 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
       warnings.push({ code: 'type-several', detail: fromLabels.join(', ') })
     } else if (fromLabels[0] !== undefined) {
       type = fromLabels[0]
-    } else if (body.type?.value) {
-      type = body.type.value
-      warnings.push({ code: 'type-as-line', detail: body.type.raw })
+    } else if (lines.type?.value) {
+      type = lines.type.value
+      warnings.push({ code: 'type-as-line', detail: lines.type.raw })
     } else {
       warnings.push({
         code: 'type-missing',
-        ...(body.type === null ? {} : { detail: body.type.raw }),
+        ...(lines.type === null ? {} : { detail: lines.type.raw }),
       })
     }
-  } else if (body.type?.value) {
-    type = body.type.value
+  } else if (lines.type?.value) {
+    type = lines.type.value
   } else {
     warnings.push({
       code: 'type-missing',
-      ...(body.type === null ? {} : { detail: body.type.raw }),
+      ...(lines.type === null ? {} : { detail: lines.type.raw }),
     })
   }
 
@@ -306,10 +335,10 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
       warnings.push({ code: 'claim-legacy-label' })
     }
   } else if (ticket.state === null) {
-    const status = body.status?.toLowerCase() ?? null
+    const status = lines.status?.toLowerCase() ?? null
     if (status === 'resolved') state = 'closed'
     else if (status === 'claimed') claim = { by: [] }
-    else if (status !== null) warnings.push({ code: 'unknown-status', detail: body.status ?? '' })
+    else if (status !== null) warnings.push({ code: 'unknown-status', detail: lines.status ?? '' })
   }
 
   if (!body.hasQuestion) warnings.push({ code: 'no-question-heading' })
@@ -348,7 +377,7 @@ const segments = (ref: Ref): ReadonlyArray<string> =>
 /** The file name a local ticket's path ends in. */
 const fileOf = (ref: Ref): string => segments(ref).at(-1) ?? ''
 
-/** The directory a local map's `map.md` sits in. */
+/** The directory a local map's file sits in. */
 const directoryOf = (ref: Ref): string => segments(ref).at(-2) ?? ''
 
 /** `03-foo-bar.md` → `Foo bar`; `#n` when there is nothing to read. */

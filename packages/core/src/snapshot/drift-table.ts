@@ -72,6 +72,23 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
     message: () => 'The map has no title of its own; its directory name stands in.',
     hint: 'A local map starts with a # heading.',
   },
+  'map-file-ambiguous': {
+    level: 'loud',
+    message: (detail) => `The effort has more than one map file${quoted(detail)}.`,
+    hint: 'An effort keeps one map file, map.md.',
+  },
+  'map-status-unknown': {
+    level: 'quiet',
+    message: (detail) =>
+      `The map's Status line starts with a word this version does not read; the map reads as open${quoted(detail)}.`,
+    hint: 'Only a Status line that starts with DONE or destination reached closes a local map.',
+  },
+  // map or ticket
+  'header-key-bold': {
+    level: 'quiet',
+    message: (detail) => `A header line has a bold key${quoted(detail)}.`,
+    hint: 'A header line is a plain "Key: value" line before the first ## heading.',
+  },
   // ticket
   'type-missing': {
     level: 'loud',

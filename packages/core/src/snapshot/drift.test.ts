@@ -157,6 +157,34 @@ describe('the drift catalogue', () => {
     expect(ticket(snapshot, 1).outcome).toBe('decided')
   })
 
+  test('map-file-ambiguous: the map read is named beside every map file the effort holds', () => {
+    const snapshot = read('map-file-ambiguous')
+    const found = map(snapshot, 1)
+    expect(found.warnings).toEqual([
+      { code: 'map-file-ambiguous', detail: 'MAP.md, map.md; read map.md' },
+    ])
+    expect(found.title).toBe('Billing rewrite')
+    expect(found.tickets.map((candidate) => candidate.number)).toEqual([2])
+  })
+
+  test('map-status-unknown: the map reads as open, with the first word as written in the detail', () => {
+    const snapshot = read('map-status-unknown')
+    const found = map(snapshot, 1)
+    expect(found.warnings).toEqual([{ code: 'map-status-unknown', detail: '01' }])
+    expect(found.tickets.map((candidate) => candidate.number)).toEqual([2])
+  })
+
+  test('header-key-bold: bold keys read like plain ones, listed once per file in order', () => {
+    const snapshot = read('header-key-bold')
+    expect(map(snapshot, 1).warnings).toEqual([
+      { code: 'header-key-bold', detail: 'Label, Status' },
+    ])
+    const bold = ticket(snapshot, 2)
+    expect(bold.warnings).toEqual([{ code: 'header-key-bold', detail: 'Type, Status' }])
+    expect(bold.type).toBe('grilling')
+    expect(bold.claim).toEqual({ by: [] })
+  })
+
   test('parent-as-part-of-line: the line places the ticket, with the line in the detail', () => {
     const snapshot = read('parent-as-part-of-line')
     expect(map(snapshot, 1).tickets.map((candidate) => candidate.number)).toEqual([2])

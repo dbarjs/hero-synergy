@@ -1,0 +1,37 @@
+{
+  "tracker": {
+    "kind": "local"
+  },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00Z",
+  "labels": [],
+  "maps": [
+    {
+      "number": 1,
+      "title": null,
+      "ref": {
+        "tracker": "local",
+        "path": ".scratch/billing-rewrite/map.md"
+      },
+      "body": "# Billing rewrite\n\n**Label**: wayfinder:map\n**Status:** in progress 2026-10-07\n\n## Destination\n\nBilling v2 decided: every question answered.\n\n## Notes\n\n- Domain: invoicing. Grilling tickets use /grilling.\n\n## Decisions so far\n\n\n\n## Not yet specified\n\n\n\n## Out of scope\n\n\n",
+      "children": [2]
+    }
+  ],
+  "tickets": [
+    {
+      "number": 2,
+      "title": null,
+      "ref": {
+        "tracker": "local",
+        "path": ".scratch/billing-rewrite/issues/02-refund-policy.md"
+      },
+      "body": "# Refund policy\n\n**Type:** grilling\n**Status:** claimed\n\n## Question\n\nReopen or credit note?\n",
+      "state": null,
+      "labels": [],
+      "assignees": [],
+      "parent": 1,
+      "blockedBy": [],
+      "lastComment": null
+    }
+  ]
+}

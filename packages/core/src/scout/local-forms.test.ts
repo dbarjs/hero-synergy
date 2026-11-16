@@ -1,10 +1,14 @@
 import { describe, expect, it } from '@effect/vitest'
+import { Effect } from 'effect'
 
-import { localForms, scratchFiles } from '../../fixtures/local-forms/forms.ts'
+import { formsRepo, localForms, scratchFiles } from '../../fixtures/local-forms/forms.ts'
+import { FileSystem } from '../file-system.ts'
+import { readLocalEfforts } from './local.ts'
+import { scoutColumns, truthColumns } from './readings.ts'
 
 // The pattern fixtures of map #130: one invented file per form a real local tracker holds, each
-// with its careful reading in `truth.json`. These tests keep the fixture whole; the readers'
-// table test feeds `localForms()` to the readers and compares with each `reading`.
+// with its careful reading in `truth.json`. The first tests keep the fixture whole; the table
+// test reads the fixture with the local reader and compares every file with its `reading`.
 
 const forms = localForms()
 const effortOf = (path: string): string => path.split('/')[1]!
@@ -74,6 +78,26 @@ describe('the local-forms fixture', () => {
       expect(form.kind, form.path).not.toBe('note')
       expect(form.disagreements!.length, form.path).toBeGreaterThan(0)
       for (const disagreement of form.disagreements!) expect(disagreement, form.path).not.toBe('')
+    }
+  })
+})
+
+describe('the local reader on every form', () => {
+  const ROOT = '/home/ana/forms'
+  const efforts = Effect.runSync(
+    readLocalEfforts(ROOT).pipe(Effect.provide(FileSystem.inMemory(formsRepo(ROOT)))),
+  )
+
+  it.each(forms)('agrees with the truth of $path', (form) => {
+    expect(scoutColumns(efforts, form.path)).toEqual(truthColumns(form))
+  })
+
+  it('reads every effort directory, and finds a map in each map-* effort', () => {
+    expect(efforts.map((effort) => effort.directory)).toEqual(
+      [...new Set(forms.map((form) => effortOf(form.path)))].sort(),
+    )
+    for (const effort of efforts) {
+      if (effort.directory.startsWith('map-')) expect(effort.map, effort.directory).not.toBeNull()
     }
   })
 })

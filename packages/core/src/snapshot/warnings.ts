@@ -22,6 +22,10 @@ export const warningCodes = [
   'decision-links-open-ticket',
   'children-as-task-list',
   'map-title-from-directory',
+  'map-file-ambiguous',
+  'map-status-unknown',
+  // map or ticket
+  'header-key-bold',
   // ticket
   'parent-as-part-of-line',
   'blockers-as-text-line',

@@ -173,7 +173,9 @@ export {
 export { findRepo, ownerAndRepo, type RepoTracker } from './scout/find-repo.ts'
 export {
   collectLocal,
+  type EffortReading,
   type LocalEffort,
+  readLocalEfforts,
   readLocalTracker,
   SCRATCH_DIRECTORY,
 } from './scout/local.ts'
