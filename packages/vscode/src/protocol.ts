@@ -247,8 +247,8 @@ export type Focus =
       readonly number: number
       readonly title: string
       readonly state: 'open' | 'closed'
-      /** Who claimed it; null when unclaimed. */
-      readonly claim: ReadonlyArray<string> | null
+      /** The Claim fact: who holds the claim, `claimed` when it names nobody, `unclaimed` with none. */
+      readonly claim: string
       /** The issue's URL on GitHub; null on a local tracker, which opens a file. */
       readonly url: string | null
       readonly session: SessionView
@@ -369,8 +369,8 @@ export type Detail =
       readonly place: 'claimed' | 'frontier' | 'blocked' | 'closed'
       readonly type: TicketType | null
       readonly mode: Mode | null
-      /** Who claimed it; null when unclaimed. */
-      readonly claim: ReadonlyArray<string> | null
+      /** The Claim fact: who holds the claim, `claimed` when it names nobody, `unclaimed` with none. */
+      readonly claim: string
       readonly url: string | null
       /** The ticket's Markdown body, rendered in the webview. */
       readonly body: string

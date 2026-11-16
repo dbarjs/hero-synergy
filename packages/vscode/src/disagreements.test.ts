@@ -128,7 +128,7 @@ describe('what the tracker and the session side disagree about', () => {
     it('shows the ticket as unclaimed, since that is what the tracker says', async () => {
       const ticket = ticketOf(await fixtureSnapshot(), 3, 1)
       const pending = disagreementOf(ticket, starting(), 0, null)
-      expect(shownClaim(ticket, pending)).toBeNull()
+      expect(shownClaim(ticket, pending)).toBe('unclaimed')
     })
   })
 
@@ -197,13 +197,13 @@ describe('the Tree and the Detail with the sessions laid over the snapshot', () 
     const focus = selectionOf(snapshot, PALETTE, sessions)?.focus
     expect(focus).toMatchObject({
       kind: 'ticket',
-      claim: null,
+      claim: 'unclaimed',
       disagreement: { kind: 'claim-pending' },
     })
     const later = launching({ [PALETTE]: live(1, Date.parse(snapshot.collectedAt)) })
     expect(detailOf(snapshot, PALETTE, later)).toMatchObject({
       kind: 'ticket',
-      claim: null,
+      claim: 'unclaimed',
       disagreement: { kind: 'unclaimed', text: 'not claimed on the tracker' },
     })
   })
@@ -309,5 +309,62 @@ describe('the Tree and the Detail with the sessions laid over the snapshot', () 
     const snapshot = await fixtureSnapshot()
     const { model } = mapNode(snapshot, { [PALETTE]: starting() })
     expect(model.kind === 'maps' && model.unlisted).toBeNull()
+  })
+})
+
+describe('the claim of a local ticket in the panes', () => {
+  /** The fixture workspace with Row density's file replaced: map 3, ticket 4. */
+  const withRowDensity = (lines: string): Promise<Snapshot> => {
+    const files = workspaceFiles(ROOT)
+    files[`${ROOT}/.scratch/cockpit-colors/issues/04-row-density.md`] =
+      `# Row density\n\nType: grilling\n${lines}\n\n## Question\n\nHow dense?\n`
+    return Effect.runPromise(
+      readLocalTracker(ROOT).pipe(Effect.provide(FileSystem.inMemory(files))),
+    )
+  }
+  const claimShown = (snapshot: Snapshot, sessions = launching({})) => {
+    const focus = selectionOf(snapshot, ROW_DENSITY, sessions)?.focus
+    const detail = detailOf(snapshot, ROW_DENSITY, sessions)
+    return {
+      focus: focus?.kind === 'ticket' ? focus.claim : null,
+      detail: detail?.kind === 'ticket' ? detail.claim : null,
+    }
+  }
+
+  it('shows a claim that names nobody as "claimed", never as an empty value', async () => {
+    for (const lines of [
+      'Status: claimed',
+      'Status: open — claimed 2026-10-08',
+      'Status: open (claimed)',
+    ]) {
+      expect(claimShown(await withRowDensity(lines)), lines).toEqual({
+        focus: 'claimed',
+        detail: 'claimed',
+      })
+    }
+  })
+
+  it('names who holds a claim an Assignee line names, and "unclaimed" for a placeholder', async () => {
+    expect(
+      claimShown(await withRowDensity('Status: open\nAssignee: wren (watering roster)')),
+    ).toEqual({ focus: 'wren', detail: 'wren' })
+    expect(claimShown(await withRowDensity('Status: open\nAssignee: — (unclaimed)'))).toEqual({
+      focus: 'unclaimed',
+      detail: 'unclaimed',
+    })
+  })
+
+  it('raises no disagreement for a named local claim with a session live here', async () => {
+    const snapshot = await withRowDensity('Status: open\nAssignee: wren (claimed 2026-10-08)')
+    // A local tracker asks for no login, so `me` stays null and the name is never compared.
+    const sessions = { [ROW_DENSITY]: live(4) }
+    const row = mapNode(snapshot, sessions).node.tickets.find((ticket) => ticket.number === 4)
+    expect(row).toMatchObject({ place: 'claimed', disagreement: null })
+    const focus = selectionOf(snapshot, ROW_DENSITY, launching(sessions))?.focus
+    expect(focus).toMatchObject({ kind: 'ticket', claim: 'wren', disagreement: null })
+    expect(detailOf(snapshot, ROW_DENSITY, launching(sessions))).toMatchObject({
+      claim: 'wren',
+      disagreement: null,
+    })
   })
 })

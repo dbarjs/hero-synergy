@@ -42,17 +42,19 @@ export const NO_BYPASS: BypassPolicy = {
 }
 
 /**
- * Whether a ticket is AFK: labelled the repo's `ready-for-agent` whatever its type, or typed
- * research or task. A ticket labelled the repo's `ready-for-human` is never AFK, even when it also
- * carries `ready-for-agent`: a ticket marked for a person is never run unattended. Any other
- * ticket, one with no type included, is HITL.
+ * Whether a ticket is AFK: marked ready for an agent whatever its type, or typed research or task.
+ * A ticket marked for a human is never AFK, even when it is also marked ready for an agent: a
+ * ticket marked for a person is never run unattended. A ticket is marked by the repo's triage
+ * labels (`docs/agents/triage-labels.md` may rename them), or, on a local tracker, by its triage
+ * role, which reads only the five default names. Any other ticket, one with no type included, is HITL.
  */
 export function isAfkTicket(
-  ticket: Pick<Ticket, 'type' | 'labels'>,
+  ticket: Pick<Ticket, 'type' | 'labels' | 'role'>,
   triage: TriageLabels,
 ): boolean {
-  if (ticket.labels.includes(triage.readyForHuman)) return false
-  if (ticket.labels.includes(triage.readyForAgent)) return true
+  if (ticket.role === 'ready-for-human' || ticket.labels.includes(triage.readyForHuman))
+    return false
+  if (ticket.role === 'ready-for-agent' || ticket.labels.includes(triage.readyForAgent)) return true
   return ticket.type === 'research' || ticket.type === 'task'
 }
 

@@ -138,8 +138,9 @@ export const DRIFT_TABLE: Readonly<Record<WarningCode, Copy>> = {
   },
   'unknown-status': {
     level: 'loud',
-    message: (detail) => `The ticket has a status this version does not know${quoted(detail)}.`,
-    hint: 'A local ticket has Status: claimed or resolved, or none.',
+    message: (detail) =>
+      `The ticket's Status line starts with a word this version does not read; the ticket reads as open${quoted(detail)}.`,
+    hint: 'A Status line starts with open, claimed, closed, done, resolved or wontfix, or a triage role: needs-triage, needs-info, ready-for-agent or ready-for-human.',
   },
   'parent-as-part-of-line': {
     level: 'quiet',

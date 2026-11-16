@@ -15,12 +15,13 @@ export interface TypeLine {
   readonly raw: string
 }
 
-/** The lines a ticket's facts are read from, before the tracker decides which count. */
+/**
+ * The lines a ticket's facts are read from, before the tracker decides which count. A local
+ * ticket's Status and Assignee lines are read from its header lines by `readTicketStatus`.
+ */
 export interface TicketLines {
   readonly blockedBy: BlockersLine | null
   readonly type: TypeLine | null
-  /** The value of a `Status:` line. */
-  readonly status: string | null
   /** The labels a `Labels:` line names, comma- or space-separated, backticks dropped; null with no line. */
   readonly labels: ReadonlyArray<string> | null
 }
@@ -37,8 +38,8 @@ export interface TicketBody extends TicketLines {
   /** The map named by a `Part of #n` line. */
   readonly partOf: number | null
   /**
-   * The header lines a local ticket's facts come from. `blockedBy`, `type` and
-   * `status` are the text fallbacks GitHub reads: any such line before the first H2.
+   * The header lines a local ticket's facts come from. `blockedBy` and `type` are
+   * the text fallbacks GitHub reads: any such line before the first H2.
    */
   readonly header: ReadonlyArray<HeaderLine>
   /** Whether a `## Question` heading is there. */
@@ -58,7 +59,6 @@ export function readTicketBody(body: string): TicketBody {
   let partOf: number | null = null
   let blockedBy: TicketBody['blockedBy'] = null
   let type: TicketBody['type'] = null
-  let status: string | null = null
   let labels: ReadonlyArray<string> | null = null
 
   // The lines live at the top of the body, before any section.
@@ -70,8 +70,6 @@ export function readTicketBody(body: string): TicketBody {
     if (blockers?.[1] !== undefined && blockedBy === null) blockedBy = readBlockers(blockers[1])
     const typeLine = /^Type:\s*(.+?)\s*$/i.exec(line)
     if (typeLine?.[1] !== undefined && type === null) type = readType(typeLine[1], line)
-    const statusLine = /^Status:\s*(.+?)\s*$/i.exec(line)
-    if (statusLine?.[1] !== undefined && status === null) status = statusLine[1]
     const labelsLine = /^Labels:\s*(.*)$/i.exec(line)
     if (labelsLine?.[1] !== undefined && labels === null) labels = readLabels(labelsLine[1])
   }
@@ -81,7 +79,6 @@ export function readTicketBody(body: string): TicketBody {
     partOf,
     blockedBy,
     type,
-    status,
     labels,
     header: readHeaderLines(body),
     hasQuestion: question !== undefined,
@@ -103,13 +100,11 @@ export function headerTicketLines(header: ReadonlyArray<HeaderLine>): LocalTicke
   const blockedBy = headerValue(header, 'blocked by')
   const blocks = headerValue(header, 'blocks')
   const type = headerValue(header, 'type')
-  const status = headerValue(header, 'status')
   const labels = headerValue(header, 'labels')
   return {
     blockedBy: blockedBy === null ? null : readReferenceLine(blockedBy),
     blocks: blocks === null ? null : readReferenceLine(blocks),
     type: type === null || type === '' ? null : readType(type, `Type: ${type}`),
-    status: status === null || status === '' ? null : status,
     labels: labels === null ? null : readLabels(labels),
   }
 }
@@ -136,7 +131,7 @@ function readBlockers(value: string): BlockersLine {
 }
 
 /** A `Labels:` value, split on commas only: a label may hold a space (`good first issue`). */
-function readLabels(value: string): ReadonlyArray<string> {
+export function readLabels(value: string): ReadonlyArray<string> {
   return value
     .split(',')
     .map((token) => token.replace(/`/g, '').trim())

@@ -18,7 +18,7 @@ const detail: Detail = {
   place: 'frontier',
   type: 'grilling',
   mode: 'HITL',
-  claim: null,
+  claim: 'unclaimed',
   url: null,
   body: '## Question\n\nPostgres or SQLite?',
   resolution: null,

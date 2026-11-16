@@ -115,6 +115,16 @@ describe('the drift table', () => {
       withDetail: 'A Blocked by item names no ticket: the design review.',
       hint: 'Each item of a Blocked by line starts with a ticket number, a ticket file name or a link to one.',
     },
+    {
+      code: 'unknown-status',
+      level: 'loud',
+      message:
+        "The ticket's Status line starts with a word this version does not read; the ticket reads as open.",
+      detail: 'build half DONE 2026-10-02; check half OPEN',
+      withDetail:
+        "The ticket's Status line starts with a word this version does not read; the ticket reads as open: build half DONE 2026-10-02; check half OPEN.",
+      hint: 'A Status line starts with open, claimed, closed, done, resolved or wontfix, or a triage role: needs-triage, needs-info, ready-for-agent or ready-for-human.',
+    },
   ] as const)(
     '$code: words the local tracker reader raises',
     ({ code, level, message, detail, withDetail, hint }) => {

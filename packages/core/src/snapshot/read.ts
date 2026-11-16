@@ -13,10 +13,12 @@ import type {
   TicketState,
   TicketType,
   Tracker,
+  TriageRole,
   WayfinderMap,
 } from './model.ts'
 import { type ReferenceItem, type ReferenceLine, resolveTarget } from './reference-line.ts'
 import { headerTicketLines, readTicketBody } from './ticket-body.ts'
+import { readTicketStatus } from './ticket-status.ts'
 import type { DriftWarning } from './warnings.ts'
 
 /**
@@ -45,7 +47,7 @@ export interface CollectedTicket {
   readonly title: string | null
   readonly ref: Ref
   readonly body: string
-  /** The tracker's state; null on a local tracker, where a `Status: resolved` line closes a ticket. */
+  /** The tracker's state; null on a local tracker, where the ticket's Status line decides. */
   readonly state: TicketState | null
   readonly labels: ReadonlyArray<string>
   readonly assignees: ReadonlyArray<string>
@@ -92,6 +94,10 @@ interface Draft {
   readonly type: TicketType | null
   readonly labels: ReadonlyArray<string>
   readonly claim: Claim | null
+  /** Local: the triage role; null on GitHub. */
+  readonly role: TriageRole | null
+  /** Local: the Status line as written; null on GitHub. */
+  readonly statusLine: string | null
   readonly body: string
   readonly resolution: Resolution | null
   readonly parent: number | null
@@ -227,12 +233,12 @@ export function readSnapshot(collected: Collected): Snapshot {
       ref: draft.ref,
       state: draft.state,
       type: draft.type,
-      // Null until the local reading rules fill them; GitHub never does.
+      // Null until the local type rules fill it; GitHub never does.
       modeNote: null,
       labels: draft.labels,
       claim: draft.claim,
-      role: null,
-      statusLine: null,
+      role: draft.role,
+      statusLine: draft.statusLine,
       blockedBy,
       body: draft.body,
       resolution: draft.resolution,
@@ -390,17 +396,21 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
 
   let state: TicketState = ticket.state ?? 'open'
   let claim: Claim | null = null
+  let role: TriageRole | null = null
+  let statusLine: string | null = null
   if (onGitHub) {
     if (ticket.assignees.length > 0) claim = { by: ticket.assignees }
     if (ticket.labels.includes('wayfinder:claimed')) {
       claim = { by: ticket.assignees }
       warnings.push({ code: 'claim-legacy-label' })
     }
-  } else if (ticket.state === null) {
-    const status = lines.status?.toLowerCase() ?? null
-    if (status === 'resolved') state = 'closed'
-    else if (status === 'claimed') claim = { by: [] }
-    else if (status !== null) warnings.push({ code: 'unknown-status', detail: lines.status ?? '' })
+  } else {
+    const status = readTicketStatus(body.header)
+    state = status.state
+    claim = status.claim
+    role = status.role
+    statusLine = status.statusLine
+    warnings.push(...status.warnings)
   }
 
   if (!body.hasQuestion) warnings.push({ code: 'no-question-heading' })
@@ -424,6 +434,8 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
     type,
     labels: onGitHub ? ticket.labels : (lines.labels ?? ticket.labels),
     claim,
+    role,
+    statusLine,
     body: ticket.body,
     resolution,
     parent: ticket.parent,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vite-plus/test'
 
-import { boldKeysOf, headerValue, readHeaderLines } from './header-lines.ts'
+import { boldKeysOf, headerValue, headerValues, readHeaderLines } from './header-lines.ts'
 
 describe('readHeaderLines', () => {
   test('reads the Key: value lines before the first H2, in order, past the H1 and blank lines', () => {
@@ -87,6 +87,21 @@ describe('headerValue', () => {
 
   test('is null for a key no line has', () => {
     expect(headerValue(lines, 'Assignee')).toBeNull()
+  })
+})
+
+describe('headerValues', () => {
+  const lines = readHeaderLines(
+    'STATUS: closed\nBlocked_by: 04\nstatus: open\n**Status:** done\nStatus:\n',
+  )
+
+  test('gives every line of a key in order, matched in any case, bold keys and empty values included', () => {
+    expect(headerValues(lines, 'Status')).toEqual(['closed', 'open', 'done', ''])
+    expect(headerValues(lines, 'blocked by')).toEqual(['04'])
+  })
+
+  test('is empty for a key no line has', () => {
+    expect(headerValues(lines, 'Assignee')).toEqual([])
   })
 })
 

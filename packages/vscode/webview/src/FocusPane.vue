@@ -79,7 +79,7 @@ const emit = defineEmits<{
         </div>
         <div class="fact claim">
           <dt>Claim</dt>
-          <dd>{{ focus.claim === null ? 'unclaimed' : focus.claim.join(', ') }}</dd>
+          <dd>{{ focus.claim }}</dd>
         </div>
         <div v-if="focus.disagreement" class="fact disagreement">
           <dt>Tracker</dt>

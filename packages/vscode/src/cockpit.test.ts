@@ -2905,6 +2905,51 @@ describe('the Cockpit controller reading the tracker again for sessions', () => 
   )
 
   it.effect(
+    "never calls a named local claim someone else's: a live session on it raises nothing, and no login is asked",
+    () => {
+      // Were the login asked, this one would differ from the Assignee's name and raise claimed-by-other.
+      const user: ProcessRecording = {
+        command: 'gh',
+        args: ['api', 'user', '--jq', '.login'],
+        stdout: 'someone-else\n',
+        stderr: '',
+        exitCode: 0,
+      }
+      const setup = launchable()
+      return withCockpit(
+        {
+          ...setup,
+          files: {
+            ...setup.files,
+            [PALETTE_FILE]:
+              '# Palette\n\nType: prototype\nStatus: open\nAssignee: wren (claimed 2026-10-08)\n\n## Question\n\nWhich colors?\n',
+          },
+          recordings: [...(setup.recordings ?? []), user],
+        },
+        ({ cockpit, published, fs, watcher }) =>
+          Effect.gen(function* () {
+            yield* TestClock.setTime(NINE_59)
+            yield* cockpit.show
+            expect(rowOf(published)).toMatchObject({ place: 'claimed', disagreement: null })
+            yield* cockpit.receive({ type: 'launch', key: PALETTE })
+            yield* TestClock.setTime(TEN)
+            yield* appendEvents(fs, watcher, eventLine('1', 'SessionStart', 'A', 'startup'))
+            expect(rowOf(published)).toMatchObject({
+              place: 'claimed',
+              disagreement: null,
+              session: { kind: 'live' },
+            })
+            yield* cockpit.receive({ type: 'select', key: PALETTE })
+            const shown = published.at(-1)
+            const focus =
+              shown?.kind === 'maps' && shown.selection?.kind === 'ticket' ? shown.selection : null
+            expect(focus).toMatchObject({ claim: 'wren', disagreement: null })
+          }),
+      )
+    },
+  )
+
+  it.effect(
     'names who claimed a ticket when a session is live here and the claim is not mine',
     () => {
       const user = (login: string): ProcessRecording => ({
@@ -3590,6 +3635,45 @@ describe('the Cockpit controller bypassing permissions', () => {
             expect(palette?.shellArgs).not.toContain('--permission-mode')
           }),
       ),
+  )
+
+  it.effect(
+    "reads a local ticket's triage role: ready-for-human keeps a task's prompts, ready-for-agent bypasses a prototype",
+    () => {
+      const setup = bypassing('afkTickets', DEV_CONTAINER)
+      return withCockpit(
+        {
+          ...setup,
+          files: {
+            ...setup.files,
+            // The repo renames its triage labels; a local role is still read in the default names.
+            [`${ROOT}/docs/agents/triage-labels.md`]:
+              '| Role | Label |\n| --- | --- |\n| ready-for-agent | agent: go |\n| ready-for-human | human only |\n',
+            [`${ROOT}/.scratch/cockpit-colors/issues/03-contrast-audit.md`]:
+              '# Contrast audit\n\nType: task\nStatus: open — ready-for-human\n\n## Question\n\nMeasure the contrast.\n',
+            [`${ROOT}/.scratch/cockpit-colors/issues/01-palette.md`]:
+              '# Palette\n\nType: prototype\nStatus: ready-for-agent\n\n## Question\n\nWhich five colors?\n',
+          },
+        },
+        ({ cockpit, published, terminals }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            expect(commandOf(published, AUDIT)).not.toContain(FLAG)
+            expect(commandOf(published, PALETTE)).toMatch(
+              /^claude --permission-mode bypassPermissions -n '#1 Palette' /,
+            )
+            yield* cockpit.receive({ type: 'launch', key: AUDIT })
+            yield* cockpit.receive({ type: 'launch', key: PALETTE })
+            const [audit, palette] = terminals.opened
+            expect(audit?.shellArgs).not.toContain('--permission-mode')
+            expect(palette?.shellArgs.slice(0, 2)).toEqual([
+              '--permission-mode',
+              'bypassPermissions',
+            ])
+          }),
+      )
+    },
   )
 
   it.effect('keeps plain Actions interactive under afkTickets', () =>

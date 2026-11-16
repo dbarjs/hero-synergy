@@ -19,7 +19,15 @@ interface MapTruth {
   readonly decisions: ReadonlyArray<number>
 }
 
+type TicketState = 'open' | 'claimed' | 'closed'
+type Role = 'needs-triage' | 'needs-info' | 'ready-for-agent' | 'ready-for-human' | 'wontfix'
+
 interface TicketTruth {
+  /** Closed; or open, and claimed when it has a claim. */
+  readonly state: TicketState
+  readonly role: Role | null
+  /** Who the `Assignee:` line names; a closed ticket keeps it as history. */
+  readonly assignee: string | null
   /** The tickets the file's own `Blocked by:` line names, in order. */
   readonly blockedBy: ReadonlyArray<number>
   /** The tickets the file's own `Blocks:` line names. */
@@ -28,12 +36,19 @@ interface TicketTruth {
 
 /**
  * One file in the columns compared: what it is; for a map its state and decisions; for a ticket
- * its merged blockers, its own `Blocked by:` items in order, then the tickets whose `Blocks:`
- * line names it, in number order.
+ * its state (closed; or open, and claimed when it has a claim), its triage role, who holds its
+ * claim (the first name, and only on a ticket that isn't closed), and its merged blockers: its
+ * own `Blocked by:` items in order, then the tickets whose `Blocks:` line names it, in number order.
  */
 export type Columns =
   | { readonly kind: 'map'; readonly state: 'open' | 'closed'; readonly decisions: number[] }
-  | { readonly kind: 'ticket'; readonly blockedBy: number[] }
+  | {
+      readonly kind: 'ticket'
+      readonly state: TicketState
+      readonly role: Role | null
+      readonly assignee: string | null
+      readonly blockedBy: number[]
+    }
   | { readonly kind: 'note' }
 
 const effortOf = (path: string): string => path.split('/')[1] ?? ''
@@ -59,7 +74,15 @@ export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>):
     .map((other) => numberOf(other.path))
     .sort((a, b) => a - b)
   for (const blocker of inverted) if (!blockedBy.includes(blocker)) blockedBy.push(blocker)
-  return { kind: 'ticket', blockedBy }
+  const { state, role, assignee } = entry.reading
+  return {
+    kind: 'ticket',
+    state,
+    role,
+    // A closed ticket keeps its Assignee as history, and is never claimed.
+    assignee: state === 'closed' ? null : assignee,
+    blockedBy,
+  }
 }
 
 /**
@@ -83,5 +106,11 @@ export function scoutColumns(efforts: ReadonlyArray<EffortReading>, path: string
     (candidate) => candidate.ref.tracker === 'local' && candidate.ref.path === path,
   )
   if (ticket === undefined) return { kind: 'note' }
-  return { kind: 'ticket', blockedBy: ticket.blockedBy.map((blocker) => blocker.number) }
+  return {
+    kind: 'ticket',
+    state: ticket.state === 'closed' ? 'closed' : ticket.claim === null ? 'open' : 'claimed',
+    role: ticket.role,
+    assignee: ticket.claim?.by[0] ?? null,
+    blockedBy: ticket.blockedBy.map((blocker) => blocker.number),
+  }
 }

@@ -55,8 +55,16 @@ const keyOf = (key: string): string =>
 
 /** The value of the first header line with this key, matched in any case; null when none has it. */
 export function headerValue(header: ReadonlyArray<HeaderLine>, key: string): string | null {
+  return headerValues(header, key)[0] ?? null
+}
+
+/** The value of every header line with this key, matched in any case, in order: the first is the one read. */
+export function headerValues(
+  header: ReadonlyArray<HeaderLine>,
+  key: string,
+): ReadonlyArray<string> {
   const wanted = keyOf(key)
-  return header.find((line) => keyOf(line.key) === wanted)?.value ?? null
+  return header.filter((line) => keyOf(line.key) === wanted).map((line) => line.value)
 }
 
 /** The bold keys, in order, each once: the detail of `header-key-bold`. */

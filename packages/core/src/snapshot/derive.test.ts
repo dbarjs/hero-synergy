@@ -166,6 +166,22 @@ describe('the frontier gate', () => {
     const stale = ticket(2, { blockedBy: [blocker(3, 'open')] })
     expect(numbers(frontierOf(map(1, [stale, closed(3)])))).toEqual([])
   })
+
+  test('never reads the triage role: a ready-for-human ticket can be next, and every role is takeable', () => {
+    const roles = ['ready-for-human', 'needs-triage', 'needs-info', 'ready-for-agent'] as const
+    const effort = map(
+      1,
+      roles.map((role, index) => ticket(index + 2, { role, statusLine: role })),
+    )
+    expect(nextOf(effort)?.role).toBe('ready-for-human')
+    expect(numbers(frontierOf(effort))).toEqual([2, 3, 4, 5])
+    expect(numbers(orderTickets(effort))).toEqual([2, 3, 4, 5])
+    expect(urgencyOf(effort, noSessions)).toBe('takeable')
+    // A role on a claimed, blocked or closed ticket changes nothing either.
+    expect(placeOf(ticket(6, { role: 'ready-for-agent', claim: { by: [] } }))).toBe('claimed')
+    expect(placeOf(ticket(7, { role: 'ready-for-agent', blockedBy: [blocker(9)] }))).toBe('blocked')
+    expect(placeOf(closed(8, { role: 'wontfix' }))).toBe('closed')
+  })
 })
 
 describe('the order of maps', () => {

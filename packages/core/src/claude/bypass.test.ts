@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { DEFAULT_TRIAGE_LABELS, type TriageLabels } from '../scout/triage-labels.ts'
-import type { TicketType } from '../snapshot/model.ts'
+import type { TicketType, TriageRole } from '../snapshot/model.ts'
 import {
   type BypassHealthInput,
   type BypassMode,
@@ -42,29 +42,84 @@ describe('isAfkTicket', () => {
           ...(agent ? [triage.readyForAgent] : []),
           ...(human ? [triage.readyForHuman] : []),
         ]
-        expect(isAfkTicket({ type, labels }, triage)).toBe(afk)
+        expect(isAfkTicket({ type, labels, role: null }, triage)).toBe(afk)
       },
     )
   })
 
   it('bypasses a ready-for-agent ticket whatever its type, an untyped one included', () => {
     for (const type of TYPES)
-      expect(isAfkTicket({ type, labels: ['ready-for-agent'] }, DEFAULT_TRIAGE_LABELS)).toBe(true)
+      expect(
+        isAfkTicket({ type, labels: ['ready-for-agent'], role: null }, DEFAULT_TRIAGE_LABELS),
+      ).toBe(true)
   })
 
   it('never bypasses a ready-for-human ticket, even one also labelled ready-for-agent', () => {
     for (const type of TYPES)
       expect(
         isAfkTicket(
-          { type, labels: ['ready-for-agent', 'ready-for-human'] },
+          { type, labels: ['ready-for-agent', 'ready-for-human'], role: null },
           DEFAULT_TRIAGE_LABELS,
         ),
       ).toBe(false)
   })
 
   it('reads only the repo’s label strings, not the default names', () => {
-    expect(isAfkTicket({ type: 'grilling', labels: ['ready-for-agent'] }, RENAMED)).toBe(false)
-    expect(isAfkTicket({ type: 'task', labels: ['ready-for-human'] }, RENAMED)).toBe(true)
+    expect(
+      isAfkTicket({ type: 'grilling', labels: ['ready-for-agent'], role: null }, RENAMED),
+    ).toBe(false)
+    expect(isAfkTicket({ type: 'task', labels: ['ready-for-human'], role: null }, RENAMED)).toBe(
+      true,
+    )
+  })
+
+  describe("a local ticket's triage role, read in the default names whatever the repo renames", () => {
+    const ROLES: ReadonlyArray<TriageRole | null> = [
+      'ready-for-agent',
+      'ready-for-human',
+      'needs-triage',
+      'needs-info',
+      'wontfix',
+      null,
+    ]
+    const cases = [DEFAULT_TRIAGE_LABELS, RENAMED].flatMap((triage) =>
+      TYPES.flatMap((type) =>
+        ROLES.map((role) => {
+          const afk =
+            role === 'ready-for-human'
+              ? false
+              : role === 'ready-for-agent' || type === 'research' || type === 'task'
+          return [type ?? 'untyped', role, triage === RENAMED, afk, type, triage] as const
+        }),
+      ),
+    )
+    it.each(cases)(
+      '%s, role %s, renamed labels %s: AFK %s',
+      (_name, role, _renamed, afk, type, triage) => {
+        expect(isAfkTicket({ type, labels: [], role }, triage)).toBe(afk)
+      },
+    )
+
+    it('keeps a ready-for-human ticket HITL whatever its labels say', () => {
+      for (const triage of [DEFAULT_TRIAGE_LABELS, RENAMED])
+        for (const type of TYPES)
+          expect(
+            isAfkTicket(
+              { type, labels: [triage.readyForAgent, 'ready-for-agent'], role: 'ready-for-human' },
+              triage,
+            ),
+          ).toBe(false)
+    })
+
+    it('keeps a ready-for-agent ticket HITL when it is also labelled for a human', () => {
+      for (const triage of [DEFAULT_TRIAGE_LABELS, RENAMED])
+        expect(
+          isAfkTicket(
+            { type: 'grilling', labels: [triage.readyForHuman], role: 'ready-for-agent' },
+            triage,
+          ),
+        ).toBe(false)
+    })
   })
 })
 
