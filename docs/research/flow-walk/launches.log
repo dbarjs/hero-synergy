@@ -1,0 +1,7 @@
+20:00:51 launch: claude /mattpocock-skills:to-spec\ .scratch/word-counts/map.md
+20:03:04 launch: claude --resume 3dbbacc9-9eae-4fc8-891a-6907ef1a7830 /mattpocock-skills:to-tickets\ .scratch/word-counts/spec.md
+20:05:19 launch: claude --permission-mode bypassPermissions -n \#4\ tally\ words -w 4 /mattpocock-skills:implement\ .scratch/word-counts/issues/04-tally-words.md
+20:13:07 launch: claude --permission-mode bypassPermissions -n Spec:\ Word\,\ line\ and\ character\ counts /mattpocock-skills:implement-spec\ .scratch/word-counts/spec.md
+20:13:07 launch: claude --permission-mode bypassPermissions -n Spec:\ Word\,\ line\ and\ character\ counts -w word-counts /mattpocock-skills:implement-spec\ .scratch/word-counts/spec.md
+20:13:24 launch: claude ''
+20:13:49 launch: claude --permission-mode bypassPermissions -n Spec:\ Word\,\ line\ and\ character\ counts -w word-counts /mattpocock-skills:implement-spec\ .scratch/word-counts/spec.md

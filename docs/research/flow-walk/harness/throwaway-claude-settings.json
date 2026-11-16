@@ -1,0 +1,25 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent|Task|Bash|Skill|AskUserQuestion|EnterWorktree|ExitWorktree",
+        "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }]
+      }
+    ],
+    "SubagentStart": [
+      { "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }] }
+    ],
+    "SubagentStop": [
+      { "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }] }
+    ],
+    "Notification": [
+      { "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }] }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "/tmp/claude-1000/-workspaces-hero-synergy/8441abde-fef9-4579-b241-75a649570dd8/scratchpad/flow-walk/obs/hook.sh" }] }
+    ]
+  }
+}
