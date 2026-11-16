@@ -108,11 +108,11 @@ The typed state of every open map in a repo at one moment: the facts the tracker
 _Avoid_: state dump, view model
 
 **Drift**:
-Any way a map or ticket differs from the current wayfinder conventions: legacy labels, text fallbacks, free-form markdown. Reported as a coded warning on the snapshot, the map or the ticket, never corrected.
+Any way a map, a spec or a ticket differs from the current conventions of the skill that writes it (wayfinder, to-spec or to-tickets): legacy labels, text fallbacks, free-form markdown. Reported as a coded warning on the snapshot, a map, a spec or a ticket, never corrected.
 _Avoid_: corruption, invalid map
 
 **Warning**:
-One coded point about the tracker or about the machine. _Drift_ is about the tracker: a map or ticket off the current conventions. _Health_ is about the machine: Claude Code, the skills, the registry. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when something old or odd was still read correctly.
+One coded point about the tracker or about the machine. _Drift_ is about the tracker: a map, a spec or a ticket off the current conventions. _Health_ is about the machine: Claude Code, the skills, the registry. _Loud_ when what the Cockpit shows may be wrong or missing; _quiet_ when something old or odd was still read correctly.
 _Avoid_: error, lint
 
 **Isolated environment**:
