@@ -109,6 +109,16 @@ describe("this repo's own map, recorded from the tracker", () => {
     expect(interpret.blockedBy[0]?.title).toBe('Which wayfinder conventions exist in the wild?')
   })
 
+  test('fills no triage role, Status line or HITL note: GitHub reads none of them', () => {
+    for (const ticket of map.tickets) {
+      expect([ticket.role, ticket.statusLine, ticket.modeNote], `#${ticket.number}`).toEqual([
+        null,
+        null,
+        null,
+      ])
+    }
+  })
+
   test('is a valid snapshot that survives the JSON round trip', () => {
     expect(decodeSnapshot(encodeSnapshot(snapshot))).toEqual(snapshot)
   })
@@ -117,9 +127,11 @@ describe("this repo's own map, recorded from the tracker", () => {
 describe("the scout prototype's legacy forms", () => {
   const snapshot = readSnapshot(legacyForms as Collected)
   const warnings = Object.fromEntries(
-    [...snapshot.maps, ...snapshot.maps.flatMap((map) => map.tickets), ...snapshot.unmapped].map(
-      (item) => [item.number, codesOf(item)],
-    ),
+    [
+      ...snapshot.maps,
+      ...snapshot.maps.flatMap((map) => map.tickets),
+      ...snapshot.unmapped.flatMap((group) => group.tickets),
+    ].map((item) => [item.number, codesOf(item)]),
   )
 
   test('raise the warnings the prototype reported, one per drift point', () => {
@@ -379,15 +391,32 @@ describe('membership and order', () => {
     expect(snapshot.maps.map((map) => map.tickets.map((t) => t.number))).toEqual([[], [3]])
   })
 
-  test('a parent the collect does not hold leaves the ticket unmapped', () => {
+  test('a parent the collect does not hold leaves the ticket unmapped, in the one group with no effort', () => {
     const snapshot = readSnapshot({
       ...base,
       maps: [
         { number: 1, title: 'A', ref: { tracker: 'github', url: url(1) }, body, children: [] },
       ],
-      tickets: [ticket(3, { parent: 9 })],
+      tickets: [ticket(3, { parent: 9 }), ticket(4, { parent: null }), ticket(5)],
     })
-    expect(snapshot.unmapped.map((t) => t.number)).toEqual([3])
+    expect(
+      snapshot.unmapped.map(({ effort, title, tickets }) => ({
+        effort,
+        title,
+        tickets: tickets.map((t) => t.number),
+      })),
+    ).toEqual([{ effort: null, title: null, tickets: [3, 4] }])
+  })
+
+  test('with every ticket on a map, unmapped holds no group at all', () => {
+    const snapshot = readSnapshot({
+      ...base,
+      maps: [
+        { number: 1, title: 'A', ref: { tracker: 'github', url: url(1) }, body, children: [] },
+      ],
+      tickets: [ticket(5)],
+    })
+    expect(snapshot.unmapped).toEqual([])
   })
 
   test('a text blocker already native is not read twice, and an unknown one is named', () => {

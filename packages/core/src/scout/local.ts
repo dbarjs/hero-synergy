@@ -2,7 +2,7 @@ import { Clock, Effect } from 'effect'
 
 import { FileSystem, type FileSystemError, type FileSystemShape } from '../file-system.ts'
 import { readMapStatus } from '../snapshot/map-status.ts'
-import type { Snapshot, Ticket, WayfinderMap } from '../snapshot/model.ts'
+import type { Snapshot, Ticket, UnmappedGroup, WayfinderMap } from '../snapshot/model.ts'
 import {
   type Collected,
   type CollectedMap,
@@ -23,7 +23,8 @@ const MAP_FILE = 'map.md'
  * the map, `issues/NN-<slug>.md` the tickets in number order. Every effort
  * directory is numbered by its 1-based position in directory order, whether it
  * holds a map or not, so no map renumbers when another closes; an effort
- * without a map file has no map, and its tickets go to `unmapped`.
+ * without a map file has no map, and its tickets go to its own `unmapped`
+ * group.
  *
  * Each effort is its own `Collected`: ticket numbers are file prefixes, unique
  * within an effort and not across the tracker, and a `Blocked by:` line only
@@ -51,7 +52,9 @@ export interface EffortReading {
  * Reads every effort under `.scratch` into one snapshot of the open maps. A
  * repo with no `.scratch` directory has no maps and no error: the tracker is
  * there, it holds nothing yet. A map closed by its own Status line is left out
- * with all its tickets, as a closed map is on GitHub.
+ * with all its tickets, as a closed map is on GitHub. Each effort's unmapped
+ * issues form one group, in directory order, titled with the effort's map
+ * title or, without a map, its directory name; an effort with none adds no group.
  */
 export function readLocalTracker(
   repoRoot: string,
@@ -66,7 +69,17 @@ export function readLocalTracker(
       maps: efforts.flatMap((effort) =>
         effort.map !== null && effort.mapState === 'open' ? [effort.map] : [],
       ),
-      unmapped: efforts.flatMap((effort) => effort.unmapped),
+      unmapped: efforts.flatMap((effort): UnmappedGroup[] =>
+        effort.unmapped.length === 0
+          ? []
+          : [
+              {
+                effort: effort.directory,
+                title: effort.map?.title ?? effort.directory,
+                tickets: effort.unmapped,
+              },
+            ],
+      ),
       // A local tracker keeps no repo-wide labels, the one thing a snapshot warns about.
       warnings: [],
     }
@@ -91,7 +104,7 @@ export function readLocalEfforts(
         directory: effort.slug,
         map: snapshot.maps[0] ?? null,
         mapState: collectedMap === undefined ? null : readMapStatus(collectedMap.body).state,
-        unmapped: snapshot.unmapped,
+        unmapped: snapshot.unmapped.flatMap((group) => group.tickets),
       }
     })
   })

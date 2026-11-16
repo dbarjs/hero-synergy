@@ -2,7 +2,7 @@ import { FileSystem, readLocalTracker, type Snapshot } from '@hero-synergy/core'
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { workspaceFiles } from '../test/fixtures/workspace-files.ts'
+import { localTrackerFiles, workspaceFiles } from '../test/fixtures/workspace-files.ts'
 import type { MapNode, ViewModel } from './protocol.ts'
 import {
   buildViewModel,
@@ -10,6 +10,7 @@ import {
   detailOf,
   firstFocusKey,
   revealKeys,
+  selectionOf,
 } from './view-model.ts'
 
 const ROOT = '/home/ana/billing'
@@ -121,6 +122,61 @@ describe('the Tree view model of the fixture workspace', () => {
     const open = { ...snapshot, maps: snapshot.maps.filter((map) => map.number !== 1) }
     const model = buildViewModel(open, new Set())
     expect(model.kind === 'maps' && model.finished).toBe(null)
+  })
+})
+
+describe('the Unmapped fold over core’s local-tracker fixture', () => {
+  const localTrackerSnapshot = (extra: Record<string, string> = {}): Promise<Snapshot> =>
+    Effect.runPromise(
+      readLocalTracker(ROOT).pipe(
+        Effect.provide(FileSystem.inMemory({ ...localTrackerFiles(ROOT), ...extra })),
+      ),
+    )
+
+  it('shows the mapless effort’s issues as plain rows keyed by number, with no group row', async () => {
+    const snapshot = await localTrackerSnapshot()
+    expect(snapshot.unmapped.map((group) => group.effort)).toEqual(['onboarding-spec'])
+    const viewModel = buildViewModel(snapshot, new Set(['unmapped']))
+    expect(viewModel.kind === 'maps' && viewModel.unmapped).toMatchObject({
+      key: 'unmapped',
+      expanded: true,
+      entries: [
+        { key: 'unmapped:ticket:1', number: 1, title: 'Welcome screen' },
+        { key: 'unmapped:ticket:2', number: 2, title: 'Invite flow' },
+      ],
+    })
+  })
+
+  it('lays several efforts’ groups end to end, in directory order', async () => {
+    const snapshot = await localTrackerSnapshot({
+      [`${ROOT}/.scratch/a-triage/issues/03-damp-shelf.md`]: '# Damp shelf\n',
+    })
+    const viewModel = buildViewModel(snapshot, new Set())
+    expect(
+      viewModel.kind === 'maps' &&
+        viewModel.unmapped?.entries.map(({ key, title }) => `${key} ${title}`),
+    ).toEqual([
+      'unmapped:ticket:3 Damp shelf',
+      'unmapped:ticket:1 Welcome screen',
+      'unmapped:ticket:2 Invite flow',
+    ])
+  })
+
+  it('selects, reveals and details an unmapped issue by its key', async () => {
+    const snapshot = await localTrackerSnapshot()
+    expect(selectionOf(snapshot, 'unmapped:ticket:2')?.focus).toMatchObject({
+      kind: 'ticket',
+      key: 'unmapped:ticket:2',
+      number: 2,
+      title: 'Invite flow',
+    })
+    expect(revealKeys(snapshot, 'unmapped:ticket:2')).toEqual(['unmapped'])
+    expect(detailOf(snapshot, 'unmapped:ticket:1')).toMatchObject({
+      kind: 'ticket',
+      key: 'unmapped:ticket:1',
+      number: 1,
+      title: 'Welcome screen',
+    })
   })
 })
 

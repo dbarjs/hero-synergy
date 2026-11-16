@@ -1,0 +1,93 @@
+{
+  "tracker": { "kind": "local" },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00.000Z",
+  "maps": [
+    {
+      "number": 2,
+      "title": "Billing rewrite",
+      "ref": { "tracker": "local", "path": ".scratch/billing-rewrite/map.md" },
+      "body": "# Billing rewrite\n\n## Destination\n\nBilling v2 decided.\n",
+      "tickets": [
+        {
+          "number": 1,
+          "title": "Refund policy",
+          "ref": {
+            "tracker": "local",
+            "path": ".scratch/billing-rewrite/issues/01-refund-policy.md"
+          },
+          "state": "open",
+          "type": "task",
+          "modeNote": "HITL",
+          "labels": [],
+          "claim": null,
+          "role": "ready-for-human",
+          "statusLine": "open, waiting on [the finance review](finance.md)",
+          "blockedBy": [],
+          "body": "# Refund policy\n\n## Question\n\nReopen the invoice or issue a credit note?\n",
+          "resolution": null,
+          "outcome": null,
+          "gist": null,
+          "warnings": []
+        },
+        {
+          "number": 2,
+          "title": "Ledger store",
+          "ref": {
+            "tracker": "local",
+            "path": ".scratch/billing-rewrite/issues/02-ledger-store.md"
+          },
+          "state": "open",
+          "type": "task",
+          "modeNote": "AFK",
+          "labels": [],
+          "claim": { "by": [] },
+          "role": null,
+          "statusLine": "claimed",
+          "blockedBy": [],
+          "body": "# Ledger store\n\n## Question\n\nMove the ledger rows so their shape can be seen.\n",
+          "resolution": null,
+          "outcome": null,
+          "gist": null,
+          "warnings": []
+        }
+      ],
+      "destination": "Billing v2 decided.",
+      "notes": null,
+      "decisions": [],
+      "notYetSpecified": [],
+      "outOfScope": [],
+      "warnings": []
+    }
+  ],
+  "unmapped": [
+    {
+      "effort": "onboarding-spec",
+      "title": "onboarding-spec",
+      "tickets": [
+        {
+          "number": 1,
+          "title": "Welcome screen",
+          "ref": {
+            "tracker": "local",
+            "path": ".scratch/onboarding-spec/issues/01-welcome-screen.md"
+          },
+          "state": "open",
+          "type": null,
+          "modeNote": null,
+          "labels": [],
+          "claim": null,
+          "role": "needs-triage",
+          "statusLine": "open",
+          "blockedBy": [],
+          "body": "# Welcome screen\n\nWhat a new user sees first.\n",
+          "resolution": null,
+          "outcome": null,
+          "gist": null,
+          "warnings": []
+        }
+      ]
+    }
+  ],
+  "warnings": []
+}

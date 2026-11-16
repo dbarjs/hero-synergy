@@ -179,8 +179,12 @@ export function readSnapshot(collected: Collected): Snapshot {
       ref: draft.ref,
       state: draft.state,
       type: draft.type,
+      // Null until the local reading rules fill them; GitHub never does.
+      modeNote: null,
       labels: draft.labels,
       claim: draft.claim,
+      role: null,
+      statusLine: null,
       blockedBy,
       body: draft.body,
       resolution: draft.resolution,
@@ -242,15 +246,18 @@ export function readSnapshot(collected: Collected): Snapshot {
     }
   })
 
+  // The strays: tickets the collect holds that no open map takes, in one group with no effort.
+  const strays = drafts
+    .filter((draft) => !mapOf.has(draft.number))
+    .map((draft) => tickets.get(draft.number))
+    .filter((ticket) => ticket !== undefined)
+
   return {
     tracker: collected.tracker,
     repoRoot: collected.repoRoot,
     collectedAt: collected.collectedAt,
     maps,
-    unmapped: drafts
-      .filter((draft) => !mapOf.has(draft.number))
-      .map((draft) => tickets.get(draft.number))
-      .filter((ticket) => ticket !== undefined),
+    unmapped: strays.length === 0 ? [] : [{ effort: null, title: null, tickets: strays }],
     warnings,
   }
 }
