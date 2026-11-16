@@ -1,0 +1,52 @@
+{
+  "tracker": {
+    "kind": "local"
+  },
+  "repoRoot": "/home/ana/billing",
+  "collectedAt": "2026-10-07T12:00:00Z",
+  "labels": [],
+  "maps": [
+    {
+      "number": 1,
+      "title": null,
+      "ref": {
+        "tracker": "local",
+        "path": ".scratch/billing-rewrite/map.md"
+      },
+      "body": "# Billing rewrite\n\n## Destination\n\nBilling v2 decided: every question answered.\n\n## Notes\n\n- Domain: invoicing. Grilling tickets use /grilling.\n\n## Decisions so far\n\n\n\n## Not yet specified\n\n\n\n## Out of scope\n\n\n",
+      "children": [1, 2]
+    }
+  ],
+  "tickets": [
+    {
+      "number": 1,
+      "title": null,
+      "ref": {
+        "tracker": "local",
+        "path": ".scratch/billing-rewrite/issues/01-tax-rule.md"
+      },
+      "body": "# Tax rule\n\nType: research\nBlocks: 02 (the refund needs the rule)\n\n## Question\n\nWhich VAT rule applies to a refund?\n",
+      "state": null,
+      "labels": [],
+      "assignees": [],
+      "parent": 1,
+      "blockedBy": [],
+      "lastComment": null
+    },
+    {
+      "number": 2,
+      "title": null,
+      "ref": {
+        "tracker": "local",
+        "path": ".scratch/billing-rewrite/issues/02-refund-policy.md"
+      },
+      "body": "# Refund policy\n\nType: grilling\n\n## Question\n\nReopen or credit note?\n",
+      "state": null,
+      "labels": [],
+      "assignees": [],
+      "parent": 1,
+      "blockedBy": [],
+      "lastComment": null
+    }
+  ]
+}

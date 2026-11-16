@@ -89,7 +89,7 @@ describe('the local reader on every form', () => {
   )
 
   it.each(forms)('agrees with the truth of $path', (form) => {
-    expect(scoutColumns(efforts, form.path)).toEqual(truthColumns(form))
+    expect(scoutColumns(efforts, form.path)).toEqual(truthColumns(form, forms))
   })
 
   it('reads every effort directory, and finds a map in each map-* effort', () => {

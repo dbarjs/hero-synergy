@@ -11,7 +11,7 @@ import type { EffortReading } from './local.ts'
 /** A file's truth entry, in the shape both truth files share. */
 export type TruthEntry =
   | { readonly path: string; readonly kind: 'map'; readonly reading: MapTruth }
-  | { readonly path: string; readonly kind: 'ticket' }
+  | { readonly path: string; readonly kind: 'ticket'; readonly reading: TicketTruth }
   | { readonly path: string; readonly kind: 'note' }
 
 interface MapTruth {
@@ -19,16 +19,47 @@ interface MapTruth {
   readonly decisions: ReadonlyArray<number>
 }
 
-/** One file in the columns compared: what it is, and for a map its state and decisions. */
+interface TicketTruth {
+  /** The tickets the file's own `Blocked by:` line names, in order. */
+  readonly blockedBy: ReadonlyArray<number>
+  /** The tickets the file's own `Blocks:` line names. */
+  readonly blocks: ReadonlyArray<number>
+}
+
+/**
+ * One file in the columns compared: what it is; for a map its state and decisions; for a ticket
+ * its merged blockers, its own `Blocked by:` items in order, then the tickets whose `Blocks:`
+ * line names it, in number order.
+ */
 export type Columns =
   | { readonly kind: 'map'; readonly state: 'open' | 'closed'; readonly decisions: number[] }
-  | { readonly kind: 'ticket' }
+  | { readonly kind: 'ticket'; readonly blockedBy: number[] }
   | { readonly kind: 'note' }
 
-/** The truth of one file, cut to the columns compared. */
-export function truthColumns(entry: TruthEntry): Columns {
-  if (entry.kind !== 'map') return { kind: entry.kind }
-  return { kind: 'map', state: entry.reading.state, decisions: [...entry.reading.decisions] }
+const effortOf = (path: string): string => path.split('/')[1] ?? ''
+const numberOf = (path: string): number => Number(/\/issues\/(\d+)-[^/]*$/.exec(path)?.[1])
+
+/**
+ * The truth of one file, cut to the columns compared. `all` is every entry of the same truth
+ * file: a ticket's blockers include the tickets of its effort whose `Blocks:` line names it.
+ */
+export function truthColumns(entry: TruthEntry, all: ReadonlyArray<TruthEntry>): Columns {
+  if (entry.kind === 'note') return { kind: 'note' }
+  if (entry.kind === 'map')
+    return { kind: 'map', state: entry.reading.state, decisions: [...entry.reading.decisions] }
+  const number = numberOf(entry.path)
+  const blockedBy = [...entry.reading.blockedBy]
+  const inverted = all
+    .filter(
+      (other) =>
+        other.kind === 'ticket' &&
+        effortOf(other.path) === effortOf(entry.path) &&
+        other.reading.blocks.includes(number),
+    )
+    .map((other) => numberOf(other.path))
+    .sort((a, b) => a - b)
+  for (const blocker of inverted) if (!blockedBy.includes(blocker)) blockedBy.push(blocker)
+  return { kind: 'ticket', blockedBy }
 }
 
 /**
@@ -48,6 +79,9 @@ export function scoutColumns(efforts: ReadonlyArray<EffortReading>, path: string
     }
   }
   const tickets = [...(map?.tickets ?? []), ...effort.unmapped]
-  const found = tickets.some((ticket) => ticket.ref.tracker === 'local' && ticket.ref.path === path)
-  return { kind: found ? 'ticket' : 'note' }
+  const ticket = tickets.find(
+    (candidate) => candidate.ref.tracker === 'local' && candidate.ref.path === path,
+  )
+  if (ticket === undefined) return { kind: 'note' }
+  return { kind: 'ticket', blockedBy: ticket.blockedBy.map((blocker) => blocker.number) }
 }

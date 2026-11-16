@@ -3,9 +3,9 @@ import { Effect } from 'effect'
 
 import { fixtureRepo as seed } from '../../fixtures/local-tracker/seed.ts'
 import { FileSystem } from '../file-system.ts'
-import { isFinished } from '../snapshot/derive.ts'
+import { frontierOf, isFinished, neighbourhoodOf, placeOf } from '../snapshot/derive.ts'
 import { driftEntryOf } from '../snapshot/drift-table.ts'
-import { decodeSnapshot, encodeSnapshot, type Snapshot } from '../snapshot/model.ts'
+import { decodeSnapshot, encodeSnapshot, type Snapshot, type Ticket } from '../snapshot/model.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
 
 const ROOT = '/home/ana/billing'
@@ -527,6 +527,255 @@ describe('unmapped groups', () => {
         ['right', [[1, { tracker: 'local', path: '.scratch/right/issues/01-shelf.md' }]]],
       ])
     }),
+  )
+})
+
+describe("a local ticket's blockers", () => {
+  const BLOCKER_CODES = [
+    'blockers-as-slugs',
+    'blockers-not-template',
+    'blocker-unread',
+    'blocks-line',
+    'blocker-outside-map',
+  ]
+  const blockerDrift = (ticket: Ticket) =>
+    ticket.warnings.filter((warning) => BLOCKER_CODES.includes(warning.code))
+  const issue = (title: string, lines: string) =>
+    `# ${title}\n\nType: task\n${lines}\n\n## Question\n\nq\n`
+  const closedIssue = (title: string, lines = '') =>
+    `# ${title}\n\nType: task\nStatus: resolved\n${lines}\n\n## Question\n\nq\n\n## Answer\n\nDone.\n`
+  /** One map, `seeds`, with closed 01 and open 02 and 03, plus the given issue files. */
+  const seeds = (files: Record<string, string>) => ({
+    '/repo/.scratch/seeds/map.md': mapBody(),
+    '/repo/.scratch/seeds/issues/01-pick-a-date.md': closedIssue('Pick a date'),
+    '/repo/.scratch/seeds/issues/02-book-the-hall.md': issue('Book the hall', ''),
+    '/repo/.scratch/seeds/issues/03-tell-the-members.md': issue('Tell the members', ''),
+    ...Object.fromEntries(
+      Object.entries(files).map(([file, body]) => [`/repo/.scratch/seeds/issues/${file}`, body]),
+    ),
+  })
+  const ticketsOf = (snapshot: Snapshot): Map<number, Ticket> =>
+    new Map(snapshot.maps[0]!.tickets.map((ticket) => [ticket.number, ticket]))
+  const numbers = (ticket: Ticket | undefined) => ticket?.blockedBy.map((blocker) => blocker.number)
+
+  it.effect('names one blocker per item, from its start, and never reads a title or a note', () =>
+    Effect.gen(function* () {
+      const lines = {
+        4: 'Blocked by: [Pick a date](01-pick-a-date.md) (closed 2026-10-01 — see 03); [Book the hall](02-book-the-hall.md)',
+        5: 'Blocked by: 01 resolved 2026-10-01; frontier — 03 is next',
+        6: 'Blocked by: [Step 3 of 4](02-book-the-hall.md) — after 03',
+        7: 'Blocked by: 02-book-the-hall.md (closed 2026-10-02), #3 — the members hear first.',
+        8: '**Blocked by:** [03 — Tell the members](03-tell-the-members.md)',
+      }
+      const tickets = ticketsOf(
+        yield* read(
+          seeds(
+            Object.fromEntries(
+              Object.entries(lines).map(([n, line]) => [`0${n}-step.md`, issue(`Step ${n}`, line)]),
+            ),
+          ),
+          '/repo',
+        ),
+      )
+      expect(numbers(tickets.get(4))).toEqual([1, 2])
+      expect(numbers(tickets.get(5))).toEqual([1])
+      expect(numbers(tickets.get(6))).toEqual([2])
+      expect(numbers(tickets.get(7))).toEqual([2, 3])
+      expect(numbers(tickets.get(8))).toEqual([3])
+      // A blocker carries its own file's title and state, never the link's.
+      expect(tickets.get(4)!.blockedBy[0]).toEqual({
+        number: 1,
+        title: 'Pick a date',
+        state: 'closed',
+        ref: { tracker: 'local', path: '.scratch/seeds/issues/01-pick-a-date.md' },
+      })
+      for (const [n, line] of Object.entries(lines)) {
+        expect(blockerDrift(tickets.get(Number(n))!), line).toEqual([
+          { code: 'blockers-not-template', detail: line.replace(/^\**Blocked by:\**\s*/, '') },
+        ])
+      }
+      expect(driftEntryOf({ code: 'blockers-not-template' }).level).toBe('quiet')
+    }),
+  )
+
+  it.effect("reads the template's NN, NN without a word", () =>
+    Effect.gen(function* () {
+      const tickets = ticketsOf(
+        yield* read(seeds({ '04-step.md': issue('Step 4', 'Blocked by: 01, 03') }), '/repo'),
+      )
+      expect(numbers(tickets.get(4))).toEqual([1, 3])
+      expect(blockerDrift(tickets.get(4)!)).toEqual([])
+    }),
+  )
+
+  it.effect.each([
+    '',
+    '—',
+    '–',
+    '-',
+    'none',
+    'None — later',
+    'NOTHING',
+    '— (first ticket of the map)',
+    '(none — frontier)',
+    '(nothing — frontier)',
+    '— ([02](02-book-the-hall.md) closed 2026-10-02)',
+    '— (ticket 03 closed 2026-10-02)',
+    '[]',
+  ])('reads the none marker "Blocked by: %s" as no blockers, with no drift', (value) =>
+    Effect.gen(function* () {
+      const tickets = ticketsOf(
+        yield* read(
+          seeds({ '04-step.md': issue('Step 4', `Blocked by: ${value}\nBlocks: ${value}`) }),
+          '/repo',
+        ),
+      )
+      expect(numbers(tickets.get(4))).toEqual([])
+      expect(blockerDrift(tickets.get(4)!)).toEqual([])
+      expect(numbers(tickets.get(2))).toEqual([])
+      expect(numbers(tickets.get(3))).toEqual([])
+    }),
+  )
+
+  it.effect(
+    'raises a loud blocker-unread for an item with no reference, and keeps blockers-as-slugs for a lone slug',
+    () =>
+      Effect.gen(function* () {
+        const tickets = ticketsOf(
+          yield* read(
+            seeds({
+              '04-step.md': issue('Step 4', 'Blocked by: 01, the design review (pending 2)'),
+              '05-step.md': issue('Step 5', 'Blocked by: palette, contrast'),
+              '06-step.md': issue(
+                'Step 6',
+                'Blocked by: every ticket on the map (02, 03), and the review',
+              ),
+              '07-step.md': issue('Step 7', 'Blocked by: (waiting — frontier)'),
+            }),
+            '/repo',
+          ),
+        )
+        expect(numbers(tickets.get(4))).toEqual([1])
+        expect(blockerDrift(tickets.get(4)!)).toEqual([
+          { code: 'blocker-unread', detail: 'the design review (pending 2)' },
+          { code: 'blockers-not-template', detail: '01, the design review (pending 2)' },
+        ])
+        // A value with no reference read is no off-template form: the slugs say it all.
+        expect(numbers(tickets.get(5))).toEqual([])
+        expect(blockerDrift(tickets.get(5)!)).toEqual([
+          { code: 'blockers-as-slugs', detail: 'palette, contrast' },
+        ])
+        expect(numbers(tickets.get(6))).toEqual([])
+        expect(blockerDrift(tickets.get(6)!)).toEqual([
+          { code: 'blocker-unread', detail: 'every ticket on the map (02, 03)' },
+          { code: 'blocker-unread', detail: 'and the review' },
+        ])
+        expect(blockerDrift(tickets.get(7)!)).toEqual([
+          { code: 'blocker-unread', detail: '(waiting — frontier)' },
+        ])
+        expect(driftEntryOf({ code: 'blocker-unread' }).level).toBe('loud')
+      }),
+  )
+
+  it.effect(
+    'raises blocker-outside-map for a number with no file or a target off the effort, and never gates on it',
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            ...seeds({
+              '04-step.md': issue(
+                'Step 4',
+                'Blocked by: 07, [Other](../../other/issues/01-elsewhere.md), [Web](https://example.com/issues/02-book-the-hall.md), [Up](../02-book-the-hall.md), ../../other/issues/01-elsewhere.md, [Root](/02-book-the-hall.md), [Climb](../../../../../02-book-the-hall.md)',
+              ),
+              '05-step.md': issue('Step 5', 'Blocked by: [Same](./02-book-the-hall.md), 01'),
+            }),
+            '/repo/.scratch/other/issues/01-elsewhere.md': issue('Elsewhere', ''),
+          },
+          '/repo',
+        )
+        const tickets = ticketsOf(snapshot)
+        expect(numbers(tickets.get(4))).toEqual([])
+        expect(placeOf(tickets.get(4)!)).toBe('frontier')
+        expect(
+          blockerDrift(tickets.get(4)!).filter(({ code }) => code === 'blocker-outside-map'),
+        ).toEqual(
+          [
+            '#7',
+            '../../other/issues/01-elsewhere.md',
+            'https://example.com/issues/02-book-the-hall.md',
+            '../02-book-the-hall.md',
+            '../../other/issues/01-elsewhere.md',
+            '/02-book-the-hall.md',
+            '../../../../../02-book-the-hall.md',
+          ].map((target) => ({
+            code: 'blocker-outside-map',
+            detail: `${target} is not an issue file of this effort`,
+          })),
+        )
+        // `./` stays in the ticket's directory: the link resolves to its own effort's file.
+        expect(numbers(tickets.get(5))).toEqual([2, 1])
+        expect(placeOf(tickets.get(5)!)).toBe('blocked')
+      }),
+  )
+
+  it.effect(
+    "adds a Blocks line's ticket to the blocked ticket's blockers, after its own items, and a one-sided edge gates",
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* read(
+          {
+            '/repo/.scratch/seeds/map.md': mapBody(),
+            '/repo/.scratch/seeds/issues/01-pick-a-date.md': issue(
+              'Pick a date',
+              'Blocks: 03 (the members need the date)',
+            ),
+            '/repo/.scratch/seeds/issues/02-book-the-hall.md': issue(
+              'Book the hall',
+              'Blocks: [Tell the members](03-tell-the-members.md), 09, the caterer',
+            ),
+            '/repo/.scratch/seeds/issues/03-tell-the-members.md': issue(
+              'Tell the members',
+              'Blocked by: 04',
+            ),
+            '/repo/.scratch/seeds/issues/04-print-flyers.md': issue('Print flyers', 'Blocks: 03'),
+            '/repo/.scratch/seeds/issues/05-thank-the-hosts.md': issue(
+              'Thank the hosts',
+              'Blocks: [Out](../../other/issues/05-x.md)',
+            ),
+            '/repo/.scratch/seeds/issues/06-sweep-up.md': closedIssue('Sweep up', 'Blocks: 05'),
+          },
+          '/repo',
+        )
+        const map = snapshot.maps[0]!
+        const tickets = ticketsOf(snapshot)
+        // Its own `Blocked by:` first, then the Blocks lines that name it, in number order, once each.
+        expect(numbers(tickets.get(3))).toEqual([4, 1, 2])
+        expect(placeOf(tickets.get(3)!)).toBe('blocked')
+        // The edge is never written on 01's side of the pair, nor on 05's: they gate all the same.
+        expect(numbers(tickets.get(1))).toEqual([])
+        expect(numbers(tickets.get(5))).toEqual([6])
+        expect(tickets.get(5)!.blockedBy[0]!.state).toBe('closed')
+        expect(frontierOf(map).map((ticket) => ticket.number)).toEqual([1, 2, 4, 5])
+        // Each Blocks line is noted once, raw; an item naming no issue file is dropped silently.
+        expect(blockerDrift(tickets.get(1)!)).toEqual([
+          { code: 'blocks-line', detail: '03 (the members need the date)' },
+        ])
+        expect(blockerDrift(tickets.get(2)!)).toEqual([
+          {
+            code: 'blocks-line',
+            detail: '[Tell the members](03-tell-the-members.md), 09, the caterer',
+          },
+        ])
+        expect(blockerDrift(tickets.get(5)!)).toEqual([
+          { code: 'blocks-line', detail: '[Out](../../other/issues/05-x.md)' },
+        ])
+        expect(blockerDrift(tickets.get(3)!)).toEqual([])
+        expect(driftEntryOf({ code: 'blocks-line' }).level).toBe('quiet')
+        // What a Blocks line names is what its ticket clears the way for.
+        expect(neighbourhoodOf(tickets.get(2)!, map).clearsWayFor.map((t) => t.number)).toEqual([3])
+        expect(neighbourhoodOf(tickets.get(6)!, map).clearsWayFor.map((t) => t.number)).toEqual([5])
+      }),
   )
 })
 

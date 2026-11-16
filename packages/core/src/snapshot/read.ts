@@ -15,6 +15,7 @@ import type {
   Tracker,
   WayfinderMap,
 } from './model.ts'
+import { type ReferenceItem, type ReferenceLine, resolveTarget } from './reference-line.ts'
 import { headerTicketLines, readTicketBody } from './ticket-body.ts'
 import type { DriftWarning } from './warnings.ts'
 
@@ -96,9 +97,17 @@ interface Draft {
   readonly parent: number | null
   readonly partOf: number | null
   readonly nativeBlockers: ReadonlyArray<Blocker>
+  /** GitHub: the numbers a `Blocked by:` text line holds; empty on a local tracker. */
   readonly textBlockers: ReadonlyArray<number>
+  /** Local: the items of the `Blocked by:` header line; empty on GitHub. */
+  readonly blockedByItems: ReadonlyArray<ReferenceItem>
+  /** Local: the items of the `Blocks:` header line; empty on GitHub. */
+  readonly blocksItems: ReadonlyArray<ReferenceItem>
   readonly warnings: DriftWarning[]
 }
+
+/** What one local blocker item names: an issue file of the effort, a reference that leaves it, or nothing. */
+type ItemTarget = { readonly number: number } | { readonly outside: string } | null
 
 /**
  * Reads every body in a collect and joins the facts into a snapshot: the
@@ -130,24 +139,63 @@ export function readSnapshot(collected: Collected): Snapshot {
     for (const child of bodies.get(map.number)?.taskList ?? []) place(child, map.number)
   for (const draft of drafts) if (draft.partOf !== null) place(draft.number, draft.partOf)
 
+  // A local blocker is an issue file of the ticket's effort, the one directory its own file sits in.
+  const targetOf = (draft: Draft, item: ReferenceItem): ItemTarget => {
+    if (item.kind === 'slug' || item.kind === 'unread') return null
+    if (item.kind === 'number')
+      return byNumber.has(item.number) ? { number: item.number } : { outside: `#${item.number}` }
+    const from = draft.ref.tracker === 'local' ? draft.ref.path : ''
+    const resolved = resolveTarget(from, item.target)
+    const inEffort = resolved !== null && directoryOfPath(resolved) === directoryOfPath(from)
+    return inEffort && byNumber.has(item.number)
+      ? { number: item.number }
+      : { outside: item.target }
+  }
+
+  // A `Blocks:` line on A names B: A is one of B's blockers, whatever B's own line says.
+  const blockedVia = new Map<number, number[]>()
+  for (const draft of drafts) {
+    for (const item of draft.blocksItems) {
+      const target = targetOf(draft, item)
+      if (target === null || !('number' in target)) continue
+      blockedVia.set(target.number, [...(blockedVia.get(target.number) ?? []), draft.number])
+    }
+  }
+
   const finish = (draft: Draft): Ticket => {
     const map = mapOf.get(draft.number)
     const body = map === undefined ? undefined : bodies.get(map)
     const ticketWarnings = [...draft.warnings]
 
     const blockedBy: Blocker[] = [...draft.nativeBlockers]
+    const block = (number: number) => {
+      const other = byNumber.get(number)
+      if (other === undefined || blockedBy.some((blocker) => blocker.number === number)) return
+      blockedBy.push({ number, title: other.title, state: other.state, ref: other.ref })
+    }
     for (const number of draft.textBlockers) {
       if (blockedBy.some((blocker) => blocker.number === number)) continue
-      const other = byNumber.get(number)
-      if (other !== undefined) {
-        blockedBy.push({ number, title: other.title, state: other.state, ref: other.ref })
-      } else if (map !== undefined) {
+      if (byNumber.has(number)) block(number)
+      else if (map !== undefined) {
         ticketWarnings.push({
           code: 'blocker-outside-map',
           detail: `#${number} is not a ticket of any open map`,
         })
       }
     }
+    for (const item of draft.blockedByItems) {
+      const target = targetOf(draft, item)
+      if (target === null) continue
+      if ('number' in target) block(target.number)
+      else if (map !== undefined) {
+        ticketWarnings.push({
+          code: 'blocker-outside-map',
+          detail: `${target.outside} is not an issue file of this effort`,
+        })
+      }
+    }
+    for (const number of (blockedVia.get(draft.number) ?? []).toSorted((a, b) => a - b))
+      block(number)
     if (map === undefined) {
       ticketWarnings.push({ code: 'no-map' })
     } else {
@@ -283,7 +331,8 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   const warnings: DriftWarning[] = []
   const body = readTicketBody(ticket.body)
   // A local ticket's facts sit on its header lines; GitHub reads its text fallbacks from any line.
-  const lines = onGitHub ? body : headerTicketLines(body.header)
+  const local = onGitHub ? null : headerTicketLines(body.header)
+  const lines = local ?? body
   if (!onGitHub) {
     const bold = boldKeysOf(body.header)
     if (bold.length > 0) warnings.push({ code: 'header-key-bold', detail: bold.join(', ') })
@@ -302,10 +351,14 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
   if (partOf !== null)
     warnings.push({ code: 'parent-as-part-of-line', detail: `Part of #${partOf}` })
 
-  const textBlockers = lines.blockedBy?.numbers ?? []
-  if (onGitHub && textBlockers.length > 0) warnings.push({ code: 'blockers-as-text-line' })
-  const slugs = lines.blockedBy?.slugs ?? []
-  if (slugs.length > 0) warnings.push({ code: 'blockers-as-slugs', detail: slugs.join(', ') })
+  const textBlockers = onGitHub ? (body.blockedBy?.numbers ?? []) : []
+  if (textBlockers.length > 0) warnings.push({ code: 'blockers-as-text-line' })
+  if (local === null) {
+    const slugs = body.blockedBy?.slugs ?? []
+    if (slugs.length > 0) warnings.push({ code: 'blockers-as-slugs', detail: slugs.join(', ') })
+  } else {
+    warnings.push(...referenceLineWarnings(local.blockedBy, local.blocks))
+  }
 
   let type: TicketType | null = null
   if (onGitHub) {
@@ -377,8 +430,34 @@ function readDraft(ticket: CollectedTicket, onGitHub: boolean): Draft {
     partOf,
     nativeBlockers: ticket.blockedBy,
     textBlockers,
+    blockedByItems: local?.blockedBy?.items ?? [],
+    blocksItems: local?.blocks?.items ?? [],
     warnings,
   }
+}
+
+/**
+ * What a local ticket's `Blocked by:` and `Blocks:` lines raise. A none marker raises nothing. A
+ * `Blocked by:` item with no reference at its start is a slug or unread; a value that names a
+ * ticket off the template's `NN, NN` is noted once. Any `Blocks:` line that names something is
+ * noted; an item of it that names no issue file of the effort is dropped without a word.
+ */
+function referenceLineWarnings(
+  blockedBy: ReferenceLine | null,
+  blocks: ReferenceLine | null,
+): DriftWarning[] {
+  const warnings: DriftWarning[] = []
+  if (blockedBy !== null && !blockedBy.none) {
+    const slugs = blockedBy.items.flatMap((item) => (item.kind === 'slug' ? [item.text] : []))
+    if (slugs.length > 0) warnings.push({ code: 'blockers-as-slugs', detail: slugs.join(', ') })
+    for (const item of blockedBy.items)
+      if (item.kind === 'unread') warnings.push({ code: 'blocker-unread', detail: item.text })
+    const named = blockedBy.items.some((item) => item.kind === 'number' || item.kind === 'file')
+    if (named && !blockedBy.template)
+      warnings.push({ code: 'blockers-not-template', detail: blockedBy.raw })
+  }
+  if (blocks !== null && !blocks.none) warnings.push({ code: 'blocks-line', detail: blocks.raw })
+  return warnings
 }
 
 const segments = (ref: Ref): ReadonlyArray<string> =>
@@ -389,6 +468,9 @@ const fileOf = (ref: Ref): string => segments(ref).at(-1) ?? ''
 
 /** The directory a local map's file sits in. */
 const directoryOf = (ref: Ref): string => segments(ref).at(-2) ?? ''
+
+/** `.scratch/e/issues/03-x.md` → `.scratch/e/issues`. */
+const directoryOfPath = (path: string): string => path.split('/').slice(0, -1).join('/')
 
 /** `03-foo-bar.md` → `Foo bar`; `#n` when there is nothing to read. */
 function humanize(slug: string, number: number): string {

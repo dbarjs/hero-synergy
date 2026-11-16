@@ -12,6 +12,7 @@ const LOUD = [
   'type-missing',
   'type-several',
   'blockers-as-slugs',
+  'blocker-unread',
   'no-map',
   'closed-unrecorded',
   'closed-no-resolution',
@@ -88,6 +89,31 @@ describe('the drift table', () => {
       withDetail:
         "The map's Status line starts with a word this version does not read; the map reads as open: 01.",
       hint: 'Only a Status line that starts with DONE or destination reached closes a local map.',
+    },
+    {
+      code: 'blockers-not-template',
+      level: 'quiet',
+      message: "The ticket's Blocked by line is not in the template's form.",
+      detail: '02 (closed 2026-10-02) — **UNBLOCKED**',
+      withDetail:
+        "The ticket's Blocked by line is not in the template's form: 02 (closed 2026-10-02) — **UNBLOCKED**.",
+      hint: 'A local ticket lists its blockers as "Blocked by: NN, NN".',
+    },
+    {
+      code: 'blocks-line',
+      level: 'quiet',
+      message: 'The ticket names the tickets it blocks.',
+      detail: '03, 04',
+      withDetail: 'The ticket names the tickets it blocks: 03, 04.',
+      hint: 'Blockers go on the waiting ticket\'s "Blocked by:" line; the Cockpit reads both sides.',
+    },
+    {
+      code: 'blocker-unread',
+      level: 'loud',
+      message: 'A Blocked by item names no ticket.',
+      detail: 'the design review',
+      withDetail: 'A Blocked by item names no ticket: the design review.',
+      hint: 'Each item of a Blocked by line starts with a ticket number, a ticket file name or a link to one.',
     },
   ] as const)(
     '$code: words the local tracker reader raises',
