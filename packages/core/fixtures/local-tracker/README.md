@@ -4,6 +4,6 @@ A repo on the local markdown tracker, seeded into the in-memory file system by `
 
 - `billing-rewrite` (map 1): a map in the current five-section form, one resolved ticket the map records as a decision, one claimed ticket blocked by it, one open ticket blocked by both.
 - `cockpit-colors` (map 2): a ticket without an H1, titled from its slug, and a resolved ticket the map rules out of scope.
-- `onboarding-spec` (position 3, no map): a `/to-spec` effort whose issue files belong to no map, so they land in `unmapped` with `no-map`. Their Status lines are triage roles (`ready-for-agent`, `needs-triage`): each issue is open, with that role.
+- `onboarding-spec` (position 3, no map): a `/to-spec` effort whose issue files belong to no map, so they are unmapped issues in an `onboarding-spec` group, with no `no-map`, `type-missing` or `no-question-heading` ([Which issue files are a map's tickets](https://github.com/dbarjs/hero-synergy/issues/139)). Two Status lines are triage roles (`ready-for-agent`, `needs-triage`): each of those issues is open, with that role. The third issue is `done`, so the snapshot hides it.
 
 The repo's `.gitignore` ignores `.scratch` everywhere and re-includes the ones under a fixtures directory.

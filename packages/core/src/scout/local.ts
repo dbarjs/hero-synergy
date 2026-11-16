@@ -1,14 +1,17 @@
 import { Clock, Effect } from 'effect'
 
 import { FileSystem, type FileSystemError, type FileSystemShape } from '../file-system.ts'
+import { headerValue, readHeaderLines } from '../snapshot/header-lines.ts'
 import { readMapStatus } from '../snapshot/map-status.ts'
 import type { Snapshot, Ticket, UnmappedGroup, WayfinderMap } from '../snapshot/model.ts'
 import {
   type Collected,
   type CollectedMap,
   type CollectedTicket,
+  type MapLine,
   readSnapshot,
 } from '../snapshot/read.ts'
+import { fileTarget, resolveTarget } from '../snapshot/reference-line.ts'
 import { joinPath } from './paths.ts'
 
 /** Where a local tracker keeps its efforts, relative to the repo root. */
@@ -18,13 +21,14 @@ export const SCRATCH_DIRECTORY = '.scratch'
 const MAP_FILE = 'map.md'
 
 /**
- * One effort of a local tracker, as the files report it before any body is
- * read: a file named `map.md` in any casing directly in `.scratch/<effort>/` is
- * the map, `issues/NN-<slug>.md` the tickets in number order. Every effort
- * directory is numbered by its 1-based position in directory order, whether it
- * holds a map or not, so no map renumbers when another closes; an effort
- * without a map file has no map, and its tickets go to its own `unmapped`
- * group.
+ * One effort of a local tracker, as the files report it: a file named `map.md`
+ * in any casing directly in `.scratch/<effort>/` is the map, `issues/NN-<slug>.md`
+ * the issue files in number order. Every effort directory is numbered by its
+ * 1-based position in directory order, whether it holds a map or not, so no map
+ * renumbers when another closes. Only the header lines that decide membership
+ * are read here (#139): an issue file is a ticket of its effort's map unless the
+ * effort has no map file or its `Parent:` line names another file, such as a
+ * PRD; every other issue file is an unmapped issue.
  *
  * Each effort is its own `Collected`: ticket numbers are file prefixes, unique
  * within an effort and not across the tracker, and a `Blocked by:` line only
@@ -52,9 +56,10 @@ export interface EffortReading {
  * Reads every effort under `.scratch` into one snapshot of the open maps. A
  * repo with no `.scratch` directory has no maps and no error: the tracker is
  * there, it holds nothing yet. A map closed by its own Status line is left out
- * with all its tickets, as a closed map is on GitHub. Each effort's unmapped
- * issues form one group, in directory order, titled with the effort's map
- * title or, without a map, its directory name; an effort with none adds no group.
+ * with all its tickets, as a closed map is on GitHub. Each effort's open
+ * unmapped issues form one group, in directory order, titled with the effort's
+ * map title, open or closed, or, without a map, its directory name. A closed
+ * unmapped issue is left out, and an effort with no open one adds no group (#139).
  */
 export function readLocalTracker(
   repoRoot: string,
@@ -69,17 +74,18 @@ export function readLocalTracker(
       maps: efforts.flatMap((effort) =>
         effort.map !== null && effort.mapState === 'open' ? [effort.map] : [],
       ),
-      unmapped: efforts.flatMap((effort): UnmappedGroup[] =>
-        effort.unmapped.length === 0
+      unmapped: efforts.flatMap((effort): UnmappedGroup[] => {
+        const open = effort.unmapped.filter((ticket) => ticket.state === 'open')
+        return open.length === 0
           ? []
           : [
               {
                 effort: effort.directory,
                 title: effort.map?.title ?? effort.directory,
-                tickets: effort.unmapped,
+                tickets: open,
               },
-            ],
-      ),
+            ]
+      }),
       // A local tracker keeps no repo-wide labels, the one thing a snapshot warns about.
       warnings: [],
     }
@@ -110,7 +116,7 @@ export function readLocalEfforts(
   })
 }
 
-/** The efforts under `.scratch`, in directory order, bodies unread. */
+/** The efforts under `.scratch`, in directory order, bodies unread but for the membership lines. */
 export function collectLocal(
   repoRoot: string,
 ): Effect.Effect<ReadonlyArray<LocalEffort>, FileSystemError, FileSystem> {
@@ -125,6 +131,8 @@ export function collectLocal(
     }
 
     const efforts: LocalEffort[] = []
+    // Each directory a `Map:` or `Parent:` line points into is listed once per collect.
+    const listings = new Map<string, ReadonlyArray<string>>()
     for (const [index, slug] of directories.entries()) {
       const mapNumber = index + 1
       const effortPath = joinPath(SCRATCH_DIRECTORY, slug)
@@ -137,7 +145,6 @@ export function collectLocal(
         if (body !== null) mapFiles.push({ name, body })
       }
       const mapFile = mapFiles.find((file) => file.name === MAP_FILE) ?? mapFiles[0]
-      const mapBody = mapFile?.body ?? null
       const issues = yield* listDirectory(fs, joinPath(repoRoot, effortPath, 'issues'))
 
       const files = issues
@@ -145,11 +152,17 @@ export function collectLocal(
         .filter((entry): entry is { file: string; number: number } => entry.number !== null)
         .sort((a, b) => a.number - b.number || a.file.localeCompare(b.file))
 
+      const mapPath = mapFile === undefined ? null : joinPath(effortPath, mapFile.name)
       const tickets: CollectedTicket[] = []
       for (const { file, number } of files) {
         const path = joinPath(effortPath, 'issues', file)
         const body = yield* readIfFile(fs, joinPath(repoRoot, path))
         if (body === null) continue
+        const mapLines = yield* readMapLines(fs, repoRoot, path, body, mapPath, listings)
+        // A ticket of the effort's map, unless its `Parent:` names another file, such as a PRD (#139).
+        const member =
+          mapPath !== null &&
+          !mapLines.some((line) => line.key === 'parent' && line.points === 'file')
         tickets.push({
           number,
           title: null,
@@ -158,9 +171,10 @@ export function collectLocal(
           state: null,
           labels: [],
           assignees: [],
-          parent: mapBody === null ? null : mapNumber,
+          parent: member ? mapNumber : null,
           blockedBy: [],
           lastComment: null,
+          ...(mapLines.length > 0 ? { mapLines } : {}),
         })
       }
 
@@ -173,7 +187,9 @@ export function collectLocal(
                 title: null,
                 ref: { tracker: 'local', path: joinPath(effortPath, mapFile.name) },
                 body: mapFile.body,
-                children: tickets.map((ticket) => ticket.number),
+                children: tickets
+                  .filter((ticket) => ticket.parent === mapNumber)
+                  .map((ticket) => ticket.number),
                 ...(mapFiles.length > 1 ? { mapFiles: mapFiles.map((file) => file.name) } : {}),
               },
             ]
@@ -193,6 +209,62 @@ export function collectLocal(
     return efforts
   })
 }
+
+/** A map file of some effort, `.scratch/<effort>/map.md` in any case, whether or not it is there. */
+const MAP_PATH = new RegExp(String.raw`^${SCRATCH_DIRECTORY}/[^/]+/${MAP_FILE}$`, 'i')
+
+/**
+ * Where the ticket's first `Map:` and first `Parent:` header lines point, each read only as a
+ * link target or a bare path resolved against the ticket's directory (#137). `mapPath` is the
+ * effort's map file, null without one. A target is the effort's own map when it names that file
+ * in any case; away when it names another effort's map file, a missing file or nothing in the
+ * repo; and any other file found by listing its directory, so every disk reads the same files.
+ */
+const readMapLines = (
+  fs: FileSystemShape,
+  repoRoot: string,
+  path: string,
+  body: string,
+  mapPath: string | null,
+  listings: Map<string, ReadonlyArray<string>>,
+): Effect.Effect<ReadonlyArray<MapLine>, FileSystemError> =>
+  Effect.gen(function* () {
+    const header = readHeaderLines(body)
+    const lines: MapLine[] = []
+    for (const key of ['map', 'parent'] as const) {
+      const value = headerValue(header, key)
+      const target = value === null ? null : fileTarget(value)
+      if (target === null) continue
+      const resolved = resolveTarget(path, target)
+      let points: MapLine['points']
+      if (resolved === null) points = 'away'
+      else if (mapPath !== null && resolved.toLowerCase() === mapPath.toLowerCase())
+        points = 'own-map'
+      else if (MAP_PATH.test(resolved)) points = 'away'
+      else points = (yield* isFileAt(fs, repoRoot, resolved, listings)) ? 'file' : 'away'
+      lines.push({ key, target, points })
+    }
+    return lines
+  })
+
+/** Whether a file, not a directory, is at the repo-relative path, by its exact name in a listing. */
+const isFileAt = (
+  fs: FileSystemShape,
+  repoRoot: string,
+  path: string,
+  listings: Map<string, ReadonlyArray<string>>,
+): Effect.Effect<boolean, FileSystemError> =>
+  Effect.gen(function* () {
+    const slash = path.lastIndexOf('/')
+    const directory = slash === -1 ? '' : path.slice(0, slash)
+    const name = path.slice(slash + 1)
+    let names = listings.get(directory)
+    if (names === undefined) {
+      names = yield* listDirectory(fs, joinPath(repoRoot, ...(directory === '' ? [] : [directory])))
+      listings.set(directory, names)
+    }
+    return names.includes(name) && !(yield* isDirectory(fs, joinPath(repoRoot, path)))
+  })
 
 /** `03-which-database.md` → 3; null for a file that is not a ticket. */
 const ticketNumber = (file: string): number | null => {

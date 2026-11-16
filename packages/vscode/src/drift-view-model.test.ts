@@ -63,10 +63,20 @@ describe('drift in the Tree view model', () => {
 
   it('folds the tickets of no map into an Unmapped node, only when there are some', async () => {
     const view = buildViewModel(await driftingSnapshot(), new Set(['unmapped']))
+    // A stray with no effort keeps its number-only key, straight under the fold.
     expect(view.kind === 'maps' && view.unmapped).toMatchObject({
       key: 'unmapped',
       expanded: true,
-      entries: [{ key: 'unmapped:ticket:3', number: 3, loud: ['The ticket belongs to no map.'] }],
+      count: 1,
+      groups: [
+        {
+          effort: null,
+          title: null,
+          entries: [
+            { key: 'unmapped:ticket:3', number: 3, loud: ['The ticket belongs to no map.'] },
+          ],
+        },
+      ],
     })
     const none = buildViewModel(await cleanSnapshot(), new Set())
     expect(none.kind === 'maps' && none.unmapped).toBeNull()

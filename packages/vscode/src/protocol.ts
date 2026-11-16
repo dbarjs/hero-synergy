@@ -146,10 +146,31 @@ export interface TicketRow {
 
 /** A ticket that belongs to no map, in the Unmapped node. */
 export interface UnmappedRow {
+  /** `unmapped:<effort>:ticket:<n>`, or `unmapped:ticket:<n>` with no effort: two efforts' `#1` never meet. */
   readonly key: string
   readonly number: number
   readonly title: string
   readonly loud: ReadonlyArray<string>
+}
+
+/** One effort's unmapped issues in the Unmapped fold, in number order. */
+export interface UnmappedGroupRow {
+  /** The effort's directory; null for GitHub's strays, which sit straight under the fold. */
+  readonly effort: string | null
+  /** The plain row's label: the effort's map title, open or closed, else its directory name; null with no effort. */
+  readonly title: string | null
+  readonly entries: ReadonlyArray<UnmappedRow>
+}
+
+/** The Unmapped fold above Finished: open work outside every map, grouped by effort. */
+export interface UnmappedFold {
+  /** What the webview sends back to expand or collapse it. */
+  readonly key: string
+  readonly expanded: boolean
+  /** The open unmapped issues across its groups. */
+  readonly count: number
+  /** The efforts in directory order, each a plain row that neither folds nor selects. */
+  readonly groups: ReadonlyArray<UnmappedGroupRow>
 }
 
 /** A closed ticket in the Decisions fold, with the gist the map recorded. */
@@ -315,7 +336,7 @@ export type ViewModel =
       /** Sessions with no ticket in view, one row at the repo level; null when there are none. */
       readonly unlisted: ReadonlyArray<UnlistedRow> | null
       /** The tickets that belong to no map, folded above Finished; null when there are none. */
-      readonly unmapped: Fold<UnmappedRow> | null
+      readonly unmapped: UnmappedFold | null
       readonly finished: FinishedFold | null
       /** The one selected row's pane; null when nothing is selected. */
       readonly selection: Focus | null

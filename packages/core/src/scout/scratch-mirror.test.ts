@@ -11,6 +11,7 @@ import {
 import { isAfkTicket } from '../claude/bypass.ts'
 import { FileSystem } from '../file-system.ts'
 import { modeOf } from '../snapshot/derive.ts'
+import type { Ticket } from '../snapshot/model.ts'
 import { collectLocal, readLocalEfforts, readLocalTracker } from './local.ts'
 import { scoutColumns, truthColumns } from './readings.ts'
 import { DEFAULT_TRIAGE_LABELS } from './triage-labels.ts'
@@ -185,6 +186,74 @@ describe('the local reader on the scratch mirror', () => {
         }
       }
     }),
+  )
+
+  it.effect(
+    "groups the 17 open unmapped issues in 7 efforts, effort-29 under its map's title, and hides the 22 closed ones",
+    () =>
+      Effect.gen(function* () {
+        const snapshot = yield* readLocalTracker(ROOT).pipe(Effect.provide(files), Effect.orDie)
+        // What the truth implies: a ticket exactly when it has a map and no PRD parent (#139).
+        const unmapped = tickets.filter(
+          (ticket) => ticket.reading.map === null || ticket.reading.parent !== null,
+        )
+        const open = unmapped.filter((ticket) => ticket.reading.state !== 'closed')
+        expect([open.length, unmapped.length - open.length]).toEqual([17, 22])
+        const pathOf = (ticket: Ticket) => (ticket.ref.tracker === 'local' ? ticket.ref.path : '')
+
+        const groups = snapshot.unmapped.map((group) => ({
+          effort: group.effort,
+          title: group.title,
+          tickets: group.tickets.map(pathOf),
+        }))
+        const expected = [...new Set(open.map((ticket) => effortOf(ticket.path)))].map(
+          (effort) => ({
+            effort,
+            title:
+              efforts.find((candidate) => candidate.directory === effort)?.map?.title ?? effort,
+            tickets: open
+              .filter((ticket) => effortOf(ticket.path) === effort)
+              .map((ticket) => ticket.path)
+              .sort((a, b) => numberOf(a) - numberOf(b)),
+          }),
+        )
+        expect(groups).toEqual(expected)
+        expect(groups).toHaveLength(7)
+
+        // Effort-29 is the one group with a map: it holds 9, and six mapless efforts the other 8.
+        const withMap = groups.filter((group) =>
+          maps.some((map) => effortOf(map.path) === group.effort),
+        )
+        expect(withMap.map((group) => [group.effort, group.tickets.length])).toEqual([
+          ['effort-29', 9],
+        ])
+        expect(withMap[0]!.title).toBe(
+          efforts.find((effort) => effort.directory === 'effort-29')!.map!.title,
+        )
+        expect(withMap[0]!.title).not.toBe('effort-29')
+        expect(
+          groups
+            .filter((group) => group.effort !== 'effort-29')
+            .reduce((sum, group) => sum + group.tickets.length, 0),
+        ).toBe(8)
+        for (const group of groups.filter((candidate) => candidate.effort !== 'effort-29'))
+          expect(group.title).toBe(group.effort)
+
+        // The closed unmapped issues are read, and only the snapshot hides them.
+        const shown = new Set(groups.flatMap((group) => group.tickets))
+        for (const ticket of unmapped.filter((candidate) => candidate.reading.state === 'closed')) {
+          expect(shown.has(ticket.path), ticket.path).toBe(false)
+          const effort = efforts.find((candidate) => candidate.directory === effortOf(ticket.path))!
+          expect(effort.unmapped.map(pathOf), ticket.path).toContain(ticket.path)
+        }
+        // An unmapped issue never raises no-map, type-missing or no-question-heading.
+        const codes = efforts
+          .flatMap((effort) => effort.unmapped)
+          .flatMap((ticket) => ticket.warnings.map((warning) => warning.code))
+        expect(codes.filter((code) => code === 'no-map')).toEqual([])
+        expect(codes.filter((code) => code === 'type-missing')).toEqual([])
+        expect(codes.filter((code) => code === 'no-question-heading')).toEqual([])
+      }),
   )
 
   it.effect('never runs the 15 HITL-noted open tickets of the open maps AFK', () =>
