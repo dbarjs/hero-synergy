@@ -25,11 +25,11 @@ A wayfinder map: the issue labelled `wayfinder:map` (or `.scratch/<effort>/map.m
 _Avoid_: board, plan, epic
 
 **Spec**:
-The issue `/to-spec` publishes (or `.scratch/<feature>/spec.md` on a local tracker): one buildable plan, split into build tickets by `/to-tickets`. It may come from a finished map or from a grilling session with no map.
+The issue `/to-spec` publishes (or `.scratch/<feature>/spec.md`, once `PRD.md`, on a local tracker): one buildable plan, split into build tickets by `/to-tickets`. On GitHub it is an issue with no parent and no `wayfinder:` label that has sub-issues or the template's Problem Statement and Solution headings; no label or title marks it. It may come from a finished map, which it names before its first heading, or from a grilling session with no map.
 _Avoid_: PRD
 
 **Ticket**:
-A child issue of a map or of a spec: a decision ticket or a build ticket.
+A child issue of a map or of a spec: a decision ticket or a build ticket. Its parent decides which, never its labels.
 _Avoid_: card, story
 
 **Decision ticket**:
@@ -37,11 +37,11 @@ A ticket of a map, holding one question, typed by a `wayfinder:<type>` label (or
 _Avoid_: wayfinder ticket
 
 **Build ticket**:
-A ticket of a spec: one slice to build, with its acceptance criteria and a triage role.
+A ticket of a spec: one slice to build, with its acceptance criteria and a triage role. On GitHub a sub-issue of the spec; on a local tracker an issue file of the spec's effort that is not a ticket of the effort's map.
 _Avoid_: spec ticket, story
 
 **Unmapped issue**:
-A tracker issue that is not a ticket of any map: on GitHub, an open ready-for-agent issue with no parent that is not a spec; on a local tracker, an issue file in an effort with no map, or one whose `Parent:` line names a PRD. Shown by effort, never on a frontier, hidden once closed.
+A tracker issue that is neither a spec nor a ticket of a map or a spec: on GitHub, an open ready-for-agent or ready-for-human issue with no parent that is not a spec; on a local tracker, an issue file in an effort with no map and no spec, or one whose `Parent:` line names some other file. Shown apart from maps and specs, by effort on a local tracker, never on a frontier, hidden once closed.
 _Avoid_: orphan, stray ticket
 
 **AFK ticket**:
@@ -179,6 +179,7 @@ _Avoid_: feature request, enhancement
 
 - A tracker holds many maps and many specs; a map holds decision tickets, a spec holds build tickets.
 - A map decides and a spec is built: a finished map leads to a spec through `/to-spec`, and a ticket is never both kinds.
+- A spec names at most one map; a map may lead to several specs.
 - A map with no open ticket and fog left offers Graduate fog, and To spec too once it has a ticket; a finished map offers To spec. A finished map has no fog.
 - The scout reads one tracker and produces one snapshot.
 - An action spawns a process and shows its command; a button never spawns one.
@@ -202,6 +203,7 @@ _Avoid_: feature request, enhancement
 
 - "task" is both a ticket type and everyday English: say "task ticket" for the type.
 - "Ticket" alone covers both kinds: say "decision ticket" or "build ticket" wherever the kind changes the meaning. The Neighbourhood entry was written for decision tickets.
+- "Parent" names four things: the tracker's native parent, a `## Parent` section, a local `Parent:` header line and a `Part of #n` line. Say "native parent" for the first. The native parent, or locally the effort, decides a ticket's kind.
 - "Background session" in this project means the scout's child process, never `claude --bg`.
 - "Register" and "registry" are different things: the upstream register is the document `docs/upstream.md`; the registry is Claude Code's list of live sessions. Say "upstream register" and "the registry".
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
