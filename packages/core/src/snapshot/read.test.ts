@@ -279,6 +279,27 @@ describe('a local tracker', () => {
     ])
   })
 
+  test('splits a Labels line on commas only, so a label may hold a space', () => {
+    // A repo may rename ready-for-human to `human only`; splitting on spaces would lose it and
+    // bypass a ticket marked for a person.
+    const snapshot = readSnapshot({
+      ...collected,
+      maps: [{ ...collected.maps[0]!, children: [1] }],
+      tickets: [
+        effort(
+          1,
+          'ticket-1',
+          '# Spaced labels\n\nType: task\nLabels: wayfinder:task, `human only`,good first issue ,\n\n## Question\n\nQ?\n',
+        ),
+      ],
+    })
+    expect(snapshot.maps[0]!.tickets[0]!.labels).toEqual([
+      'wayfinder:task',
+      'human only',
+      'good first issue',
+    ])
+  })
+
   test('resolves Blocked by numbers against the effort, with their file refs', () => {
     expect(tickets.get(2)?.blockedBy).toEqual([
       {

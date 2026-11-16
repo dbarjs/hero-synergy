@@ -125,7 +125,13 @@ describe('the manifest the registries show', () => {
       default: 'off',
       scope: 'machine',
     })
-    expect(properties['heroSynergy.sessions.bypassPermissions'].enumDescriptions).toHaveLength(3)
+    // The afkTickets description names a label in code, so it is Markdown: plain
+    // `enumDescriptions` would show the backticks.
+    expect(properties['heroSynergy.sessions.bypassPermissions'].markdownEnumDescriptions).toEqual([
+      'Never bypass permissions.',
+      'Bypass for AFK tickets: research and task tickets, and any ticket labelled `ready-for-agent`.',
+      'Bypass for every Claude Code session the Cockpit launches.',
+    ])
     expect(properties['heroSynergy.sessions.bypassPermissions'].markdownDescription).toContain(
       'Claude Code asks you once, in the first bypassed session, to accept bypass mode.',
     )
@@ -134,8 +140,13 @@ describe('the manifest the registries show', () => {
       default: true,
       scope: 'machine',
     })
-    for (const setting of Object.values<{ markdownDescription?: string }>(properties)) {
+    for (const setting of Object.values<{
+      markdownDescription?: string
+      enumDescriptions?: ReadonlyArray<string>
+    }>(properties)) {
       expect(setting.markdownDescription).toBeTruthy()
+      // Plain-text enum descriptions render Markdown literally.
+      for (const description of setting.enumDescriptions ?? []) expect(description).not.toMatch(/`/)
     }
   })
 

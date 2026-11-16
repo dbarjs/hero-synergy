@@ -70,7 +70,7 @@ An AFK ticket is meant to be worked by the agent alone, but a session stops at e
 **What each mode covers.**
 
 - `off` (the default): never.
-- `afkTickets`: every ticket Action (Work ticket, Launch fresh, Resume, Resume by name) on an AFK ticket. A ticket is AFK when it is labelled `ready-for-agent`, or when it is a research or task ticket not labelled `ready-for-human`. Prototype and grilling tickets, and tickets with no type, keep their prompts. The label names come from your repo's `docs/agents/triage-labels.md` when it renames them. Resume passes the flag again, because Claude Code drops the mode on `--resume`.
+- `afkTickets`: every ticket Action (Work ticket, Launch fresh, Resume, Resume by name) on an AFK ticket. A ticket is AFK when it is labelled `ready-for-agent`, whatever its type, or when it is a research or task ticket. A ticket labelled `ready-for-human` keeps its prompts even when it is also labelled `ready-for-agent`, and so do prototype and grilling tickets and tickets with no type that aren't labelled `ready-for-agent`. The label names come from your repo's `docs/agents/triage-labels.md` when it renames them. Resume passes the flag again, because Claude Code drops the mode on `--resume`.
 - `allSessions`: every ticket Action on every ticket, and Chart a map, To spec, Run skill… and Setup.
 
 The installs never carry the flag. A changed setting applies to the next launch; running sessions are left alone.

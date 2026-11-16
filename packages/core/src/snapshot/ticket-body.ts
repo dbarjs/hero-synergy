@@ -123,9 +123,10 @@ function readBlockers(value: string): BlockersLine {
   return { numbers, slugs }
 }
 
+/** A `Labels:` value, split on commas only: a label may hold a space (`good first issue`). */
 function readLabels(value: string): ReadonlyArray<string> {
   return value
-    .split(/[\s,]+/)
+    .split(',')
     .map((token) => token.replace(/`/g, '').trim())
     .filter((token) => token !== '')
 }

@@ -29,7 +29,7 @@ describe('isAfkTicket', () => {
     const cases = TYPES.flatMap((type) =>
       [false, true].flatMap((agent) =>
         [false, true].map((human) => {
-          const afk = agent || ((type === 'research' || type === 'task') && !human)
+          const afk = !human && (agent || type === 'research' || type === 'task')
           return [type ?? 'untyped', agent, human, afk, type] as const
         }),
       ),
@@ -45,6 +45,21 @@ describe('isAfkTicket', () => {
         expect(isAfkTicket({ type, labels }, triage)).toBe(afk)
       },
     )
+  })
+
+  it('bypasses a ready-for-agent ticket whatever its type, an untyped one included', () => {
+    for (const type of TYPES)
+      expect(isAfkTicket({ type, labels: ['ready-for-agent'] }, DEFAULT_TRIAGE_LABELS)).toBe(true)
+  })
+
+  it('never bypasses a ready-for-human ticket, even one also labelled ready-for-agent', () => {
+    for (const type of TYPES)
+      expect(
+        isAfkTicket(
+          { type, labels: ['ready-for-agent', 'ready-for-human'] },
+          DEFAULT_TRIAGE_LABELS,
+        ),
+      ).toBe(false)
   })
 
   it('reads only the repo’s label strings, not the default names', () => {
@@ -177,6 +192,74 @@ describe('bypassHealth', () => {
 
   it('raises no root warning when a sandbox variable is set', () => {
     expect(codes({ root: true, sandboxEnv: true })).toEqual([])
+  })
+
+  describe('across setting × gate × isolation × root × sandbox env', () => {
+    // Each window, with the detail `bypass-not-isolated` names when it is not isolated.
+    const windows: ReadonlyArray<readonly [string, Isolation, string | null]> = [
+      ['a dev container', ISOLATED, null],
+      [
+        'a Docker container',
+        { isolated: true, signal: { kind: 'marker', path: '/.dockerenv' } },
+        null,
+      ],
+      [
+        'a Podman container',
+        { isolated: true, signal: { kind: 'marker', path: '/run/.containerenv' } },
+        null,
+      ],
+      ...(
+        [
+          ['ssh-remote', 'Remote-SSH'],
+          ['wsl', 'WSL'],
+          ['tunnel', 'Remote Tunnel'],
+          [null, 'local window'],
+          ['some-remote', 'some-remote'],
+        ] as const
+      ).flatMap(([remoteName, where]) =>
+        (
+          [
+            [null, 'no container marker'],
+            ['/run/.toolboxenv', 'a toolbx or distrobox container'],
+          ] as const
+        ).map(
+          ([vetoedBy, why]) =>
+            [
+              `${where}${vetoedBy === null ? '' : ' in toolbx'}`,
+              { isolated: false, remoteName, vetoedBy },
+              `${where}, ${why}`,
+            ] as const,
+        ),
+      ),
+    ]
+    const cases = bypassModes.flatMap((mode) =>
+      [true, false].flatMap((gate) =>
+        windows.flatMap(([where, isolation, detail]) =>
+          [false, true].flatMap((root) =>
+            [false, true].map((sandboxEnv) => {
+              const raised =
+                mode === 'off'
+                  ? []
+                  : gate && detail !== null
+                    ? [{ code: 'bypass-not-isolated', detail }]
+                    : root && !sandboxEnv
+                      ? [{ code: 'bypass-refused-as-root', detail: null }]
+                      : []
+              return [mode, gate, where, root, sandboxEnv, raised, isolation] as const
+            }),
+          ),
+        ),
+      ),
+    )
+
+    it.each(cases)(
+      '%s, gate %s, %s, root %s, sandbox env %s: %j',
+      (bypassPermissions, onlyWhenIsolated, _where, root, sandboxEnv, raised, isolation) => {
+        expect(codes({ bypassPermissions, onlyWhenIsolated, isolation, root, sandboxEnv })).toEqual(
+          raised,
+        )
+      },
+    )
   })
 
   it('words both entries as the spec does, the root hint never naming IS_SANDBOX', () => {

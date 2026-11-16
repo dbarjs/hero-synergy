@@ -167,7 +167,7 @@
             "afkTickets",
             "allSessions"
           ],
-          "enumDescriptions": [
+          "markdownEnumDescriptions": [
             "Never bypass permissions.",
             "Bypass for AFK tickets: research and task tickets, and any ticket labelled `ready-for-agent`.",
             "Bypass for every Claude Code session the Cockpit launches."

@@ -1,6 +1,5 @@
 import {
   type BypassPolicy,
-  type BypassTarget,
   bypasses,
   chartMap,
   DEFAULT_TRIAGE_LABELS,
@@ -192,10 +191,6 @@ const plan = (
   }
 }
 
-/** Whether the settings put the bypass flag on this kind of Action in this window. */
-const bypassFor = (launching: Pick<Launching, 'bypass'>, target: BypassTarget): boolean =>
-  bypasses(launching.bypass, target)
-
 const contextOf = (
   snapshot: Pick<Snapshot, 'repoRoot' | 'tracker'>,
   launching: Pick<Launching, 'pluginPath' | 'eventsFile'>,
@@ -228,7 +223,7 @@ export function ticketActions(
   const context = contextOf(snapshot, launching)
   const wayfinder = launching.wayfinder
   // The ticket decides, not the Action: every ticket Action on it bypasses alike, resumes included.
-  const bypassed = bypassFor(launching, {
+  const bypassed = bypasses(launching.bypass, {
     kind: 'ticket',
     afk: isAfkTicket(ticket, launching.triage),
   })
@@ -288,7 +283,7 @@ export function mapActions(
 ): ReadonlyArray<Planned> {
   if (!isFinished(map)) return []
   const command = launching.toSpec
-  const bypassed = bypassFor(launching, { kind: 'plain' })
+  const bypassed = bypasses(launching.bypass, { kind: 'plain' })
   return [
     plan(launching, 'to-spec', 'To spec', {
       launch: command === null ? null : toSpec(snapshot, { toSpec: command }, map, bypassed),
@@ -302,7 +297,7 @@ export function mapActions(
 /** Chart a map: the wayfinder command with no input, in a plain terminal. */
 export function chartMapAction(repoRoot: string, launching: Launching): Planned {
   const command = launching.wayfinder
-  const bypassed = bypassFor(launching, { kind: 'plain' })
+  const bypassed = bypasses(launching.bypass, { kind: 'plain' })
   return plan(launching, 'chart-map', 'Chart a map', {
     launch: command === null ? null : chartMap({ repoRoot }, { wayfinder: command }, bypassed),
     bypassed,
@@ -313,7 +308,7 @@ export function chartMapAction(repoRoot: string, launching: Launching): Planned 
 
 /** Run skill…: one discovered command by itself, in a plain terminal. */
 export function runSkillAction(repoRoot: string, launching: Launching, command: string): Planned {
-  const bypassed = bypassFor(launching, { kind: 'plain' })
+  const bypassed = bypasses(launching.bypass, { kind: 'plain' })
   return plan(launching, 'run-skill', 'Run skill…', {
     launch: runSkill({ repoRoot }, command, bypassed),
     bypassed,
@@ -357,7 +352,7 @@ export function startOf(repoRoot: string | null, launching: Launching, lack: Lac
 /** Setup: the setup skill by itself, in a plain terminal. */
 export function setupAction(repoRoot: string, launching: Launching): Planned {
   const command = launching.setup
-  const bypassed = bypassFor(launching, { kind: 'plain' })
+  const bypassed = bypasses(launching.bypass, { kind: 'plain' })
   return plan(launching, 'setup', 'Setup', {
     launch: command === null ? null : setup({ repoRoot }, { setup: command }, bypassed),
     bypassed,

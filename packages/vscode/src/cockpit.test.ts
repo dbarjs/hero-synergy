@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from '@effect/vitest'
 import {
+  bypassModes,
   FileSystem,
   type ProcessRecording,
   readLocalTracker,
@@ -3634,13 +3635,65 @@ describe('the Cockpit controller bypassing permissions', () => {
           terminals.close(3, { reason: 'user', code: null })
           yield* Effect.yieldNow
           yield* cockpit.receive({ type: 'select', key: AUDIT })
-          expect(selectionActions(published.at(-1))[0]).toMatchObject({
+          const resume = selectionActions(published.at(-1))[0]
+          expect(resume).toMatchObject({
             id: 'resume',
             command: `claude ${FLAG} --resume sess-3 -n '#3 Contrast audit' --plugin-dir /ext/claude-plugin`,
           })
+          // The spawned argv is the shown command.
+          yield* cockpit.receive({ type: 'launch', key: AUDIT, action: 'resume' })
+          expect(terminals.opened[3]?.shellArgs).toEqual([
+            '--permission-mode',
+            'bypassPermissions',
+            '--resume',
+            'sess-3',
+            '-n',
+            '#3 Contrast audit',
+            '--plugin-dir',
+            '/ext/claude-plugin',
+          ])
+          expect(renderCommand(['claude', ...(terminals.opened[3]?.shellArgs ?? [])])).toBe(
+            resume?.command,
+          )
         }),
     ),
   )
+
+  describe('an AFK and a HITL ticket under each mode, in and out of an isolated environment', () => {
+    const windows = [
+      ['a dev container', DEV_CONTAINER, true],
+      ['Remote-SSH', { remoteName: 'ssh-remote' }, false],
+      ['a local window', {}, false],
+    ] as const
+    const cases = bypassModes.flatMap((mode) =>
+      windows.flatMap(([where, overrides, isolated]) =>
+        [true, false].map((gate) => {
+          const allowed = mode !== 'off' && (!gate || isolated)
+          return [mode, where, gate, allowed, allowed && mode === 'allSessions', overrides] as const
+        }),
+      ),
+    )
+    it.effect.each(cases)(
+      '%s in %s, gate %s: AFK flag %s, HITL flag %s',
+      ([mode, _where, gate, afkFlag, hitlFlag, overrides]) =>
+        withCockpit(bypassing(mode, overrides, gate), ({ cockpit, published, terminals }) =>
+          Effect.gen(function* () {
+            yield* cockpit.activated
+            yield* cockpit.show
+            const afk = commandOf(published, AUDIT)
+            const hitl = commandOf(published, PALETTE)
+            expect(afk?.includes(FLAG)).toBe(afkFlag)
+            expect(hitl?.includes(FLAG)).toBe(hitlFlag)
+            // What is shown is what is spawned, flag or not.
+            yield* cockpit.receive({ type: 'launch', key: AUDIT })
+            yield* cockpit.receive({ type: 'launch', key: PALETTE })
+            const [audit, palette] = terminals.opened
+            expect(renderCommand(['claude', ...(audit?.shellArgs ?? [])])).toBe(afk)
+            expect(renderCommand(['claude', ...(palette?.shellArgs ?? [])])).toBe(hitl)
+          }),
+        ),
+    )
+  })
 
   it.effect('keeps the prompts outside an isolated environment, with a quiet note saying why', () =>
     withCockpit(bypassing('afkTickets', { remoteName: 'ssh-remote' }), ({ cockpit, published }) =>
@@ -3813,11 +3866,15 @@ describe('the Cockpit controller bypassing permissions', () => {
     const audit = `${ROOT}/.scratch/cockpit-colors/issues/03-contrast-audit.md`
     const files = {
       ...setup.files,
-      // A HITL type labelled for an agent, under a renamed label; a task marked for a human.
+      // A HITL type labelled for an agent, under a renamed label; a task marked for a human, under
+      // a renamed label that holds a space.
       [palette]: setup.files![palette]!.replace('Type: prototype', 'Type: prototype\nLabels: afk'),
-      [audit]: setup.files![audit]!.replace('Type: task', 'Type: task\nLabels: human-only'),
+      [audit]: setup.files![audit]!.replace(
+        'Type: task',
+        'Type: task\nLabels: wayfinder:task, `human only`',
+      ),
       [`${ROOT}/docs/agents/triage-labels.md`]:
-        '| Role | Label |\n| --- | --- |\n| `ready-for-agent` | `afk` |\n| `ready-for-human` | `human-only` |\n',
+        '| Role | Label |\n| --- | --- |\n| `ready-for-agent` | `afk` |\n| `ready-for-human` | `human only` |\n',
     }
     return withCockpit({ ...setup, files }, ({ cockpit, published }) =>
       Effect.gen(function* () {
