@@ -111,6 +111,14 @@ _Avoid_: crawler, analyzer, sync
 The typed state of every open map in a repo at one moment: the facts the tracker reports, what code reads from map and ticket bodies, and drift warnings. It knows nothing about sessions.
 _Avoid_: state dump, view model
 
+**Refresh**:
+One read of the whole tracker by the scout, started by a cause: the Tree shown, the window focused, a session starting, stopping or ending, a local tracker file changing, or the refresh button. A cause that comes too soon after the last read, or while refreshes are paused, is owed one read when the wait ends.
+_Avoid_: poll, sync, reload
+
+**Paused**:
+Automatic refreshes held back on a GitHub tracker while few of the login's hourly API points are left, so the user's sessions keep theirs. The refresh button still reads the tracker; once no points are left the tracker is rate-limited and nothing reads it until they come back.
+_Avoid_: throttled, frozen, offline
+
 **Drift**:
 Any way a map, a spec or a ticket differs from the current conventions of the skill that writes it (wayfinder, to-spec or to-tickets): legacy labels, text fallbacks, free-form markdown. Reported as a coded warning on the snapshot, a map, a spec or a ticket, never corrected.
 _Avoid_: corruption, invalid map
@@ -196,6 +204,7 @@ _Avoid_: feature request, enhancement
 - The Tree says a stuck map is deciding, and a stuck spec building, while a session is live on one of its tickets; both still rank as stuck.
 - A map with no open ticket and fog left offers Graduate fog, and To spec too once it has a ticket; a finished map offers To spec. A finished map has no fog.
 - The scout reads one tracker and produces one snapshot.
+- A refresh reads everything at once, so a snapshot has one age; session facts come from the registry and status events and never wait for a refresh.
 - An action spawns a process and shows its command; a button never spawns one.
 - An action launches a session; a map, a spec or a ticket has at most one live session.
 - Whether a session is bypassed follows its ticket, not the action: every action on an AFK ticket, resumes too, bypasses alike, and a whole-spec run bypasses only when its spec has open build tickets and every one is AFK. Bypass is off unless the user turns it on, and by default happens only in an isolated environment.
@@ -227,3 +236,4 @@ _Avoid_: feature request, enhancement
 - "Drift" is only ever about the tracker. A newer Claude Code or skills release breaking the codebase is an upstream break, found by the canary while nobody is here or by an upstream review when Eduardo is back; the same thing found on a user's machine is health, shown by the Cockpit at runtime.
 - "Status" is a session's registry status (busy, idle, waiting). On a local tracker the `Status:` line carries a ticket's state, its claim or its triage role: say "state" for open or closed, and "Status line" for the line itself.
 - "In review" means a ticket has an open pull request, whether or not anyone reviews it; "review required" and "changes requested" are GitHub's review decision on that pull request. "Blocked" stays a ticket waiting on a blocker: a pull request GitHub won't merge yet is "merge blocked".
+- "Paused", "waiting", "blocked" and "stuck": refreshes are paused, a session is waiting, a ticket is blocked, a map or spec is stuck.
