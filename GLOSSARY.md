@@ -28,6 +28,10 @@ _Avoid_: board, plan, epic
 The issue `/to-spec` publishes (or `.scratch/<feature>/spec.md`, once `PRD.md`, on a local tracker): one buildable plan, split into build tickets by `/to-tickets`. On GitHub it is an issue with no parent and no `wayfinder:` label that has sub-issues or the template's Problem Statement and Solution headings; no label or title marks it. It may come from a finished map, which it names before its first heading, or from a grilling session with no map.
 _Avoid_: PRD
 
+**Effort**:
+The piece of work one map charts and its spec builds. On a local tracker it is one directory under `.scratch`, holding the map, the spec and their issue files; the directory's name stays the same when other efforts come and go, so it is what tells apart two local maps or specs with one title.
+_Avoid_: feature (upstream's `<feature-slug>` names the same directory), project
+
 **Ticket**:
 A child issue of a map or of a spec: a decision ticket or a build ticket. Its parent decides which, never its labels.
 _Avoid_: card, story
@@ -63,6 +67,10 @@ _Avoid_: status, stage
 **Header line**:
 A `Key: value` line before a local ticket's or map's first H2, with a plain or bold key: the only place the scout reads a local item's type, blockers, map, claim and state.
 _Avoid_: front matter, metadata
+
+**Number**:
+What is shown in front of a title as `#<number>`, always a fact of the tracker: the issue's number on GitHub, the file's prefix for a local ticket. A local map and a local spec have none, so they are shown by their title alone; the Cockpit never makes a number up.
+_Avoid_: id, index, position
 
 **Blocker**:
 A ticket another ticket waits on: the tracker's blocked-by link, or on a local tracker the reference at the start of an item of a `Blocked by:` or `Blocks:` header line. A note after the reference is never read; the blocker's state is its own.
@@ -132,7 +140,7 @@ A window whose extension host runs inside a container the Cockpit can recognise:
 _Avoid_: sandbox, safe environment
 
 **Session**:
-One live Claude Code CLI process in a VS Code terminal, named `#<number> <title>` after the map, spec or ticket it works on, whoever started it; an Action with no issue, such as Chart a map, names it after itself. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
+One live Claude Code CLI process in a VS Code terminal, named `#<number> <title>` after the map, spec or ticket it works on, or by the title alone when that has no number, whoever started it; an Action with no issue, such as Chart a map, names it after itself. The conversation claude keeps on disk is not a session: it is what Resume takes as an argument.
 _Avoid_: agent, run, job, conversation
 
 **Whole-spec run**:
